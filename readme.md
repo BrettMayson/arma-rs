@@ -6,7 +6,7 @@ The easiest way to make extensions for Arma 3.
 
 ```toml
 [dependencies]
-arma-rs = "*"
+arma-rs = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
 ```
 
 ## Usage
@@ -88,8 +88,7 @@ use std::ffi::CString;
 
 #[no_mangle]
 pub unsafe extern "stdcall" fn RvExtensionVersion(output: *mut c_char, output_size: usize) {
-  let v = get_c(env!("CARGO_PKG_VERSION"));
-  strncpy(output, v, output_size);
+  strncpy(output, CString::new(env!("CARGO_PKG_VERSION")).unwrap().into_raw(), output_size);
 }
 
 #[no_mangle]
