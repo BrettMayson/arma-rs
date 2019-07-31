@@ -72,9 +72,7 @@ fn is_arma3(version: u8) -> bool {
 }
 
 #[rv_handler]
-fn init() {
-    println!("Ready to go!");
-}
+fn init() {}
 ```
 
 ### Without arma-rs
