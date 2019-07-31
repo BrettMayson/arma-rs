@@ -22,9 +22,7 @@ fn hello() -> &'static str {
 }
 
 #[rv_handler]
-fn init() {
-    println!("Ready to go!");
-}
+fn init() {}
 
 ```
 
