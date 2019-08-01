@@ -1,7 +1,8 @@
 #![recursion_limit="256"]
 
-use std::sync::Mutex;
 use std::collections::HashMap;
+use std::str::FromStr;
+use std::sync::Mutex;
 
 extern crate proc_macro;
 #[macro_use]
@@ -9,6 +10,7 @@ extern crate lazy_static;
 
 use proc_macro::TokenStream;
 use quote::quote;
+use regex::Regex;
 use syn::ItemFn;
 
 lazy_static! {
@@ -17,8 +19,20 @@ lazy_static! {
 }
 
 #[proc_macro_attribute]
-pub fn rv(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
+    
+    let mut thread = false;
+
+    let sattr = attr.to_string();
+    if !sattr.is_empty() {
+        let re = Regex::new(r#"(?m)(?P<key>[^,]+?)(?:\s+)?=(?:\s+)?(?P<value>[^",]+|"(?:[^"\\]|\\.)*")"#).unwrap();
+        for caps in re.captures_iter(&sattr) {
+            if &caps["key"] == "thread" {
+                thread = bool::from_str(&caps["value"]).unwrap();
+            }
+        }
+    }
 
     let name = &ast.ident;
     let sname = ast.ident.to_string();
@@ -49,34 +63,71 @@ pub fn rv(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let handlerfn = if args.is_empty() {
         match ast.decl.output {
-            syn::ReturnType::Default => quote! { 
-                unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
-                    #name();
+            syn::ReturnType::Default => {
+                if thread {
+                    quote! { 
+                        unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                            std::thread::spawn(move || {
+                                #name();
+                            });
+                        }
+                    }
+                } else {
+                    quote! { 
+                        unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                            #name();
+                        }
+                    }
                 }
             },
-            _ => quote! { 
-                unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
-                    libc::strncpy(output, std::ffi::CString::new(#name().to_string()).unwrap().into_raw(), size);
+            _ => {
+                if thread {
+                    panic!("Threaded functions can not return a value");
+                }
+                quote! { 
+                    unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                        libc::strncpy(output, std::ffi::CString::new(#name().to_string()).unwrap().into_raw(), size);
+                    }
                 }
             }
         }
     } else {
         match ast.decl.output {
-            syn::ReturnType::Default => quote! { 
-                unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
-                    let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
-                    let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().replace("\"", "")).collect();
-                    argv.reverse();
-                    #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
+            syn::ReturnType::Default => {
+                if thread {
+                    quote! { 
+                        unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                            let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().replace("\"", "")).collect();
+                            argv.reverse();
+                            std::thread::spawn(move || {
+                                #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
+                            });
+                        }
+                    }
+                } else {
+                    quote! { 
+                        unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                            let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().replace("\"", "")).collect();
+                            argv.reverse();
+                            #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
+                        }
+                    }
                 }
             },
-            _ => quote! { 
-                unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
-                    let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
-                    let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().replace("\"", "")).collect();
-                    argv.reverse();
-                    let v = #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*).to_string();
-                    libc::strncpy(output, std::ffi::CString::new(v).unwrap().into_raw(), size);
+            _ => {
+                if thread {
+                    panic!("Threaded functions can not return a value");
+                }
+                quote! { 
+                    unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                        let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                        let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().replace("\"", "")).collect();
+                        argv.reverse();
+                        let v = #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*).to_string();
+                        libc::strncpy(output, std::ffi::CString::new(v).unwrap().into_raw(), size);
+                    }
                 }
             }
         }
@@ -87,6 +138,7 @@ pub fn rv(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static #info: FunctionInfo = FunctionInfo {
             handler: #handler,
             name: #sname,
+            thread: #thread,
         };
         #handlerfn
         #ast
@@ -120,6 +172,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         pub struct FunctionInfo {
             name: &'static str,
             handler: unsafe fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> (),
+            thread: bool,
         }
 
         static arma_proxies: &[&FunctionInfo] = &[#(&#info,)*];

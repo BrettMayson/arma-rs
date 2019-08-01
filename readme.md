@@ -50,6 +50,16 @@ fn is_arma3(version: u8) -> bool {
 }
 ```
 
+### Parameters
+
+**Thread**
+A function can be ran in it's own thread as long as it does not have a return value
+
+```rust
+#[rv(thread=true)]
+fn do_something(){}
+```
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
