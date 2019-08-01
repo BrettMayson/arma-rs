@@ -192,6 +192,10 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #[no_mangle]
         pub unsafe extern "stdcall" fn RVExtension(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char) {
+            if !did_init {
+                init();
+                did_init = true;
+            }
             let size = output_size - 1;
             let r_function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
 
@@ -207,6 +211,10 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #[no_mangle]
         pub unsafe extern "stdcall" fn RVExtensionArgs(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char, args: *mut *mut libc::c_char, arg_count: usize) {
+            if !did_init {
+                init();
+                did_init = true;
+            }
             let size = output_size - 1;
             let r_function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
             for info in arma_proxies_arg.iter() {
