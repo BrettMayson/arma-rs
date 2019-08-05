@@ -7,6 +7,7 @@ The easiest way to make extensions for Arma 3.
 ```toml
 [dependencies]
 arma-rs = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
+libc = "*"
 ```
 
 ## Usage
