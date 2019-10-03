@@ -22,20 +22,47 @@ lazy_static! {
 }
 
 #[proc_macro_attribute]
-/// Create an RV function for use with callExtension
+/// Create an RV function for use with callExtension.
 /// 
 /// # Example
 /// 
 /// ```
 /// use arma_rs::{rv, rv_handler};
+/// 
 /// #[rv]
 /// fn hello() -> &'static str {
 ///    "Hello from Rust!"
 /// }
 /// 
+/// #[rv]
+/// fn is_arma3(version: u8) -> bool {
+///     version == 3
+/// }
+/// 
+/// #[rv]
+/// fn say_hello(name: String) -> String {
+///     format!("Hello {}", name)
+/// }
+/// 
+/// #[rv(thread=true)]
+/// fn do_something() {}
+/// 
 /// #[rv_handler]
 /// fn init() {}
 /// ```
+/// 
+/// `"myExtension" callExtension ["say_hello", ["Rust"]]` => `Hello Rust`
+/// 
+/// Any type that implements the trait [`FromStr`] can be used as an argument.  
+/// Any type that implements the trait [`ToStr`] can be used as the return type.
+/// 
+/// # Parameters
+/// 
+/// **Thread**
+/// A function can be ran in it's own thread as long as it does not have a return value
+/// 
+/// [`FromStr`]: https://doc.rust-lang.org/std/str/trait.FromStr.html
+/// [`ToStr`]: https://doc.rust-lang.org/std/string/trait.ToString.html
 pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     
@@ -173,11 +200,12 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 /// Required for all extensions
 /// 
-/// Handles incoming information from Arma and calls the appropriate function
-/// Also can be used to run code at init
+/// Handles incoming information from Arma and calls the appropriate function.
+/// Also can be used to run code at init.
 /// 
 /// ```
 /// use arma_rs::rv_handler;
+/// 
 /// #[rv_handler]
 /// fn init() {
 ///     // Init code here
