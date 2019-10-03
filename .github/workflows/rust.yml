@@ -3,10 +3,26 @@ name: Rust
 on: [push]
 
 jobs:
-  build:
-
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the source code
+        uses: actions/checkout@master
 
+      - name: Install Rust stable
+        run: |
+          rustup toolchain update stable --no-self-update
+          rustup default stable
+          rustup component add clippy rustfmt
+      - name: Run rustfmt
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all -- -Dwarnings
+  
+  build:
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
     - name: Build
