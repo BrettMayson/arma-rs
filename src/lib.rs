@@ -1,4 +1,7 @@
 #![recursion_limit="256"]
+#![forbid(clippy::missing_docs_in_private_items)]
+
+//! Create Arma extensions easily in Rust and the power of code generation
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -19,6 +22,20 @@ lazy_static! {
 }
 
 #[proc_macro_attribute]
+/// Create an RV function for use with callExtension
+/// 
+/// # Example
+/// 
+/// ```
+/// use arma_rs::{rv, rv_handler};
+/// #[rv]
+/// fn hello() -> &'static str {
+///    "Hello from Rust!"
+/// }
+/// 
+/// #[rv_handler]
+/// fn init() {}
+/// ```
 pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     
@@ -154,6 +171,18 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
+/// Required for all extensions
+/// 
+/// Handles incoming information from Arma and calls the appropriate function
+/// Also can be used to run code at init
+/// 
+/// ```
+/// use arma_rs::rv_handler;
+/// #[rv_handler]
+/// fn init() {
+///     // Init code here
+/// }
+/// ```
 pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
 
