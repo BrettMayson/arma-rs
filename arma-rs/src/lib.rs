@@ -226,6 +226,13 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         .map(|s| syn::Ident::new(&format!("{}_info", s), proc_macro2::Span::call_site()))
         .collect();
 
+    
+    let extern_type = if cfg!(windows) {
+        "stdcall"
+    } else {
+        "C"
+    };
+
     let expanded = quote! {
         use std::str::FromStr;
 
@@ -240,10 +247,10 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static arma_proxies: &[&FunctionInfo] = &[#(&#info,)*];
         static arma_proxies_arg: &[&FunctionInfo] = &[#(&#infoarg,)*];
         static mut did_init: bool = false;
-        static mut CALLBACK: Option<extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int> = None;
+        static mut CALLBACK: Option<extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int> = None;
 
         #[no_mangle]
-        pub unsafe extern "C" fn RvExtensionVersion(output: *mut libc::c_char, output_size: usize) {
+        pub unsafe extern #extern_type fn RvExtensionVersion(output: *mut libc::c_char, output_size: usize) {
             if !did_init {
                 init();
                 did_init = true;
@@ -253,7 +260,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern "C" fn RVExtension(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char) {
+        pub unsafe extern #extern_type fn RVExtension(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char) {
             if !did_init {
                 init();
                 did_init = true;
@@ -270,7 +277,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern "C" fn RVExtensionArgs(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char, args: *mut *mut libc::c_char, arg_count: usize) {
+        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char, args: *mut *mut libc::c_char, arg_count: usize) {
             if !did_init {
                 init();
                 did_init = true;
@@ -286,7 +293,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern "C" fn RvExtensionRegisterCallback(callback: Option<extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int>) {
+        pub unsafe extern #extern_type fn RvExtensionRegisterCallback(callback: Option<extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int>) {
             CALLBACK = callback;
         }
 

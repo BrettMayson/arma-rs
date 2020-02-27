@@ -18,8 +18,5 @@ fn init() {}
 
 #[rv(thread = true)]
 fn calculate() {
-    let mut data: Vec<&str> = Vec::new();
-    data.push("item1");
-    data.push("item2");
-    localEvent!("myEvent", data);
+    rv_callback!("test", "myEvent", "test data");
 }
