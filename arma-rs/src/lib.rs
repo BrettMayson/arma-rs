@@ -226,12 +226,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         .map(|s| syn::Ident::new(&format!("{}_info", s), proc_macro2::Span::call_site()))
         .collect();
 
-    
-    let extern_type = if cfg!(windows) {
-        "stdcall"
-    } else {
-        "C"
-    };
+    let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
 
     let expanded = quote! {
         use std::str::FromStr;
