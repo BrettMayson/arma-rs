@@ -18,5 +18,5 @@ fn init() {}
 
 #[rv(thread = true)]
 fn calculate() {
-    rv_callback!("test", "myEvent", "test data");
+    rv_callback!("test", "myEvent", "test data", 10.5, "more data");
 }

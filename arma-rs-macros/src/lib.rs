@@ -1,8 +1,6 @@
 #[macro_export]
 /// Create an `ExtensionCallback` mission event inside Arma 3
-/// (name, function, data)
-///
-/// data can be one of: Vec<&str>, ToString
+/// (name, function, data*)
 macro_rules! rv_callback {
     ($n:expr, $f:expr, $($d:expr),*) => {
         use std::any::Any;
