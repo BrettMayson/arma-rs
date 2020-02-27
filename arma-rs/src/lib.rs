@@ -288,8 +288,8 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RvExtensionRegisterCallback(callback: Option<extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int>) {
-            CALLBACK = callback;
+        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int) {
+            CALLBACK = Some(callback);
         }
 
         pub unsafe fn rv_send_callback(name: *const libc::c_char, function: *const libc::c_char, data: *const libc::c_char) {

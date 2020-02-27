@@ -9,7 +9,7 @@ macro_rules! rv_callback {
         let mut out = String::new();
         $(
             let s = $d.to_string();
-            let quote = s.parse::<f64>().is_ok();
+            let quote = !s.parse::<f64>().is_ok();
             if quote {
                 out.push('"');
             }
@@ -20,9 +20,9 @@ macro_rules! rv_callback {
             out.push_str(",");
         )*
         if out.matches(",").count() == 1 {
-            out = out.trim_end_matches(",").to_string();
+            out = out.trim_end_matches(",").trim_matches('"').to_string();
         } else {
-            out = format!("[{}]", out.trim_end_matches(",").trim_matches('"').to_string());
+            out = format!("[{}]", out.trim_end_matches(",").to_string());
         }
         // let data = if let Some(f) = (&$d as &Any).downcast_ref::<Vec<&str>>() {
         //     println!("`{:?}` is vec.", f);
