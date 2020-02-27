@@ -4,10 +4,20 @@ The easiest way to make extensions for Arma 3.
 
 ## Installation
 
+### Base
+
 ```toml
 [dependencies]
 arma-rs = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
 libc = "*"
+```
+
+### Callback Support
+
+If you want to use callbacks into Arma 3 add the following to your Cargo.toml
+
+```toml
+arma-rs-macros = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
 ```
 
 ## Usage
@@ -62,12 +72,14 @@ fn do_something(){}
 ```
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 ## Example
 
 ### With arma-rs
-```rust 
+
+```rust
 use arma_rs::{rv, rv_handler};
 
 #[rv]
@@ -85,6 +97,7 @@ fn init() {}
 ```
 
 ### Without arma-rs
+
 ```rust
 extern crate libc;
 use libc::c_char;
