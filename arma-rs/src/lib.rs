@@ -254,7 +254,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 did_init = true;
             }
             let v = std::ffi::CString::new(env!("CARGO_PKG_VERSION")).unwrap().into_raw();
-            libc::strncpy(output, v, output_size);
+            libc::strncpy(output, v, output_size - 1);
         }
 
         #[no_mangle]
