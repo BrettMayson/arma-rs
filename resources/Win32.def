@@ -1,0 +1,6 @@
+LIBRARY
+EXPORTS
+    _RVExtensionVersion@8
+    _RVExtension@12
+    _RVExtensionArgs@20
+    _RVExtensionRegisterCallback@4

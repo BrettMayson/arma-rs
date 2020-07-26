@@ -11,6 +11,8 @@ The easiest way to make extensions for Arma 3.
 arma-rs = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
 ```
 
+If you will be targeting 32 bit Windows (i686-pc-windows-msvc) place the files from `resources/` into the root of your Rust project.
+
 ## Usage
 
 ### Hello World

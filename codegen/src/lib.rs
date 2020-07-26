@@ -259,7 +259,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static mut CALLBACK: Option<extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int> = None;
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RvExtensionVersion(output: *mut arma_rs_libc::c_char, size: usize) {
+        pub unsafe extern #extern_type fn RVExtensionVersion(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t) {
             if !did_init {
                 #init();
                 did_init = true;
