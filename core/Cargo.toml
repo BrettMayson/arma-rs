@@ -1,0 +1,9 @@
+[package]
+name = "arma-rs"
+version = "0.2.0"
+authors = ["Brett <brett@mayson.io>"]
+edition = "2018"
+
+[dependencies]
+arma-rs-codegen = {path = "../codegen"}
+libc = "0.2"

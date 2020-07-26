@@ -81,25 +81,31 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    let name = &ast.ident;
-    let sname = ast.ident.to_string();
+    let name = &ast.sig.ident;
+    let sname = ast.sig.ident.to_string();
     let handler = syn::Ident::new(&format!("{}_handler", name), name.span());
     let info = syn::Ident::new(&format!("{}_info", name), name.span());
 
-    let mut args: HashMap<syn::Ident, syn::Type> = HashMap::new();
-    let mut argtypes: Vec<syn::Type> = Vec::new();
+    let mut args: HashMap<syn::Ident, Box<syn::Type>> = HashMap::new();
+    let mut argtypes: Vec<Box<syn::Type>> = Vec::new();
 
-    let astargs = &ast.decl.inputs;
+    let astargs = &ast.sig.inputs;
     astargs.pairs().for_each(|p| {
         let v = p.value();
         match v {
-            syn::FnArg::Captured(cap) => match &cap.pat {
-                syn::Pat::Ident(ident) => {
-                    args.insert(ident.ident.clone(), cap.ty.clone());
-                    argtypes.push(cap.ty.clone());
+            syn::FnArg::Typed(t) => {
+                if let syn::Pat::Ident(i) = &*t.pat {
+                    args.insert(i.ident.clone(), t.ty.clone());
+                    argtypes.push(t.ty.clone());
                 }
-                _ => unreachable!(),
-            },
+            }
+            // syn::FnArg::Captured(cap) => match &cap.pat {
+            //     syn::Pat::Ident(ident) => {
+            //         args.insert(ident.ident.clone(), cap.ty.clone());
+            //         argtypes.push(cap.ty.clone());
+            //     }
+            //     _ => unreachable!(),
+            // },
             _ => unreachable!(),
         }
     });
@@ -107,11 +113,11 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
     let argcount = args.len();
 
     let handlerfn = if args.is_empty() {
-        match ast.decl.output {
+        match ast.sig.output {
             syn::ReturnType::Default => {
                 if thread {
                     quote! {
-                        unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                        unsafe fn #handler(output: *mut arma_rs_libc::c_char, _: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
                             std::thread::spawn(move || {
                                 #name();
                             });
@@ -119,7 +125,7 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 } else {
                     quote! {
-                        unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                        unsafe fn #handler(output: *mut arma_rs_libc::c_char, _: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
                             #name();
                         }
                     }
@@ -130,20 +136,20 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                     panic!("Threaded functions can not return a value");
                 }
                 quote! {
-                    unsafe fn #handler(output: *mut libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
-                        libc::strncpy(output, std::ffi::CString::new(#name().to_string()).unwrap().into_raw(), size);
+                    unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, _: Option<*mut *mut i8>, _: Option<usize>) {
+                        write_cstr(#name().to_string(), output, size);
                     }
                 }
             }
         }
     } else {
-        match ast.decl.output {
+        match ast.sig.output {
             syn::ReturnType::Default => {
                 if thread {
                     quote! {
                         #[allow(clippy::transmute_ptr_to_ref)]
-                        unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
-                            let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                        unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                            let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
                             let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
                             println!("calling {}: {:?}", #sname, argv);
                             argv.reverse();
@@ -155,8 +161,8 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                 } else {
                     quote! {
                         #[allow(clippy::transmute_ptr_to_ref)]
-                        unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
-                            let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                        unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                            let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
                             let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
                             println!("calling {}: {:?}", #sname, argv);
                             argv.reverse();
@@ -171,13 +177,13 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 quote! {
                     #[allow(clippy::transmute_ptr_to_ref)]
-                    unsafe fn #handler(output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
-                        let argv: &[*mut libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
+                    unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
+                        let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
                         let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
                         println!("calling {}: {:?}", #sname, argv);
                         argv.reverse();
-                        let v = #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*).to_string();
-                        libc::strncpy(output, std::ffi::CString::new(v).unwrap().into_raw(), size);
+                        let v = #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
+                        write_cstr(v.to_string(), output, size);
                     }
                 }
             }
@@ -234,39 +240,39 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
 
+    let init = ast.sig.ident.clone();
+
     let expanded = quote! {
         use std::str::FromStr;
+        
+        use arma_rs::libc as arma_rs_libc;
 
         pub struct FunctionInfo {
             name: &'static str,
-            handler: unsafe fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> (),
+            handler: unsafe fn(*mut arma_rs_libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> (),
             thread: bool,
         }
-
-        extern crate libc;
 
         static arma_proxies: &[&FunctionInfo] = &[#(&#info,)*];
         static arma_proxies_arg: &[&FunctionInfo] = &[#(&#infoarg,)*];
         static mut did_init: bool = false;
-        static mut CALLBACK: Option<extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int> = None;
+        static mut CALLBACK: Option<extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int> = None;
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RvExtensionVersion(output: *mut libc::c_char, output_size: usize) {
+        pub unsafe extern #extern_type fn RvExtensionVersion(output: *mut arma_rs_libc::c_char, size: usize) {
             if !did_init {
-                init();
+                #init();
                 did_init = true;
             }
-            let v = std::ffi::CString::new(env!("CARGO_PKG_VERSION")).unwrap().into_raw();
-            libc::strncpy(output, v, output_size - 1);
+            write_cstr(env!("CARGO_PKG_VERSION").to_string(), output, size);
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtension(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char) {
+        pub unsafe extern #extern_type fn RVExtension(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char) {
             if !did_init {
-                init();
+                #init();
                 did_init = true;
             }
-            let size = output_size - 1;
             let r_function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
 
             for info in arma_proxies.iter() {
@@ -278,12 +284,11 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut libc::c_char, output_size: usize, function: *mut libc::c_char, args: *mut *mut libc::c_char, arg_count: usize) {
+        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: usize) {
             if !did_init {
-                init();
+                #init();
                 did_init = true;
             }
-            let size = output_size - 1;
             let r_function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
             for info in arma_proxies_arg.iter() {
                 if info.name == r_function {
@@ -294,14 +299,26 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: extern #extern_type fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int) {
+        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int) {
             CALLBACK = Some(callback);
         }
 
-        pub unsafe fn rv_send_callback(name: *const libc::c_char, function: *const libc::c_char, data: *const libc::c_char) {
+        unsafe fn rv_send_callback(name: *const arma_rs_libc::c_char, function: *const arma_rs_libc::c_char, data: *const arma_rs_libc::c_char) {
             if let Some(c) = CALLBACK {
                 c(name, function, data);
             }
+        }
+
+        // https://github.com/Spoffy/Rust-Arma-Extension-Example/blob/5fc61340a1572ddecd9f8caf5458fd4faaf28e20/src/lib.rs#L95L113
+        unsafe fn write_cstr(string: String, ptr: *mut arma_rs_libc::c_char, buf_size: arma_rs_libc::size_t) -> Option<usize> {
+            if !string.is_ascii() {return None};
+            let cstr = std::ffi::CString::new(string).ok()?;
+            let cstr_bytes = cstr.as_bytes();
+            let amount_to_copy = std::cmp::min(cstr_bytes.len(), buf_size - 1);
+            if amount_to_copy > isize::MAX as usize {return None}
+            ptr.copy_from(cstr.as_ptr(), amount_to_copy);
+            ptr.add(amount_to_copy).write(0x00);
+            Some(amount_to_copy)
         }
 
         #ast

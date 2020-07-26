@@ -1,3 +1,6 @@
+pub use libc;
+pub use arma_rs_codegen::{rv, rv_handler};
+
 #[macro_export]
 /// Create an `ExtensionCallback` mission event inside Arma 3
 /// (name, function, data*)
@@ -24,15 +27,6 @@ macro_rules! rv_callback {
         } else {
             out = format!("[{}]", out.trim_end_matches(",").to_string());
         }
-        // let data = if let Some(f) = (&$d as &Any).downcast_ref::<Vec<&str>>() {
-        //     println!("`{:?}` is vec.", f);
-        //     std::ffi::CString::new(format!("{:?}", $d))
-        //         .unwrap()
-        //         .into_raw()
-        // } else {
-        //     println!("I dunno what is `{:?}` :(", $d);
-        //     std::ffi::CString::new($d.to_string()).unwrap().into_raw()
-        // };
         unsafe {
             rv_send_callback(name, func, std::ffi::CString::new(out).unwrap().into_raw());
         }

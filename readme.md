@@ -9,15 +9,6 @@ The easiest way to make extensions for Arma 3.
 ```toml
 [dependencies]
 arma-rs = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
-libc = "*"
-```
-
-### Callback Support
-
-If you want to use callbacks into Arma 3 add the following to your Cargo.toml
-
-```toml
-arma-rs-macros = { git = "https://github.com/synixebrett/arma-rs", branch = "master" }
 ```
 
 ## Usage
@@ -37,8 +28,8 @@ fn init() {}
 
 ```
 
-Functions can easily be created by using the `rv` attribute. Every extension needs to have a `init()` function with the `rv_handler` attribute. `init()` is called when Arma 3 checks the version number of your extension.  
-If you do not require an `init()` just use an empty function.
+Functions can easily be created by using the `rv` attribute. Every extension needs to have a function with the `rv_handler` attribute. The handler is called when Arma 3 checks the version number of your extension.  
+If you do not require any init just use an empty function.
 
 ### Arguments
 
@@ -69,6 +60,17 @@ A function can be ran in it's own thread as long as it does not have a return va
 ```rust
 #[rv(thread=true)]
 fn do_something(){}
+```
+
+### Callbacks
+
+```rust
+#[rv(thread = true)]
+fn calculate() {
+    //            name    function   data...
+    rv_callback!("test", "a_string", "A string sent to Arma");
+    rv_callback!("test", "my_event", "An array of", 3, "items");
+}
 ```
 
 ## Contributing
