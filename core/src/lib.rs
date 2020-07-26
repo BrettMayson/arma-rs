@@ -1,5 +1,5 @@
-pub use libc;
 pub use arma_rs_codegen::{rv, rv_handler};
+pub use libc;
 
 #[macro_export]
 /// Create an `ExtensionCallback` mission event inside Arma 3
