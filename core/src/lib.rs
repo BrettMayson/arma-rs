@@ -7,28 +7,43 @@ pub use libc;
 macro_rules! rv_callback {
     ($n:expr, $f:expr, $($d:expr),*) => {
         use std::any::Any;
-        let name = std::ffi::CString::new($n).unwrap().into_raw();
-        let func = std::ffi::CString::new($f).unwrap().into_raw();
+        use std::ffi::CString;
+        let name = CString::new($n).unwrap().into_raw();
+        let func = CString::new($f).unwrap().into_raw();
+
         let mut out = String::new();
+        let mut commas = 0;
+
         $(
+            let quote = {
+                let a = &$d as &Any;
+                a.is::<&'static str>() || a.is::<String>()
+            };
+
             let s = $d.to_string();
-            let quote = !s.parse::<f64>().is_ok();
+            commas += s.matches(",").count();
+
             if quote {
                 out.push('"');
             }
+
             out.push_str(&s);
+
             if quote {
                 out.push('"');
             }
-            out.push_str(",");
+
+            out.push(',');
         )*
-        if out.matches(",").count() == 1 {
+
+        if out.matches(",").count() - commas == 1 {
             out = out.trim_end_matches(",").trim_matches('"').to_string();
         } else {
             out = format!("[{}]", out.trim_end_matches(",").to_string());
         }
+
         unsafe {
-            rv_send_callback(name, func, std::ffi::CString::new(out).unwrap().into_raw());
+            rv_send_callback(name, func, CString::new(out).unwrap().into_raw());
         }
     };
 }
