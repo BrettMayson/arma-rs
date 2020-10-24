@@ -30,7 +30,7 @@ fn init() {}
 
 ```
 
-Functions can easily be created by using the `rv` attribute. Every extension needs to have a function with the `rv_handler` attribute. The handler is called when Arma 3 checks the version number of your extension.  
+Functions can easily be created by using the `rv` attribute. Every extension needs to have a function with the `rv_handler` attribute that is defined *below* all other functions. The handler is called when Arma 3 checks the version number of your extension.
 If you do not require any init just use an empty function.
 
 ### Arguments
