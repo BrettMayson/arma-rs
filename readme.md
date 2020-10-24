@@ -1,3 +1,5 @@
+[![Lint & Build](https://github.com/BrettMayson/arma-rs/workflows/Rust/badge.svg)](https://github.com/BrettMayson/arma-rs/actions)
+
 # arma-rs
 
 The easiest way to make extensions for Arma 3.
