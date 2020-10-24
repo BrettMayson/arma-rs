@@ -53,7 +53,7 @@ lazy_static! {
 ///
 /// `"myExtension" callExtension ["say_hello", ["Rust"]]` => `Hello Rust`
 ///
-/// Any type that implements the trait [`FromStr`] can be used as an argument.  
+/// Any type that implements the trait [`FromStr`] can be used as an argument.
 /// Any type that implements the trait [`ToStr`] can be used as the return type.
 ///
 /// # Parameters
