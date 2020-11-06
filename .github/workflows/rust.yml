@@ -1,6 +1,6 @@
 name: Rust
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   lint:
@@ -22,6 +22,7 @@ jobs:
         run: cargo clippy --all -- -Dwarnings
   
   build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1

@@ -26,7 +26,7 @@ lazy_static! {
 ///
 /// # Example
 ///
-/// ```
+/// ```ignore
 /// use arma_rs::{rv, rv_handler};
 ///
 /// #[rv]
@@ -216,7 +216,7 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// Handles incoming information from Arma and calls the appropriate function.
 /// Also can be used to run code at init.
 ///
-/// ```
+/// ```ignore
 /// use arma_rs::rv_handler;
 ///
 /// #[rv_handler]
@@ -244,7 +244,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         use std::str::FromStr;
-        
+
         use arma_rs::libc as arma_rs_libc;
 
         pub struct FunctionInfo {
