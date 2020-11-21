@@ -53,7 +53,7 @@ lazy_static! {
 ///
 /// `"myExtension" callExtension ["say_hello", ["Rust"]]` => `Hello Rust`
 ///
-/// Any type that implements the trait [`FromStr`] can be used as an argument.  
+/// Any type that implements the trait [`FromStr`] can be used as an argument.
 /// Any type that implements the trait [`ToStr`] can be used as the return type.
 ///
 /// # Parameters
@@ -259,16 +259,17 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static mut CALLBACK: Option<extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int> = None;
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionVersion(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t) {
+        pub unsafe extern #extern_type fn RVExtensionVersion(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t)-> i32 {
             if !did_init {
                 #init();
                 did_init = true;
             }
             write_cstr(env!("CARGO_PKG_VERSION").to_string(), output, size);
+            0
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtension(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char) {
+        pub unsafe extern #extern_type fn RVExtension(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char) -> i32 {
             if !did_init {
                 #init();
                 did_init = true;
@@ -278,13 +279,14 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
             for info in arma_proxies.iter() {
                 if info.name == r_function {
                     (info.handler)(output, size, None, None);
-                    return;
+                    return 0;
                 }
             }
+            1
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: usize) {
+        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut arma_rs_libc::c_char, size: usize, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: usize) -> i32 {
             if !did_init {
                 #init();
                 did_init = true;
@@ -293,9 +295,10 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
             for info in arma_proxies_arg.iter() {
                 if info.name == r_function {
                     (info.handler)(output, size, Some(args), Some(arg_count));
-                    return;
+                    return 0;
                 }
             }
+            1
         }
 
         #[no_mangle]
