@@ -308,7 +308,12 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         unsafe fn rv_send_callback(name: *const arma_rs_libc::c_char, function: *const arma_rs_libc::c_char, data: *const arma_rs_libc::c_char) {
             if let Some(c) = CALLBACK {
-                c(name, function, data);
+                loop {
+                    if c(name, function, data) >= 0 {
+                        break;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                }
             }
         }
 

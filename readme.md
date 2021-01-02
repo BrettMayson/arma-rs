@@ -73,7 +73,10 @@ fn do_something(){}
 fn calculate() {
     //            name    function   data...
     rv_callback!("test", "a_string", "A string sent to Arma");
+    // Converted to an array for parseSimpleArray
     rv_callback!("test", "my_event", "An array of", 3, "items");
+    // Send a custom array for parseSimpleArray
+    rv_callback!("test", "my_event", r#"[""test data"", 10.5, ""more data"""#);
 }
 ```
 
