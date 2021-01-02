@@ -1,4 +1,4 @@
-use arma_rs::{rv, rv_handler, rv_callback};
+use arma_rs::{rv, rv_callback, rv_handler};
 
 #[rv]
 fn hello() -> &'static str {

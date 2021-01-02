@@ -244,7 +244,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         use std::str::FromStr;
-        
+
         use arma_rs::libc as arma_rs_libc;
 
         pub struct FunctionInfo {

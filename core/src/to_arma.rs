@@ -10,7 +10,14 @@ impl std::fmt::Display for ArmaValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Number(n) => write!(f, "{}", n.to_string()),
-            Self::Array(a) => write!(f, "[{}]", a.iter().map(|x| x.to_string()).collect::<Vec<String>>().join(",")),
+            Self::Array(a) => write!(
+                f,
+                "[{}]",
+                a.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(",")
+            ),
             Self::Boolean(b) => write!(f, "{}", b.to_string()),
             Self::String(s) => write!(f, "\"{}\"", s.to_string().replace("\"", "\"\"")),
         }

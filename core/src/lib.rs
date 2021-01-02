@@ -13,28 +13,28 @@ pub fn to_arma<T: ToArma>(t: T) -> ArmaValue {
 /// For use with parseSimpleArray when providing multiple arguments
 /// (name, function, data*)
 macro_rules! rv_callback {
-    ($n:expr, $f:expr) => {
+    ($n:expr, $f:expr) => {{
         let name = std::ffi::CString::new($n).unwrap().into_raw();
         let func = std::ffi::CString::new($f).unwrap().into_raw();
         unsafe {
             rv_send_callback(name, func, std::ffi::CString::new(String::new()).unwrap().into_raw());
         }
-    };
-    ($n:expr, $f:expr, $d:expr) => {
+    }};
+    ($n:expr, $f:expr, $d:expr) => {{
         let name = std::ffi::CString::new($n).unwrap().into_raw();
         let func = std::ffi::CString::new($f).unwrap().into_raw();
         let data = std::ffi::CString::new(arma_rs::to_arma($d).to_string().trim_start_matches("\"").trim_end_matches("\"").to_string()).unwrap().into_raw();
         unsafe {
             rv_send_callback(name, func, data);
         }
-    };
-    ($n:expr, $f:expr, $($d:expr),+) => {
+    }};
+    ($n:expr, $f:expr, $($d:expr),+) => {{
         let name = std::ffi::CString::new($n).unwrap().into_raw();
         let func = std::ffi::CString::new($f).unwrap().into_raw();
         unsafe {
             rv_send_callback(name, func, std::ffi::CString::new(arma_rs::quote!(arma_rs::simple_array!($($d),*))).unwrap().into_raw());
         }
-    };
+    }};
 }
 
 #[macro_export]
