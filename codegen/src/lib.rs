@@ -53,7 +53,7 @@ lazy_static! {
 ///
 /// `"myExtension" callExtension ["say_hello", ["Rust"]]` => `Hello Rust`
 ///
-/// Any type that implements the trait [`FromStr`] can be used as an argument.  
+/// Any type that implements the trait [`FromStr`] can be used as an argument.
 /// Any type that implements the trait [`ToStr`] can be used as the return type.
 ///
 /// # Parameters
@@ -150,7 +150,7 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                         #[allow(clippy::transmute_ptr_to_ref)]
                         unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
                             let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
-                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
+                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_string_lossy().trim_matches('\"').to_owned()).collect();
                             println!("calling {}: {:?}", #sname, argv);
                             argv.reverse();
                             std::thread::spawn(move || {
@@ -163,7 +163,7 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                         #[allow(clippy::transmute_ptr_to_ref)]
                         unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
                             let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
-                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
+                            let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_string_lossy().trim_matches('\"').to_owned()).collect();
                             println!("calling {}: {:?}", #sname, argv);
                             argv.reverse();
                             #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
@@ -179,7 +179,7 @@ pub fn rv(attr: TokenStream, item: TokenStream) -> TokenStream {
                     #[allow(clippy::transmute_ptr_to_ref)]
                     unsafe fn #handler(output: *mut arma_rs_libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) {
                         let argv: &[*mut arma_rs_libc::c_char; #argcount] = std::mem::transmute(args.unwrap());
-                        let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_str().unwrap().trim_matches('\"').to_owned()).collect();
+                        let mut argv: Vec<String> = argv.to_vec().into_iter().map(|s| std::ffi::CStr::from_ptr(s).to_string_lossy().trim_matches('\"').to_owned()).collect();
                         println!("calling {}: {:?}", #sname, argv);
                         argv.reverse();
                         let v = #name(#(#argtypes::from_str(&argv.pop().unwrap()).unwrap(),)*);
