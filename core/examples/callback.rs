@@ -1,7 +1,4 @@
-use arma_rs::{rv, rv_handler};
-
-#[macro_use]
-extern crate arma_rs;
+use arma_rs::{rv, rv_callback, rv_handler};
 
 #[rv]
 fn hello() -> &'static str {
@@ -15,7 +12,13 @@ fn is_arma3(version: u8) -> bool {
 
 #[rv(thread = true)]
 fn calculate() {
-    rv_callback!("test", "myEvent", "test data", 10.5, "more data");
+    // For use with parseSimpleArray
+    rv_callback!("test", "myEvent", "test data", 10.5f32, "more data"); // [""test data"", 10.5, ""more data""]
+    rv_callback!("test", "myEvent", "just one data"); // ""just one data""
+    rv_callback!("test", "myEvent"); // []
+
+    // Used to send preformatted text that will not be converted to an array
+    rv_callback!("test", "myEvent", r#"[""test data"", 10.5, ""more data"""#);
 }
 
 #[rv_handler]
