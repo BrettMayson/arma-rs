@@ -4,6 +4,11 @@ The best way to make Arma 3 Extensions.
 
 ## Usage
 
+```toml
+[dependencies]
+arma-rs = { git = "https://github.com/brettmayson/arma-rs" }
+```
+
 ### Hello World
 
 ```rs
