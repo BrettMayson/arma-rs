@@ -9,6 +9,8 @@ The best way to make Arma 3 Extensions.
 arma-rs = { git = "https://github.com/brettmayson/arma-rs" }
 ```
 
+If you will be targeting 32 bit Windows (i686-pc-windows-msvc) place the files from resources/ into the root of your Rust project.
+
 ### Hello World
 
 ```rs
@@ -179,3 +181,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
 "my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 ```
+
+# Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
