@@ -1,6 +1,7 @@
 use crate::arma::{ArmaValue, FromArma, IntoArma};
 
-type HandlerFunc = Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>;
+type HandlerFunc =
+    Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>;
 
 pub struct CommandHandler {
     pub(crate) handler: HandlerFunc,
