@@ -28,7 +28,7 @@ impl Group {
         self
     }
 
-    pub fn child<S>(mut self, name: S, child: Self) -> Self
+    pub fn group<S>(mut self, name: S, child: Self) -> Self
     where
         S: Into<String>,
     {

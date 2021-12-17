@@ -64,7 +64,7 @@ impl ExtensionBuilder {
 
     #[inline]
     pub fn group(mut self, group: Group) -> Self {
-        self.group = self.group.child(group.name().to_string(), group);
+        self.group = self.group.group(group.name().to_string(), group);
         self
     }
 
