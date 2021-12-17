@@ -3,15 +3,13 @@ use std::collections::HashMap;
 use crate::command::{fn_handler, CommandFactory, CommandHandler};
 
 pub struct Group {
-    name: String,
     commands: HashMap<String, Box<CommandHandler>>,
     children: HashMap<String, Self>,
 }
 
 impl Group {
-    pub fn new<S: Into<String>>(name: S) -> Self {
+    pub fn new() -> Self {
         Self {
-            name: name.into(),
             commands: HashMap::new(),
             children: HashMap::new(),
         }
@@ -55,9 +53,5 @@ impl Group {
         } else {
             1
         }
-    }
-
-    pub fn name(&self) -> &str {
-        &self.name
     }
 }

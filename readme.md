@@ -50,17 +50,17 @@ mod timer;
 #[arma]
 fn init() -> Extension {
     Extension::build()
-        .group(
-            Group::new("hello")
+        .group("hello",
+            Group::new()
                 .command("english", hello::english)
-                .group(
-                    Group::new("english")
+                .group("english",
+                    Group::new()
                         .command("casual", hello::english_casual)
                 )
                 .command("french", hello::french),
         )
-        .group(
-            Group::new("welcome")
+        .group("welcome",
+            Group::new()
                 .command("english", welcome::english)
                 .command("french", welcome::french),
         )
@@ -112,7 +112,7 @@ pub fn sleep(duration: u64, id: String) {
 }
 
 pub fn group() -> arma_rs::Group {
-    arma_rs::Group::new("timer").command("sleep", sleep)
+    arma_rs::Group::new().command("sleep", sleep)
 }
 ```
 

@@ -12,5 +12,5 @@ pub fn sleep(duration: u64, id: String) {
 }
 
 pub fn group() -> Group {
-    Group::new("timer").command("sleep", sleep)
+    Group::new().command("sleep", sleep)
 }

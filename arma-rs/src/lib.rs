@@ -19,7 +19,7 @@ impl Extension {
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
-            group: Group::new(""),
+            group: Group::new(),
             allow_no_args: false,
         }
     }
@@ -63,8 +63,11 @@ impl ExtensionBuilder {
     }
 
     #[inline]
-    pub fn group(mut self, group: Group) -> Self {
-        self.group = self.group.group(group.name().to_string(), group);
+    pub fn group<S>(mut self, name: S, group: Group) -> Self
+    where
+        S: Into<String>,
+    {
+        self.group = self.group.group(name.into(), group);
         self
     }
 

@@ -8,19 +8,21 @@ fn init() -> Extension {
     Extension::build()
         .command("log", log)
         .group(
-            Group::new("hello")
+            "hello",
+            Group::new()
                 .command("english", hello::english)
                 .command("french", hello::french)
                 .command("spanish", hello::spanish),
         )
         .group(
-            Group::new("welcome")
+            "welcome",
+            Group::new()
                 .command("english", welcome::english)
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
-        .group(system_info::group())
-        .group(timer::group())
+        .group("system", system_info::group())
+        .group("timer", timer::group())
         .finish()
 }
 

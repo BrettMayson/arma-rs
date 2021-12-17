@@ -31,5 +31,5 @@ pub fn memory() -> MemoryReport {
 }
 
 pub fn group() -> Group {
-    Group::new("system").command("memory", memory)
+    Group::new().command("memory", memory)
 }
