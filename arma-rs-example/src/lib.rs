@@ -5,7 +5,7 @@ mod timer;
 
 #[arma]
 fn init() -> Extension {
-    Extension::new()
+    Extension::build()
         .command("log", log)
         .group(
             Group::new("hello")

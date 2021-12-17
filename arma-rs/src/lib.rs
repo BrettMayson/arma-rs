@@ -16,7 +16,7 @@ pub struct Extension {
 }
 
 impl Extension {
-    pub fn new() -> ExtensionBuilder {
+    pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(""),
@@ -28,11 +28,14 @@ impl Extension {
         &self.version
     }
 
-    pub fn allow_no_args(&self) -> bool {
+    pub const fn allow_no_args(&self) -> bool {
         self.allow_no_args
     }
 
-    pub fn handle(
+    /// Called by generated code, do not call directly.
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn handle(
         &self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
@@ -40,7 +43,7 @@ impl Extension {
         args: Option<*mut *mut i8>,
         count: Option<usize>,
     ) -> usize {
-        let function = unsafe { std::ffi::CStr::from_ptr(function).to_str().unwrap() };
+        let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
         self.group
             .handle(function.to_string(), output, size, args, count)
     }
@@ -66,7 +69,7 @@ impl ExtensionBuilder {
     }
 
     #[inline]
-    pub fn allow_no_args(mut self) -> Self {
+    pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
     }
@@ -90,6 +93,9 @@ impl ExtensionBuilder {
     }
 }
 
+/// Called by generated code, do not call directly.
+/// # Safety
+/// This function is unsafe because it interacts with the C API.
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,

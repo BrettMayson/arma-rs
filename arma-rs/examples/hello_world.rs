@@ -2,7 +2,7 @@ use arma_rs::{arma, Extension};
 
 #[arma]
 fn init() -> Extension {
-    Extension::new()
+    Extension::build()
         .version("1.0.0".to_string())
         .command("hello", hello)
         .command("welcome", welcome)

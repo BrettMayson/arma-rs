@@ -16,7 +16,7 @@ use arma_rs::{arma, Extension};
 
 #[arma]
 fn init() -> Extension {
-    Extension::new()
+    Extension::build()
         .command("hello", hello)
         .command("welcome", welcome)
         .finish()
@@ -47,7 +47,7 @@ mod timer;
 
 #[arma]
 fn init() -> Extension {
-    Extension::new()
+    Extension::build()
         .group(
             Group::new("hello")
                 .command("english", hello::english)
@@ -163,7 +163,7 @@ use arma_rs::{arma, Extension};
 
 #[arma]
 fn init() -> Extension {
-    Extension::new()
+    Extension::build()
         .command("add", add)
         .finish()
 }

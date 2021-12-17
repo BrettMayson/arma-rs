@@ -1,8 +1,9 @@
 use crate::arma::{ArmaValue, FromArma, IntoArma};
 
+type HandlerFunc = Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>;
+
 pub struct CommandHandler {
-    pub(crate) handler:
-        Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>,
+    pub(crate) handler: HandlerFunc,
 }
 
 pub fn fn_handler<C, I, R>(command: C) -> CommandHandler
@@ -15,13 +16,15 @@ where
                   size: usize,
                   args: Option<*mut *mut i8>,
                   count: Option<usize>|
-                  -> usize { command.call(output, size, args, count) },
+                  -> usize { unsafe { command.call(output, size, args, count) } },
         ),
     }
 }
 
 pub trait CommandExecutor: 'static {
-    fn call(
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    unsafe fn call(
         &self,
         output: *mut libc::c_char,
         size: usize,
@@ -31,7 +34,9 @@ pub trait CommandExecutor: 'static {
 }
 
 pub trait CommandFactory<A, R> {
-    fn call(
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    unsafe fn call(
         &self,
         output: *mut libc::c_char,
         size: usize,
@@ -46,7 +51,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         O: 'static,
         $($param: FromArma + 'static,)*
     {
-        fn call(
+        unsafe fn call(
             &self,
             output: *mut libc::c_char,
             size: usize,
@@ -62,41 +67,41 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        fn call(&self, _output: *mut libc::c_char, _size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize{
+        unsafe fn call(&self, _output: *mut libc::c_char, _size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<usize>().unwrap();
             }
             if $c != 0 {
-                unsafe {
-                    #[allow(unused_variables, unused_mut)]
-                    let mut argv: Vec<String> = {
-                        let argv: &[*mut libc::c_char; $c] =std::mem::transmute(args.unwrap());
-                        let mut argv = argv
-                        .to_vec()
-                        .into_iter()
-                        .map(|s|
-                            std::ffi::CStr::from_ptr(s)
-                            .to_string_lossy()
-                            .trim_matches('\"')
-                            .to_owned()
-                        )
-                        .collect::<Vec<String>>();
-                        argv.reverse();
-                        argv
-                    };
-                    let mut c = 0;
-                    (self)($(
-                        if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                            c+=1;
-                            val
-                        } else {
-                            return format!("3{}", c).parse::<usize>().unwrap()
-                        },
-                    )*);
-                    0
-                }
+                #[allow(unused_variables, unused_mut)]
+                let mut argv: Vec<String> = {
+                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let mut argv = argv
+                    .to_vec()
+                    .into_iter()
+                    .map(|s|
+                        std::ffi::CStr::from_ptr(s)
+                        .to_string_lossy()
+                        .trim_matches('\"')
+                        .to_owned()
+                    )
+                    .collect::<Vec<String>>();
+                    argv.reverse();
+                    argv
+                };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                (self)($(
+                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                        c += 1;
+                        val
+                    } else {
+                        return format!("3{}", c).parse::<usize>().unwrap()
+                    },
+                )*);
+                0
             } else {
                 (self)($($param::from_arma("".to_string()).unwrap(),)*);
                 0
@@ -110,69 +115,66 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        fn call(&self, output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize {
+        unsafe fn call(&self, output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<usize>().unwrap();
             }
             if $c != 0 {
-                unsafe {
-                    #[allow(unused_variables, unused_mut)]
-                    let mut argv: Vec<String> = {
-                        let argv: &[*mut libc::c_char; $c] = std::mem::transmute(args.unwrap());
-                        let mut argv = argv
-                        .to_vec()
-                        .into_iter()
-                        .map(|s|
-                            std::ffi::CStr::from_ptr(s)
-                            .to_string_lossy()
-                            .trim_matches('\"')
-                            .to_owned()
-                        )
-                        .collect::<Vec<String>>();
-                        argv.reverse();
-                        argv
-                    };
-                    crate::write_cstr(
-                        {
-                            // Current param position
-                            let mut c = 0;
-                            let ret = (self)($(
-                                if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                                    c+=1;
-                                    val
-                                } else {
-                                    return format!("3{}", c).parse::<usize>().unwrap()
-                                },
-                            )*);
-                            if let ArmaValue::String(s) = ret.to_arma() {
-                                s
+                #[allow(unused_variables, unused_mut)]
+                let mut argv: Vec<String> = {
+                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let mut argv = argv
+                    .to_vec()
+                    .into_iter()
+                    .map(|s|
+                        std::ffi::CStr::from_ptr(s)
+                        .to_string_lossy()
+                        .trim_matches('\"')
+                        .to_owned()
+                    )
+                    .collect::<Vec<String>>();
+                    argv.reverse();
+                    argv
+                };
+                crate::write_cstr(
+                    {
+                        #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                        let mut c = 0;
+                        #[allow(unused_assignments, clippy::eval_order_dependence)]
+                        let ret = (self)($(
+                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                                c += 1;
+                                val
                             } else {
-                                ret.to_arma().to_string()
-                            }
-                        },
-                        output,
-                        size
-                    );
-                    0
-                }
+                                return format!("3{}", c).parse::<usize>().unwrap()
+                            },
+                        )*);
+                        if let ArmaValue::String(s) = ret.to_arma() {
+                            s
+                        } else {
+                            ret.to_arma().to_string()
+                        }
+                    },
+                    output,
+                    size
+                );
+                0
             } else {
-                unsafe {
-                    crate::write_cstr(
-                        {
-                            let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                            if let ArmaValue::String(s) = ret.to_arma() {
-                                s
-                            } else {
-                                ret.to_arma().to_string()
-                            }
-                        },
-                        output,
-                        size
-                    );
-                    0
-                }
+                crate::write_cstr(
+                    {
+                        let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
+                        if let ArmaValue::String(s) = ret.to_arma() {
+                            s
+                        } else {
+                            ret.to_arma().to_string()
+                        }
+                    },
+                    output,
+                    size
+                );
+                0
             }
         }
     }

@@ -50,12 +50,10 @@ impl Group {
             } else {
                 1
             }
+        } else if let Some(handler) = self.commands.get(&function) {
+            (handler.handler)(output, size, args, count)
         } else {
-            if let Some(handler) = self.commands.get(&function) {
-                (handler.handler)(output, size, args, count)
-            } else {
-                1
-            }
+            1
         }
     }
 
