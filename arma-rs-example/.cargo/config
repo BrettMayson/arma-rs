@@ -1,0 +1,11 @@
+[target.i686-pc-windows-msvc]
+rustflags = [
+    # Allows us to export the correct stdcall symbol names for Windows 32-bit binaries.
+    # Rust has no way to explicitly export a symbol named "_RVExtension@12", it cuts off the @12.
+    # This overrides the linker's /DEF argument, to force it to export the symbols we want.
+    "-Clink-arg=/DEF:Win32.def",
+    # Generate a map file so we can see what symbols exist, and what we're exporting.
+    "-Clink-arg=/MAP:SymbolInfo.map",
+    # Add exported symbol info to the map file
+    "-Clink-arg=/MAPINFO:EXPORTS"
+]

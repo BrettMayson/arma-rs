@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "arma-rs",
+    "arma-rs-example",
+    "arma-rs-proc",
+]

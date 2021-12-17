@@ -1,0 +1,12 @@
+[package]
+name = "arma-rs-example"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "arma_rs_example"
+crate-type = ["cdylib"]
+
+[dependencies]
+arma-rs = { path = "../arma-rs" }
+sys-info = "0.9"
