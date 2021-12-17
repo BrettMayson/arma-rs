@@ -2,7 +2,7 @@ pub use arma_rs_proc::arma;
 pub use libc;
 
 mod arma;
-pub use arma::{ArmaValue, IntoArma, FromArma};
+pub use arma::{ArmaValue, FromArma, IntoArma};
 mod command;
 mod group;
 

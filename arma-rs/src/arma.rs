@@ -25,7 +25,7 @@ impl Display for ArmaValue {
     }
 }
 
-impl <T> From<T> for ArmaValue
+impl<T> From<T> for ArmaValue
 where
     T: IntoArma,
 {

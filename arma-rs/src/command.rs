@@ -1,7 +1,8 @@
-use crate::arma::{FromArma, IntoArma, ArmaValue};
+use crate::arma::{ArmaValue, FromArma, IntoArma};
 
 pub struct CommandHandler {
-    pub(crate) handler: Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>,
+    pub(crate) handler:
+        Box<dyn Fn(*mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>,
 }
 
 pub fn fn_handler<C, I, R>(command: C) -> CommandHandler
@@ -13,9 +14,8 @@ where
             move |output: *mut libc::c_char,
                   size: usize,
                   args: Option<*mut *mut i8>,
-                  count: Option<usize>| -> usize {
-                command.call(output, size, args, count)
-            },
+                  count: Option<usize>|
+                  -> usize { command.call(output, size, args, count) },
         ),
     }
 }
