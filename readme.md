@@ -97,7 +97,7 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 ## Callbacks
 
-Extension callbacks can be invoked anywhere in the extension code by adding `use crate::arma_callback`.
+Extension callbacks can be invoked anywhere in the extension by adding `use crate::arma_callback`.
 
 ```rs
 use crate::arma_callback;
@@ -116,7 +116,7 @@ pub fn group() -> arma_rs::Group {
 
 ## Custom Return Types
 
-If you're bring your already existing Rust library with your own types, you can easily define how they are converted to Arma.
+If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
 
 ```rs
 #[derive(Default)]
@@ -140,7 +140,7 @@ impl IntoArma for MemoryReport {
 
 ## Error Codes
 
-By default arma-rs will only allow commands via RvExtensionArgs. Using `callExtension` with only a function name will return an empty string.
+By default arma-rs will only allow commands via `RvExtensionArgs`. Using `callExtension` with only a function name will return an empty string.
 
 ```sqf
 "my_extension" callExtension "hello:english" // returns ""
