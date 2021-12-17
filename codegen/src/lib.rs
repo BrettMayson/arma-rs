@@ -256,7 +256,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static arma_proxies: &[&FunctionInfo] = &[#(&#info,)*];
         static arma_proxies_arg: &[&FunctionInfo] = &[#(&#infoarg,)*];
         static mut did_init: bool = false;
-        static mut CALLBACK: Option<extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int> = None;
+        static mut CALLBACK: Option<extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> usize> = None;
 
         #[no_mangle]
         pub unsafe extern #extern_type fn RVExtensionVersion(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t)-> i32 {
@@ -302,7 +302,7 @@ pub fn rv_handler(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> arma_rs_libc::c_int) {
+        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: extern #extern_type fn(*const arma_rs_libc::c_char, *const arma_rs_libc::c_char, *const arma_rs_libc::c_char) -> usize) {
             CALLBACK = Some(callback);
         }
 
