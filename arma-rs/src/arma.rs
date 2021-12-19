@@ -118,7 +118,7 @@ impl<T: IntoArma> IntoArma for Option<T> {
     fn to_arma(&self) -> ArmaValue {
         match self {
             Some(v) => v.to_arma(),
-            None => ArmaValue::Nil
+            None => ArmaValue::Nil,
         }
     }
 }
@@ -228,7 +228,7 @@ mod tests {
     fn test_as_nil() {
         match ArmaValue::Nil.as_null() {
             Some(_) => (),
-            None => panic!("Failed to retrieve value")
+            None => panic!("Failed to retrieve value"),
         }
     }
 
@@ -236,7 +236,7 @@ mod tests {
     fn test_as_f32() {
         match ArmaValue::Number(54.0).as_f32() {
             Some(f) => assert!((54.0 - f) == 0.0),
-            None => panic!("Failed to retrieve value")
+            None => panic!("Failed to retrieve value"),
         }
     }
 
@@ -245,11 +245,11 @@ mod tests {
         match ArmaValue::Array(vec![ArmaValue::String("hello".into())]).as_vec() {
             Some(v) => {
                 let first_value = v.get(0).unwrap();
-                
+
                 assert!(first_value.is_string());
                 assert_eq!(first_value.to_string(), String::from("\"hello\""));
-            },
-            None => panic!("Failed to retrieve value")
+            }
+            None => panic!("Failed to retrieve value"),
         }
     }
 
@@ -257,7 +257,7 @@ mod tests {
     fn test_as_bool() {
         match ArmaValue::Boolean(true).as_bool() {
             Some(b) => assert!(b),
-            None => panic!("Failed to retrieve value")
+            None => panic!("Failed to retrieve value"),
         }
     }
 
@@ -265,7 +265,7 @@ mod tests {
     fn test_as_str() {
         match ArmaValue::String(String::from("hello world")).as_str() {
             Some(s) => assert_eq!(s, "hello world"),
-            None => panic!("Failed to retrieve value")
+            None => panic!("Failed to retrieve value"),
         }
     }
 

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::command::{fn_handler, CommandFactory, CommandHandler};
 
+#[derive(Default)]
 pub struct Group {
     commands: HashMap<String, Box<CommandHandler>>,
     children: HashMap<String, Self>,
