@@ -1,5 +1,20 @@
 use std::{fmt::Display, str::FromStr};
 
+pub trait FromArma: Sized {
+    fn from_arma(s: String) -> Result<Self, String>;
+}
+
+impl<T> FromArma for T
+where
+    T: FromStr,
+    <T as FromStr>::Err: ToString,
+{
+    fn from_arma(s: String) -> Result<Self, String> {
+        s.parse::<Self>().map_err(|e| e.to_string())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ArmaValue {
     Nil,
     Number(f32),
@@ -27,6 +42,10 @@ impl Display for ArmaValue {
     }
 }
 
+pub trait IntoArma {
+    fn to_arma(&self) -> ArmaValue;
+}
+
 impl<T> From<T> for ArmaValue
 where
     T: IntoArma,
@@ -36,22 +55,10 @@ where
     }
 }
 
-pub trait FromArma: Sized {
-    fn from_arma(s: String) -> Result<Self, String>;
-}
-
-impl<T> FromArma for T
-where
-    T: FromStr,
-    <T as FromStr>::Err: ToString,
-{
-    fn from_arma(s: String) -> Result<Self, String> {
-        s.parse::<Self>().map_err(|e| e.to_string())
+impl IntoArma for Vec<ArmaValue> {
+    fn to_arma(&self) -> ArmaValue {
+        ArmaValue::Array(self.to_vec())
     }
-}
-
-pub trait IntoArma {
-    fn to_arma(&self) -> ArmaValue;
 }
 
 impl<T> IntoArma for Vec<T>

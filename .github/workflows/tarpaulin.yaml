@@ -1,9 +1,9 @@
-name:                           coverage
+name:                           Coverage
 
 on:                             [push]
 jobs:
   coverage:
-    name:                       coverage
+    name:                       Tarpaulin
     runs-on:                    ubuntu-latest
     container:
       image:                    xd009642/tarpaulin
