@@ -186,7 +186,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 
 Test can be created utilizing the `extension.call()` method.
 
-```rust
+```rs
 #[cfg(test)]
 mod tests {
     use super::init;
