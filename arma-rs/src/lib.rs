@@ -47,6 +47,33 @@ impl Extension {
         self.group
             .handle(function.to_string(), output, size, args, count)
     }
+
+    /// Call a function, intended for tests
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, usize) {
+        let output = std::ffi::CString::new("").unwrap().into_raw();
+        let len = args.as_ref().map(|a| a.len());
+        let mut args_pointer = args.map(|v| {
+            v.into_iter()
+                .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
+                .collect::<Vec<*mut i8>>()
+        });
+        let res = self.group.handle(
+            function.to_string(),
+            output,
+            10240,
+            args_pointer.as_mut().map(|a| a.as_mut_ptr()),
+            len,
+        );
+        (
+            std::ffi::CStr::from_ptr(output)
+                .to_str()
+                .unwrap()
+                .to_string(),
+            res,
+        )
+    }
 }
 
 pub struct ExtensionBuilder {

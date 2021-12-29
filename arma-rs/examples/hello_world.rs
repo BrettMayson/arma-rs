@@ -17,5 +17,28 @@ pub fn welcome(name: String) -> String {
     format!("Welcome {}", name)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::init;
+
+    #[test]
+    fn test_hello() {
+        let extension = init();
+        let result = unsafe {
+            extension.call("hello", None)
+        };
+        assert_eq!(result.0, "Hello");
+    }
+
+    #[test]
+    fn test_welcome() {
+        let extension = init();
+        let result = unsafe {
+            extension.call("welcome", Some(vec!["John".to_string()]))
+        };
+        assert_eq!(result.0, "Welcome John");
+    }
+}
+
 // Only required for cargo, don't include in your library
 fn main() {}

@@ -3,8 +3,6 @@ name = "arma-rs"
 version = "1.0.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 libc = "0.2"
 arma-rs-proc = { path = "../arma-rs-proc"}
