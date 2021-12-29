@@ -182,6 +182,32 @@ pub fn add(a: i32, b: i32) -> i32 {
 "my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 ```
 
-# Contributing
+## Testing
+
+Test can be created utilizing the `extension.call()` method.
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::init;
+
+    #[test]
+    fn hello() {
+        let extension = init();
+        let (output, _) = unsafe { extension.call("hello:english", None) };
+        assert_eq!(output, "hello");
+    }
+
+    #[test]
+    fn welcome() {
+        let extension = init();
+        let (output, _) =
+            unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
+        assert_eq!(output, "Welcome John");
+    }
+}
+```
+
+## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

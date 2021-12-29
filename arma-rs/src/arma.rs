@@ -133,7 +133,7 @@ impl<T: IntoArma> IntoArma for Option<T> {
 impl ArmaValue {
     pub fn as_null(&self) -> Option<()> {
         match self {
-            ArmaValue::Nil => Some(()),
+            Self::Nil => Some(()),
             _ => None,
         }
     }
@@ -144,7 +144,7 @@ impl ArmaValue {
 
     pub fn as_f32(&self) -> Option<f32> {
         match *self {
-            ArmaValue::Number(n) => Some(n),
+            Self::Number(n) => Some(n),
             _ => None,
         }
     }
@@ -153,9 +153,9 @@ impl ArmaValue {
         self.as_f32().is_some()
     }
 
-    pub fn as_vec(&self) -> Option<&Vec<ArmaValue>> {
+    pub fn as_vec(&self) -> Option<&Vec<Self>> {
         match *self {
-            ArmaValue::Array(ref vec) => Some(vec),
+            Self::Array(ref vec) => Some(vec),
             _ => None,
         }
     }
@@ -166,7 +166,7 @@ impl ArmaValue {
 
     pub fn as_bool(&self) -> Option<bool> {
         match *self {
-            ArmaValue::Boolean(bool) => Some(bool),
+            Self::Boolean(bool) => Some(bool),
             _ => None,
         }
     }
@@ -177,7 +177,7 @@ impl ArmaValue {
 
     pub fn as_str(&self) -> Option<&str> {
         match *self {
-            ArmaValue::String(ref string) => Some(string),
+            Self::String(ref string) => Some(string),
             _ => None,
         }
     }
@@ -188,11 +188,11 @@ impl ArmaValue {
 
     pub fn is_empty(&self) -> bool {
         match self {
-            ArmaValue::Nil => true,
-            ArmaValue::Number(n) => (*n as f64) == 0.0,
-            ArmaValue::Array(a) => a.is_empty(),
-            ArmaValue::Boolean(b) => !*b,
-            ArmaValue::String(s) => s.is_empty(),
+            Self::Nil => true,
+            Self::Number(n) => (*n as f64) == 0.0,
+            Self::Array(a) => a.is_empty(),
+            Self::Boolean(b) => !*b,
+            Self::String(s) => s.is_empty(),
         }
     }
 }
