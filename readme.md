@@ -184,7 +184,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 
 ## Testing
 
-Test can be created utilizing the `extension.call()` method.
+Tests can be created utilizing the `extension.call()` method.
 
 ```rs
 #[cfg(test)]
