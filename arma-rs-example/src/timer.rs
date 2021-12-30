@@ -42,4 +42,28 @@ mod tests {
             Duration::from_secs(2)
         ));
     }
+
+    #[test]
+    fn sleep_timeout() {
+        let extension = Extension::build()
+            .group("timer", super::group())
+            .finish()
+            .testing();
+        let (_, code) = unsafe {
+            extension.call(
+                "timer:sleep",
+                Some(vec!["1".to_string(), "test".to_string()]),
+            )
+        };
+        assert_eq!(code, 0);
+        assert!(!extension.callback_handler(
+            |name, func, data| {
+                assert_eq!(name, "timer:sleep");
+                assert_eq!(func, "done");
+                assert_eq!(data, Some(ArmaValue::String("test".to_string())));
+                false
+            },
+            Duration::from_secs(2)
+        ));
+    }
 }
