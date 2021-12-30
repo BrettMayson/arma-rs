@@ -1,4 +1,4 @@
-use arma_rs::{Extension, Group, Context};
+use arma_rs::{Context, Extension, Group};
 
 #[test]
 fn root_command() {
