@@ -1,8 +1,15 @@
 use crate::arma::{ArmaValue, FromArma, IntoArma};
 use crate::Context;
 
-type HandlerFunc =
-    Box<dyn Fn(Context, *mut libc::c_char, libc::c_int, Option<*mut *mut i8>, Option<libc::c_int>) -> libc::c_int>;
+type HandlerFunc = Box<
+    dyn Fn(
+        Context,
+        *mut libc::c_char,
+        libc::c_int,
+        Option<*mut *mut i8>,
+        Option<libc::c_int>,
+    ) -> libc::c_int,
+>;
 
 pub struct CommandHandler {
     pub(crate) handler: HandlerFunc,
