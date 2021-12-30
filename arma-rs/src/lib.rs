@@ -32,6 +32,7 @@ pub struct Extension {
 }
 
 impl Extension {
+    /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
@@ -44,14 +45,21 @@ impl Extension {
         &self.version
     }
 
+    /// Allows the extension to be called without any arguments.
+    /// Example:
+    /// ```sqf
+    /// "my_ext" callExtension "my_func"
+    /// ```
     pub const fn allow_no_args(&self) -> bool {
         self.allow_no_args
     }
 
+    /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
     }
 
+    /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(self.callback_queue.clone())
     }
@@ -78,10 +86,12 @@ impl Extension {
         )
     }
 
+    /// Create a version of the extension that can be used in tests.
     pub fn testing(self) -> TestingExtension {
         TestingExtension::new(self)
     }
 
+    /// Called by generated code, do not call directly.
     pub fn run_callbacks(&self) {
         let queue = self.callback_queue.clone();
         let callback = self.callback;

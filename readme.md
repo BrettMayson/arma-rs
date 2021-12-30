@@ -1,4 +1,4 @@
-# arma-rs 
+# arma-rs
 
 The best way to make Arma 3 Extensions.
 
@@ -37,6 +37,7 @@ pub fn welcome(name: String) -> String {
 "my_extension" callExtension ["hello", []]; // Returns ["Hello", 0, 0]
 "my_extension" callExtension ["welcome", ["John"]]; // Returns ["Welcome John", 0, 0]
 ```
+
 ## Command Groups
 
 The main reason behind the arma-rs rewrite, command groups! Commands can now be grouped together, making your large projects much easier to manage.
@@ -193,17 +194,41 @@ mod tests {
 
     #[test]
     fn hello() {
-        let extension = init();
+        let extension = init().testing();
         let (output, _) = unsafe { extension.call("hello:english", None) };
         assert_eq!(output, "hello");
     }
 
     #[test]
     fn welcome() {
-        let extension = init();
+        let extension = init().testing();
         let (output, _) =
             unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
         assert_eq!(output, "Welcome John");
+    }
+
+    #[test]
+    fn test_sleep_1sec() {
+        let extension = Extension::build()
+            .group("timer", super::group())
+            .finish()
+            .testing();
+        let (_, code) = unsafe {
+            extension.call(
+                "timer:sleep",
+                Some(vec!["1".to_string(), "test".to_string()]),
+            )
+        };
+        assert_eq!(code, 0);
+        assert!(extension.callback_handler(
+            |name, func, data| {
+                assert_eq!(name, "timer:sleep");
+                assert_eq!(func, "done");
+                assert_eq!(data, Some(ArmaValue::String("test".to_string())));
+                true
+            },
+            Duration::from_secs(2)
+        ));
     }
 }
 ```
