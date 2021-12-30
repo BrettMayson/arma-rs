@@ -11,11 +11,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let ext_init = quote! {
         if RV_EXTENSION.is_none() {
-            RV_EXTENSION = Some({
-                let ext = #init();
-                ext.run_callbacks();
-                ext
-            });
+            RV_EXTENSION = Some(#init());
         }
     };
 
@@ -56,14 +52,11 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #[no_mangle]
         pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: arma_rs::Callback) {
-            std::thread::spawn(move || {
-                loop {
-                    if let Some(ext) = &mut RV_EXTENSION {
-                        ext.register_callback(callback);
-                        break;
-                    }
-                }
-            });
+            #ext_init
+            if let Some(ext) = &mut RV_EXTENSION {
+                ext.register_callback(callback);
+                ext.run_callbacks();
+            }
         }
 
         #ast
