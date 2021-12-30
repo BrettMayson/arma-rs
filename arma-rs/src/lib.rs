@@ -190,17 +190,17 @@ pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
     buf_size: libc::c_int,
-) -> Option<usize> {
+) -> Option<libc::c_int> {
     if !string.is_ascii() {
         return None;
     };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
     let amount_to_copy = std::cmp::min(cstr_bytes.len(), (buf_size - 1).try_into().unwrap());
-    if amount_to_copy > isize::MAX.try_into().unwrap() {
+    if amount_to_copy > i32::MAX.try_into().unwrap() {
         return None;
     }
     ptr.copy_from(cstr.as_ptr(), amount_to_copy);
     ptr.add(amount_to_copy).write(0x00);
-    Some(amount_to_copy)
+    Some(amount_to_copy.try_into().unwrap())
 }
