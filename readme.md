@@ -100,7 +100,7 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 ## Callbacks
 
-Extension callbacks can be invoked anywhere in the extension by adding the a variable of type `Context` to the start of a handler.
+Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
 ```rs
 use arma_rs::Context;
