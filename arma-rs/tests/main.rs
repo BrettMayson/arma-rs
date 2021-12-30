@@ -157,3 +157,15 @@ fn output_overflow() {
     let (_, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 4);
 }
+
+#[test]
+fn output_overflow_with_args() {
+    let extension = Extension::build()
+        .command("hello", |ctx: Context, item: String| -> String {
+            item.repeat(ctx.buffer_len() + 1)
+        })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", Some(vec![String::from("X")])) };
+    assert_eq!(code, 4);
+}
