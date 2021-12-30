@@ -52,7 +52,7 @@ impl Extension {
         self.callback = Some(callback);
     }
 
-    fn context(&self) -> Context {
+    pub fn context(&self) -> Context {
         Context::new(self.callback_queue.clone())
     }
 
