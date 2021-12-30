@@ -100,15 +100,15 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 ## Callbacks
 
-Extension callbacks can be invoked anywhere in the extension by adding `use crate::arma_callback`.
+Extension callbacks can be invoked anywhere in the extension by adding the a variable of type `Context` to the start of a handler.
 
 ```rs
-use crate::arma_callback;
+use arma_rs::Context;
 
-pub fn sleep(duration: u64, id: String) {
+pub fn sleep(ctx: Context, duration: u64, id: String) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(duration));
-        arma_callback("example_timer", "done", Some(id));
+        ctx.callback("example_timer", "done", Some(id));
     });
 }
 
