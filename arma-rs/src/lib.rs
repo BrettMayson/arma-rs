@@ -17,8 +17,11 @@ pub use group::Group;
 pub use testing::TestingExtension;
 
 #[cfg(windows)]
-pub type Callback =
-    extern "stdcall" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
+pub type Callback = extern "stdcall" fn(
+    *const libc::c_char,
+    *const libc::c_char,
+    *const libc::c_char,
+) -> libc::c_int;
 #[cfg(not(windows))]
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
