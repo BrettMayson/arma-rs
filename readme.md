@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_sleep_1sec() {
+    fn sleep_1sec() {
         let extension = Extension::build()
             .group("timer", super::group())
             .finish()

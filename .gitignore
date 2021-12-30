@@ -1,3 +1,4 @@
 target/
 *.dll
 Cargo.lock
+cov/

@@ -202,37 +202,37 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_is_nil() {
+    fn is_nil() {
         assert!(ArmaValue::Nil.is_nil());
         assert!(!ArmaValue::Boolean(false).is_nil());
     }
 
     #[test]
-    fn test_is_number() {
+    fn is_number() {
         assert!(ArmaValue::Number(54.0).is_number());
         assert!(!ArmaValue::Boolean(false).is_number());
     }
 
     #[test]
-    fn test_is_array() {
+    fn is_array() {
         assert!(ArmaValue::Array(Vec::new()).is_array());
         assert!(!ArmaValue::Boolean(false).is_array());
     }
 
     #[test]
-    fn test_is_boolean() {
+    fn is_boolean() {
         assert!(ArmaValue::Boolean(false).is_boolean());
         assert!(!ArmaValue::Number(54.0).is_boolean());
     }
 
     #[test]
-    fn test_is_string() {
+    fn is_string() {
         assert!(ArmaValue::String(String::new()).is_string());
         assert!(!ArmaValue::Boolean(false).is_string());
     }
 
     #[test]
-    fn test_as_nil() {
+    fn as_nil() {
         match ArmaValue::Nil.as_null() {
             Some(_) => (),
             None => panic!("Failed to retrieve value"),
@@ -240,7 +240,7 @@ mod tests {
     }
 
     #[test]
-    fn test_as_f32() {
+    fn as_f32() {
         match ArmaValue::Number(54.0).as_f32() {
             Some(f) => assert!((54.0 - f) == 0.0),
             None => panic!("Failed to retrieve value"),
@@ -248,7 +248,7 @@ mod tests {
     }
 
     #[test]
-    fn test_as_vec() {
+    fn as_vec() {
         match ArmaValue::Array(vec![ArmaValue::String("hello".into())]).as_vec() {
             Some(v) => {
                 let first_value = v.get(0).unwrap();
@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn test_as_bool() {
+    fn as_bool() {
         match ArmaValue::Boolean(true).as_bool() {
             Some(b) => assert!(b),
             None => panic!("Failed to retrieve value"),
@@ -269,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn test_as_str() {
+    fn as_str() {
         match ArmaValue::String(String::from("hello world")).as_str() {
             Some(s) => assert_eq!(s, "hello world"),
             None => panic!("Failed to retrieve value"),
@@ -277,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_empty() {
+    fn is_empty() {
         assert!(ArmaValue::String("".into()).is_empty());
         assert!(ArmaValue::Array(vec![]).is_empty());
         assert!(ArmaValue::Boolean(false).is_empty());
