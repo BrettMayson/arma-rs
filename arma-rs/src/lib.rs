@@ -45,7 +45,7 @@ impl Extension {
         &self.version
     }
 
-    /// Allows the extension to be called without any arguments.
+    /// Returns if the extension can be called without any arguments.
     /// Example:
     /// ```sqf
     /// "my_ext" callExtension "my_func"
@@ -129,12 +129,14 @@ pub struct ExtensionBuilder {
 
 impl ExtensionBuilder {
     #[inline]
+    /// Sets the version of the extension.
     pub fn version(mut self, version: String) -> Self {
         self.version = version;
         self
     }
 
     #[inline]
+    /// Add a group to the extension.
     pub fn group<S>(mut self, name: S, group: Group) -> Self
     where
         S: Into<String>,
@@ -144,12 +146,18 @@ impl ExtensionBuilder {
     }
 
     #[inline]
+    /// Allows the extension to be called without any arguments.
+    /// Example:
+    /// ```sqf
+    /// "my_ext" callExtension "my_func"
+    /// ``
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
     }
 
     #[inline]
+    /// Add a command to the extension.
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
         S: Into<String>,
@@ -159,6 +167,8 @@ impl ExtensionBuilder {
         self
     }
 
+    #[inline]
+    /// Builds the extension.
     pub fn finish(self) -> Extension {
         Extension {
             version: self.version,
