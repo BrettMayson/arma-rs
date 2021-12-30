@@ -23,6 +23,25 @@ fn root_command_with_args() {
 }
 
 #[test]
+fn root_command_no_return() {
+    let extension = Extension::build().command("nop", || {}).finish().testing();
+    let (result, code) = unsafe { extension.call("nop", None) };
+    assert_eq!(code, 0);
+    assert_eq!(result, "");
+}
+
+#[test]
+fn root_command_with_args_no_return() {
+    let extension = Extension::build()
+        .command("nop", |_: i8| {})
+        .finish()
+        .testing();
+    let (result, code) = unsafe { extension.call("nop", Some(vec![String::from("4")])) };
+    assert_eq!(code, 0);
+    assert_eq!(result, "");
+}
+
+#[test]
 fn group_command() {
     let extension = Extension::build()
         .group(

@@ -19,9 +19,7 @@ impl TestingExtension {
 
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
-        Context {
-            queue: self.callback_queue.clone(),
-        }
+        Context::new(self.callback_queue.clone())
     }
 
     /// Call a function, intended for tests

@@ -1,18 +1,21 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
 
 pub trait FromArma: Sized {
     fn from_arma(s: String) -> Result<Self, String>;
 }
 
-impl<T> FromArma for T
-where
-    T: FromStr,
-    <T as FromStr>::Err: ToString,
-{
-    fn from_arma(s: String) -> Result<Self, String> {
-        s.parse::<Self>().map_err(|e| e.to_string())
-    }
+macro_rules! impl_from_arma {
+    ($($t:ty),*) => {
+        $(
+            impl FromArma for $t {
+                fn from_arma(s: String) -> Result<Self, String> {
+                    s.parse::<Self>().map_err(|e| e.to_string())
+                }
+            }
+        )*
+    };
 }
+impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, String);
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum ArmaValue {
