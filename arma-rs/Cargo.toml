@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 libc = "0.2"
 arma-rs-proc = { path = "../arma-rs-proc"}
+crossbeam-queue = "0.3"

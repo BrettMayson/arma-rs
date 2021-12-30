@@ -1,18 +1,34 @@
+use std::sync::Arc;
+
 pub use arma_rs_proc::arma;
+use crossbeam_queue::SegQueue;
 pub use libc;
 
 mod arma;
 pub use arma::{ArmaValue, FromArma, IntoArma};
 mod command;
+mod context;
 mod group;
+mod testing;
 
 pub use command::*;
+pub use context::Context;
 pub use group::Group;
+pub use testing::TestingExtension;
+
+#[cfg(windows)]
+pub type Callback =
+    extern "stdcall" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> i32;
+#[cfg(not(windows))]
+pub type Callback =
+    extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> i32;
 
 pub struct Extension {
     version: String,
     group: Group,
     allow_no_args: bool,
+    callback: Option<Callback>,
+    callback_queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
 }
 
 impl Extension {
@@ -32,6 +48,14 @@ impl Extension {
         self.allow_no_args
     }
 
+    pub fn register_callback(&mut self, callback: Callback) {
+        self.callback = Some(callback);
+    }
+
+    fn context(&self) -> Context {
+        Context::new(self.callback_queue.clone())
+    }
+
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -44,35 +68,46 @@ impl Extension {
         count: Option<usize>,
     ) -> usize {
         let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
-        self.group
-            .handle(function.to_string(), output, size, args, count)
-    }
-
-    /// Call a function, intended for tests
-    /// # Safety
-    /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, usize) {
-        let output = std::ffi::CString::new("").unwrap().into_raw();
-        let len = args.as_ref().map(|a| a.len());
-        let mut args_pointer = args.map(|v| {
-            v.into_iter()
-                .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
-                .collect::<Vec<*mut i8>>()
-        });
-        let res = self.group.handle(
+        self.group.handle(
+            self.context(),
             function.to_string(),
             output,
-            10240,
-            args_pointer.as_mut().map(|a| a.as_mut_ptr()),
-            len,
-        );
-        (
-            std::ffi::CStr::from_ptr(output)
-                .to_str()
-                .unwrap()
-                .to_string(),
-            res,
+            size,
+            args,
+            count,
         )
+    }
+
+    pub fn testing(self) -> TestingExtension {
+        TestingExtension::new(self)
+    }
+
+    pub fn run_callbacks(&self) {
+        let queue = self.callback_queue.clone();
+        let callback = self.callback;
+        std::thread::spawn(move || loop {
+            if let Some((name, func, data)) = queue.pop() {
+                if let Some(c) = callback {
+                    let name = std::ffi::CString::new(name).unwrap().into_raw();
+                    let func = std::ffi::CString::new(func).unwrap().into_raw();
+                    let data = std::ffi::CString::new(match data {
+                        Some(value) => match value {
+                            ArmaValue::String(s) => s,
+                            v => v.to_string(),
+                        },
+                        None => String::new(),
+                    })
+                    .unwrap()
+                    .into_raw();
+                    loop {
+                        if c(name, func, data) >= 0 {
+                            break;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -119,6 +154,8 @@ impl ExtensionBuilder {
             version: self.version,
             group: self.group,
             allow_no_args: self.allow_no_args,
+            callback: None,
+            callback_queue: Arc::new(SegQueue::new()),
         }
     }
 }

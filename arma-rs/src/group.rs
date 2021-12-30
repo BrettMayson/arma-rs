@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::command::{fn_handler, CommandFactory, CommandHandler};
+use crate::{
+    command::{fn_handler, CommandFactory, CommandHandler},
+    Context,
+};
 
 #[derive(Default)]
 pub struct Group {
@@ -37,6 +40,7 @@ impl Group {
 
     pub fn handle(
         &self,
+        context: Context,
         function: String,
         output: *mut libc::c_char,
         size: usize,
@@ -45,12 +49,12 @@ impl Group {
     ) -> usize {
         if let Some((group, function)) = function.split_once(':') {
             if let Some(group) = self.children.get(group) {
-                group.handle(function.to_string(), output, size, args, count)
+                group.handle(context, function.to_string(), output, size, args, count)
             } else {
                 1
             }
         } else if let Some(handler) = self.commands.get(&function) {
-            (handler.handler)(output, size, args, count)
+            (handler.handler)(context, output, size, args, count)
         } else {
             1
         }
