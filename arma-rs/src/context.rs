@@ -6,11 +6,21 @@ use crate::{ArmaValue, IntoArma};
 
 pub struct Context {
     pub(crate) queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
+    buffer_len: usize,
 }
 
 impl Context {
-    pub fn new(queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>) -> Self {
-        Self { queue }
+    pub fn new(
+        queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
+        buffer_len: usize,
+    ) -> Self {
+        Self { queue, buffer_len }
+    }
+
+    /// Returns the length of the output buffer.
+    /// This is the maximum size of the data that can be returned by the extension.
+    pub fn buffer_len(&self) -> usize {
+        self.buffer_len
     }
 
     /// Sends a callback into Arma

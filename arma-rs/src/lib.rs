@@ -63,8 +63,8 @@ impl Extension {
     }
 
     /// Get a context for interacting with Arma
-    pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+    pub fn context(&self, buffer_len: usize) -> Context {
+        Context::new(self.callback_queue.clone(), buffer_len)
     }
 
     /// Called by generated code, do not call directly.
@@ -80,7 +80,7 @@ impl Extension {
     ) -> libc::c_int {
         let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
         self.group.handle(
-            self.context(),
+            self.context(size.try_into().unwrap()),
             function.to_string(),
             output,
             size,
@@ -196,8 +196,8 @@ pub unsafe fn write_cstr(
     };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
-    let amount_to_copy = std::cmp::min(cstr_bytes.len(), (buf_size - 1).try_into().unwrap());
-    if amount_to_copy > i32::MAX.try_into().unwrap() {
+    let amount_to_copy = cstr_bytes.len();
+    if amount_to_copy > (buf_size - 1).try_into().unwrap() {
         return None;
     }
     ptr.copy_from(cstr.as_ptr(), amount_to_copy);

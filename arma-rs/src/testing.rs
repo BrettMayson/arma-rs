@@ -19,7 +19,10 @@ impl TestingExtension {
 
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+        Context::new(
+            self.callback_queue.clone(),
+            10240, // The sized used by Arma 3 as of 2021-12-30
+        )
     }
 
     /// Call a function, intended for tests
