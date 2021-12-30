@@ -12,6 +12,7 @@ pub struct Group {
 }
 
 impl Group {
+    /// Creates a new group
     pub fn new() -> Self {
         Self {
             commands: HashMap::new(),
@@ -20,6 +21,7 @@ impl Group {
     }
 
     #[inline]
+    /// Add a command to the group
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
         S: Into<String>,
@@ -30,6 +32,8 @@ impl Group {
         self
     }
 
+    #[inline]
+    /// Add a group to the group
     pub fn group<S>(mut self, name: S, child: Self) -> Self
     where
         S: Into<String>,
@@ -38,7 +42,7 @@ impl Group {
         self
     }
 
-    pub fn handle(
+    pub(crate) fn handle(
         &self,
         context: Context,
         function: String,

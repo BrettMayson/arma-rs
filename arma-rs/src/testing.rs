@@ -17,6 +17,7 @@ impl TestingExtension {
         }
     }
 
+    /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
         Context {
             queue: self.callback_queue.clone(),
@@ -51,6 +52,14 @@ impl TestingExtension {
         )
     }
 
+    /// Create a callback handler
+    /// 
+    /// Returns true if the callback was handled
+    /// returns false if the timeout is reached
+    /// 
+    /// The handler must return a boolean indicating whether the callback was handled
+    /// Return true to end the callback loop
+    /// Return false to continue the callback loop
     pub fn callback_handler<F>(&self, handler: F, timeout: Duration) -> bool
     where
         F: Fn(&str, &str, Option<ArmaValue>) -> bool,

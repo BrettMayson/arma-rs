@@ -13,6 +13,8 @@ impl Context {
         Self { queue }
     }
 
+    /// Sends a callback into Arma
+    /// https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback
     pub fn callback<V>(&self, name: &str, func: &str, data: Option<V>)
     where
         V: IntoArma,

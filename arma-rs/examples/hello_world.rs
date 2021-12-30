@@ -23,14 +23,14 @@ mod tests {
 
     #[test]
     fn test_hello() {
-        let extension = init();
+        let extension = init().testing();
         let (result, _) = unsafe { extension.call("hello", None) };
         assert_eq!(result, "Hello");
     }
 
     #[test]
     fn test_welcome() {
-        let extension = init();
+        let extension = init().testing();
         let (result, _) = unsafe { extension.call("welcome", Some(vec!["John".to_string()])) };
         assert_eq!(result, "Welcome John");
     }
