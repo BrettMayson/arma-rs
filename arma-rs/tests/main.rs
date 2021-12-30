@@ -1,4 +1,4 @@
-use arma_rs::{Extension, Group};
+use arma_rs::{Extension, Group, Context};
 
 #[test]
 fn root_command() {
@@ -144,4 +144,16 @@ fn invalid_arg_type_position() {
         )
     };
     assert_eq!(code, 31);
+}
+
+#[test]
+fn output_overflow() {
+    let extension = Extension::build()
+        .command("hello", |ctx: Context| -> String {
+            "X".repeat(ctx.buffer_len() + 1)
+        })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", None) };
+    assert_eq!(code, 4);
 }

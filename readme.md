@@ -154,12 +154,13 @@ By default arma-rs will only allow commands via `RvExtensionArgs`. Using `callEx
 
 This behvaiour can be changed by calling `.allow_no_args()` when building the extension. It is recommended not to use this, and to implement error handling instead.
 
-| Code | Description                                   |
-|------|-----------------------------------------------|
-|  0   | Success                                       |
-|  1   | Command not found                             |
-|  2x  | Invalid argument count, x is received count   |
-|  3x  | Invalid argument type, x is argument position |
+| Code | Description                                       |
+|------|---------------------------------------------------|
+|  0   | Success                                           |
+|  1   | Command not found                                 |
+|  2x  | Invalid argument count, x is received count       |
+|  3x  | Invalid argument type, x is argument position     |
+|  4   | Attempted to write a value larger than the buffer |
 
 ### Error Examples
 
@@ -180,9 +181,9 @@ pub fn add(a: i32, b: i32) -> i32 {
 
 ```sqf
 "my_extension" callExtension ["add", [1, 2]]; // Returns ["3", 0, 0]
+"my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 "my_extension" callExtension ["add", [1, 2, 3]]; // Returns ["", 23, 0], didn't expect 3 elements
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
-"my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 ```
 
 ## Testing
