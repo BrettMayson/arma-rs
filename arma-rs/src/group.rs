@@ -47,10 +47,10 @@ impl Group {
         context: Context,
         function: String,
         output: *mut libc::c_char,
-        size: usize,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
-        count: Option<usize>,
-    ) -> usize {
+        count: Option<libc::c_int>,
+    ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
             if let Some(group) = self.children.get(group) {
                 group.handle(context, function.to_string(), output, size, args, count)

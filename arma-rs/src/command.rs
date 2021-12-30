@@ -2,7 +2,7 @@ use crate::arma::{ArmaValue, FromArma, IntoArma};
 use crate::Context;
 
 type HandlerFunc =
-    Box<dyn Fn(Context, *mut libc::c_char, usize, Option<*mut *mut i8>, Option<usize>) -> usize>;
+    Box<dyn Fn(Context, *mut libc::c_char, libc::c_int, Option<*mut *mut i8>, Option<libc::c_int>) -> libc::c_int>;
 
 pub struct CommandHandler {
     pub(crate) handler: HandlerFunc,
@@ -16,10 +16,10 @@ where
         handler: Box::new(
             move |context: Context,
                   output: *mut libc::c_char,
-                  size: usize,
+                  size: libc::c_int,
                   args: Option<*mut *mut i8>,
-                  count: Option<usize>|
-                  -> usize {
+                  count: Option<libc::c_int>|
+                  -> libc::c_int {
                 unsafe { command.call(context, output, size, args, count) }
             },
         ),
@@ -33,9 +33,9 @@ pub trait CommandExecutor: 'static {
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: usize,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
-        count: Option<usize>,
+        count: Option<libc::c_int>,
     );
 }
 
@@ -46,10 +46,10 @@ pub trait CommandFactory<A, R> {
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: usize,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
-        count: Option<usize>,
-    ) -> usize;
+        count: Option<libc::c_int>,
+    ) -> libc::c_int;
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
@@ -62,9 +62,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
             &self,
             context: Context,
             output: *mut libc::c_char,
-            size: usize,
+            size: libc::c_int,
             args: Option<*mut *mut i8>,
-            count: Option<usize>,
+            count: Option<libc::c_int>,
         ) {
             self.call(context, output, size, args, count);
         }
@@ -77,11 +77,11 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize{
+        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<usize>().unwrap();
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c != 0 {
                 #[allow(unused_variables, unused_mut)]
@@ -108,7 +108,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                         c += 1;
                         val
                     } else {
-                        return format!("3{}", c).parse::<usize>().unwrap()
+                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
                     },
                 )*);
                 0
@@ -126,11 +126,11 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize{
+        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<usize>().unwrap();
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c != 0 {
                 #[allow(unused_variables, unused_mut)]
@@ -158,7 +158,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                         c += 1;
                         val
                     } else {
-                        return format!("3{}", c).parse::<usize>().unwrap()
+                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
                     },
                 )*);
                 0
@@ -177,11 +177,11 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize {
+        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<usize>().unwrap();
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c != 0 {
                 #[allow(unused_variables, unused_mut)]
@@ -210,7 +210,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                                 c += 1;
                                 val
                             } else {
-                                return format!("3{}", c).parse::<usize>().unwrap()
+                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
                             },
                         )*);
                         if let ArmaValue::String(s) = ret.to_arma() {
@@ -249,11 +249,11 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: usize, args: Option<*mut *mut i8>, count: Option<usize>) -> usize {
+        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<usize>().unwrap();
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c != 0 {
                 #[allow(unused_variables, unused_mut)]
@@ -282,7 +282,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                                 c += 1;
                                 val
                             } else {
-                                return format!("3{}", c).parse::<usize>().unwrap()
+                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
                             },
                         )*);
                         if let ArmaValue::String(s) = ret.to_arma() {

@@ -18,10 +18,10 @@ pub use testing::TestingExtension;
 
 #[cfg(windows)]
 pub type Callback =
-    extern "stdcall" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> i32;
+    extern "stdcall" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 #[cfg(not(windows))]
 pub type Callback =
-    extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> i32;
+    extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
 pub struct Extension {
     version: String,
@@ -71,10 +71,10 @@ impl Extension {
         &self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
-        size: usize,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
-        count: Option<usize>,
-    ) -> usize {
+        count: Option<libc::c_int>,
+    ) -> libc::c_int {
         let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
         self.group.handle(
             self.context(),
@@ -186,15 +186,15 @@ impl ExtensionBuilder {
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
-    buf_size: libc::size_t,
+    buf_size: libc::c_int,
 ) -> Option<usize> {
     if !string.is_ascii() {
         return None;
     };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
-    let amount_to_copy = std::cmp::min(cstr_bytes.len(), buf_size - 1);
-    if amount_to_copy > isize::MAX as usize {
+    let amount_to_copy = std::cmp::min(cstr_bytes.len(), (buf_size - 1).try_into().unwrap());
+    if amount_to_copy > isize::MAX.try_into().unwrap() {
         return None;
     }
     ptr.copy_from(cstr.as_ptr(), amount_to_copy);
