@@ -17,7 +17,7 @@ impl TestingExtension {
         }
     }
 
-    fn context(&self) -> Context {
+    pub fn context(&self) -> Context {
         Context {
             queue: self.callback_queue.clone(),
         }
