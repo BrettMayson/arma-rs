@@ -1,29 +1,29 @@
-use crate::arma::{ArmaValue, FromArma, IntoArma};
+use crate::arma::{FromArma, IntoArma, Value};
 use crate::Context;
 
 type HandlerFunc = Box<
     dyn Fn(
         Context,
         *mut libc::c_char,
-        libc::c_int,
+        libc::size_t,
         Option<*mut *mut i8>,
         Option<libc::c_int>,
     ) -> libc::c_int,
 >;
 
-pub struct CommandHandler {
+pub struct Handler {
     pub(crate) handler: HandlerFunc,
 }
 
-pub fn fn_handler<C, I, R>(command: C) -> CommandHandler
+pub fn fn_handler<C, I, R>(command: C) -> Handler
 where
-    C: CommandFactory<I, R> + 'static,
+    C: Factory<I, R> + 'static,
 {
-    CommandHandler {
+    Handler {
         handler: Box::new(
             move |context: Context,
                   output: *mut libc::c_char,
-                  size: libc::c_int,
+                  size: libc::size_t,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
@@ -33,34 +33,34 @@ where
     }
 }
 
-pub trait CommandExecutor: 'static {
+pub trait Executor: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: libc::c_int,
+        size: libc::size_t,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     );
 }
 
-pub trait CommandFactory<A, R> {
+pub trait Factory<A, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: libc::c_int,
+        size: libc::size_t,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     ) -> libc::c_int;
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* O> CommandExecutor for dyn CommandFactory<($($param,)*), O>
+    impl<$($param,)* O> Executor for dyn Factory<($($param,)*), O>
     where
         O: 'static,
         $($param: FromArma + 'static,)*
@@ -69,7 +69,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
             &self,
             context: Context,
             output: *mut libc::c_char,
-            size: libc::c_int,
+            size: libc::size_t,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
@@ -78,13 +78,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context without return
-    impl<Func, $($param,)*> CommandFactory<($($param,)*), ()> for Func
+    impl<Func, $($param,)*> Factory<($($param,)*), ()> for Func
     where
         Func: Fn($($param),*),
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
+        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
@@ -127,13 +127,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context without return
-    impl<Func, $($param,)*> CommandFactory<(Context, $($param,)*), ()> for Func
+    impl<Func, $($param,)*> Factory<(Context, $($param,)*), ()> for Func
     where
         Func: Fn(Context, $($param),*),
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
+        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
@@ -177,14 +177,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context with input and return
-    impl<Func, $($param,)* R> CommandFactory<($($param,)*), R> for Func
+    impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
         R: IntoArma + 'static,
         Func: Fn($($param),*) -> R,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
@@ -220,7 +220,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                                 return format!("3{}", c).parse::<libc::c_int>().unwrap()
                             },
                         )*);
-                        if let ArmaValue::String(s) = ret.to_arma() {
+                        if let Value::String(s) = ret.to_arma() {
                             s
                         } else {
                             ret.to_arma().to_string()
@@ -237,7 +237,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 if crate::write_cstr(
                     {
                         let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                        if let ArmaValue::String(s) = ret.to_arma() {
+                        if let Value::String(s) = ret.to_arma() {
                             s
                         } else {
                             ret.to_arma().to_string()
@@ -246,7 +246,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     output,
                     size
                 ).is_none() {
-                    return 4;
+                    4
                 } else {
                     0
                 }
@@ -255,14 +255,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context with input and return
-    impl<Func, $($param,)* R> CommandFactory<(Context, $($param,)*), R> for Func
+    impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
         R: IntoArma + 'static,
         Func: Fn(Context, $($param),*) -> R,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
@@ -298,7 +298,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                                 return format!("3{}", c).parse::<libc::c_int>().unwrap()
                             },
                         )*);
-                        if let ArmaValue::String(s) = ret.to_arma() {
+                        if let Value::String(s) = ret.to_arma() {
                             s
                         } else {
                             ret.to_arma().to_string()
@@ -315,7 +315,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 if crate::write_cstr(
                     {
                         let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
-                        if let ArmaValue::String(s) = ret.to_arma() {
+                        if let Value::String(s) = ret.to_arma() {
                             s
                         } else {
                             ret.to_arma().to_string()
