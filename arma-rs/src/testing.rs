@@ -29,7 +29,7 @@ impl TestingExtension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        let output = std::ffi::CString::new("").unwrap().into_raw();
+        let output = [0; 10240].as_mut_ptr();
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
             v.into_iter()

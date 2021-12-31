@@ -165,7 +165,7 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 ### Error Examples
 
 ```rs
-use arma_rs::{arma, Extension};
+use arma_rs::{arma, Extension, Context};
 
 #[arma]
 fn init() -> Extension {
@@ -177,6 +177,10 @@ fn init() -> Extension {
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
+
+pub fn overflow(ctx: Context) -> String {
+    "X".repeat(ctx.buffer_len() + 1)
+}
 ```
 
 ```sqf
@@ -184,6 +188,7 @@ pub fn add(a: i32, b: i32) -> i32 {
 "my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 "my_extension" callExtension ["add", [1, 2, 3]]; // Returns ["", 23, 0], didn't expect 3 elements
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
+"my_extension" callExtension ["overflow", []]; // Returns 4, the return size was larger than the buffer
 ```
 
 ## Testing

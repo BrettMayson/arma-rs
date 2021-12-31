@@ -196,11 +196,11 @@ pub unsafe fn write_cstr(
     };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
-    let amount_to_copy = cstr_bytes.len();
-    if amount_to_copy > (buf_size - 1).try_into().unwrap() {
+    let len_to_copy = cstr_bytes.len();
+    if len_to_copy * 8 >= (buf_size - 8).try_into().unwrap() {
         return None;
     }
-    ptr.copy_from(cstr.as_ptr(), amount_to_copy);
-    ptr.add(amount_to_copy).write(0x00);
-    Some(amount_to_copy.try_into().unwrap())
+    ptr.copy_from(cstr.as_ptr(), len_to_copy);
+    ptr.add(len_to_copy).write(0x00);
+    Some(len_to_copy.try_into().unwrap())
 }

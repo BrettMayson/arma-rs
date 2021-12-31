@@ -162,7 +162,10 @@ fn output_overflow() {
 fn output_overflow_with_args() {
     let extension = Extension::build()
         .command("hello", |ctx: Context, item: String| -> String {
-            item.repeat(ctx.buffer_len() + 1)
+            let size = ctx.buffer_len() / 8;
+            println!("size: {}", size);
+            println!("size: {}", size * 8);
+            item.repeat(size)
         })
         .finish()
         .testing();
