@@ -15,7 +15,7 @@ If you will be targeting 32 bit Windows (i686-pc-windows-msvc) place the files f
 
 ### Hello World
 
-```rs
+```rust
 use arma_rs::{arma, Extension};
 
 #[arma]
@@ -44,7 +44,7 @@ pub fn welcome(name: String) -> String {
 
 The main reason behind the arma-rs rewrite, command groups! Commands can now be grouped together, making your large projects much easier to manage.
 
-```rs
+```rust
 use arma_rs::{arma, Extension, Group};
 
 mod system_info;
@@ -104,7 +104,7 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
-```rs
+```rust
 use arma_rs::Context;
 
 pub fn sleep(ctx: Context, duration: u64, id: String) {
@@ -123,7 +123,7 @@ pub fn group() -> arma_rs::Group {
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
 
-```rs
+```rust
 #[derive(Default)]
 pub struct MemoryReport {
     total: u64,
@@ -164,7 +164,7 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 
 ### Error Examples
 
-```rs
+```rust
 use arma_rs::{arma, Extension, Context};
 
 #[arma]
@@ -195,7 +195,7 @@ pub fn overflow(ctx: Context) -> String {
 
 Tests can be created utilizing the `extension.call()` method.
 
-```rs
+```rust
 #[cfg(test)]
 mod tests {
     use super::init;
