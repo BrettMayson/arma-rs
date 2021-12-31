@@ -134,47 +134,47 @@ impl<T: IntoArma> IntoArma for Option<T> {
 }
 
 impl ArmaValue {
-    pub fn as_null(&self) -> Option<()> {
+    pub const fn as_null(&self) -> Option<()> {
         match self {
             Self::Nil => Some(()),
             _ => None,
         }
     }
 
-    pub fn is_nil(&self) -> bool {
+    pub const fn is_nil(&self) -> bool {
         self.as_null().is_some()
     }
 
-    pub fn as_f32(&self) -> Option<f32> {
+    pub const fn as_f32(&self) -> Option<f32> {
         match *self {
             Self::Number(n) => Some(n),
             _ => None,
         }
     }
 
-    pub fn is_number(&self) -> bool {
+    pub const fn is_number(&self) -> bool {
         self.as_f32().is_some()
     }
 
-    pub fn as_vec(&self) -> Option<&Vec<Self>> {
+    pub const fn as_vec(&self) -> Option<&Vec<Self>> {
         match *self {
             Self::Array(ref vec) => Some(vec),
             _ => None,
         }
     }
 
-    pub fn is_array(&self) -> bool {
+    pub const fn is_array(&self) -> bool {
         self.as_vec().is_some()
     }
 
-    pub fn as_bool(&self) -> Option<bool> {
+    pub const fn as_bool(&self) -> Option<bool> {
         match *self {
             Self::Boolean(bool) => Some(bool),
             _ => None,
         }
     }
 
-    pub fn is_boolean(&self) -> bool {
+    pub const fn is_boolean(&self) -> bool {
         self.as_bool().is_some()
     }
 

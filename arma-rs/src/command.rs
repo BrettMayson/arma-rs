@@ -207,7 +207,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     argv.reverse();
                     argv
                 };
-                if let None = crate::write_cstr(
+                if crate::write_cstr(
                     {
                         #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                         let mut c = 0;
@@ -228,13 +228,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                     output,
                     size
-                ) {
+                ).is_none() {
                     4
                 } else {
                     0
                 }
             } else {
-                if let None = crate::write_cstr(
+                if crate::write_cstr(
                     {
                         let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
                         if let ArmaValue::String(s) = ret.to_arma() {
@@ -245,7 +245,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                     output,
                     size
-                ) {
+                ).is_none() {
                     return 4;
                 } else {
                     0
@@ -285,7 +285,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     argv.reverse();
                     argv
                 };
-                if let None = crate::write_cstr(
+                if crate::write_cstr(
                     {
                         #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                         let mut c = 0;
@@ -306,13 +306,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                     output,
                     size
-                ) {
+                ).is_none() {
                     4
                 } else {
                     0
                 }
             } else {
-                if let None = crate::write_cstr(
+                if crate::write_cstr(
                     {
                         let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
                         if let ArmaValue::String(s) = ret.to_arma() {
@@ -323,7 +323,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                     output,
                     size
-                ) {
+                ).is_none() {
                     4
                 } else {
                     0

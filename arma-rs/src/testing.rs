@@ -9,6 +9,8 @@ pub struct TestingExtension {
     callback_queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
 }
 
+const BUFFER_SIZE: i32 = 10240;
+
 impl TestingExtension {
     pub fn new(ext: Extension) -> Self {
         Self {
@@ -28,7 +30,7 @@ impl TestingExtension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        let output = [0; 10240].as_mut_ptr();
+        let output = [0; BUFFER_SIZE as usize].as_mut_ptr();
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
             v.into_iter()
@@ -39,7 +41,7 @@ impl TestingExtension {
             self.context(),
             function.to_string(),
             output,
-            10240,
+            BUFFER_SIZE,
             args_pointer.as_mut().map(|a| a.as_mut_ptr()),
             len,
         );

@@ -17,13 +17,14 @@ impl Context {
         }
     }
 
-    pub(crate) fn with_buffer_size(self, buffer_len: usize) -> Self {
-        Self { buffer_len, ..self }
+    pub(crate) fn with_buffer_size(mut self, buffer_len: usize) -> Self {
+        self.buffer_len = buffer_len;
+        self
     }
 
     /// Returns the length of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.
-    pub fn buffer_len(&self) -> usize {
+    pub const fn buffer_len(&self) -> usize {
         self.buffer_len
     }
 
