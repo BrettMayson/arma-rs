@@ -17,7 +17,7 @@ pub fn group() -> Group {
 mod tests {
     use std::time::Duration;
 
-    use arma_rs::{Value, Extension};
+    use arma_rs::{Extension, Value};
 
     #[test]
     fn sleep_1sec() {
