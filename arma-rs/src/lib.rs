@@ -63,8 +63,8 @@ impl Extension {
     }
 
     /// Get a context for interacting with Arma
-    pub fn context(&self, buffer_len: usize) -> Context {
-        Context::new(self.callback_queue.clone(), buffer_len)
+    pub fn context(&self) -> Context {
+        Context::new(self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -80,7 +80,7 @@ impl Extension {
     ) -> libc::c_int {
         let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
         self.group.handle(
-            self.context(size.try_into().unwrap()),
+            self.context().with_buffer_size(size.try_into().unwrap()),
             function.to_string(),
             output,
             size,
