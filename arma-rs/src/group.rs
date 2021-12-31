@@ -52,11 +52,9 @@ impl Group {
         count: Option<libc::c_int>,
     ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
-            if let Some(group) = self.children.get(group) {
+            self.children.get(group).map_or(1, |group| {
                 group.handle(context, function.to_string(), output, size, args, count)
-            } else {
-                1
-            }
+            })
         } else if let Some(handler) = self.commands.get(&function) {
             (handler.handler)(context, output, size, args, count)
         } else {
