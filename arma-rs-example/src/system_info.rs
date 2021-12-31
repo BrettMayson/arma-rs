@@ -1,4 +1,4 @@
-use arma_rs::{Value, Group, IntoArma};
+use arma_rs::{Group, IntoArma, Value};
 
 #[derive(Default)]
 pub struct MemoryReport {
