@@ -1,7 +1,11 @@
 [package]
 name = "arma-rs-proc"
-version = "0.1.0"
+version = "1.2.0"
 edition = "2021"
+authors = ["Brett Mayson"]
+repository = "https://github.com/brettmayson/arma-rs"
+license = "MIT"
+keywords = ["arma"]
 
 [lib]
 proc-macro = true
