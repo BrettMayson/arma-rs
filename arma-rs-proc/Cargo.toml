@@ -1,5 +1,6 @@
 [package]
 name = "arma-rs-proc"
+description = "proc macros for arma-rs"
 version = "1.2.0"
 edition = "2021"
 authors = ["Brett Mayson"]
