@@ -10,11 +10,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(
-        queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
-        buffer_len: usize,
-    ) -> Self {
-        Self { queue, buffer_len }
+    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>) -> Self {
+        Self {
+            queue,
+            buffer_len: 0,
+        }
+    }
+
+    pub(crate) fn with_buffer_size(self, buffer_len: usize) -> Self {
+        Self { buffer_len, ..self }
     }
 
     /// Returns the length of the output buffer.
