@@ -219,9 +219,6 @@ pub unsafe fn write_cstr(
     ptr: *mut libc::c_char,
     buf_size: libc::size_t,
 ) -> Option<libc::size_t> {
-    if !string.is_ascii() {
-        return None;
-    };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
     let len_to_copy = cstr_bytes.len();
