@@ -1,4 +1,4 @@
-use arma_rs::{ArmaValue, Group, IntoArma};
+use arma_rs::{Value, Group, IntoArma};
 
 #[derive(Default)]
 pub struct MemoryReport {
@@ -8,8 +8,8 @@ pub struct MemoryReport {
 }
 
 impl IntoArma for MemoryReport {
-    fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(
+    fn to_arma(&self) -> Value {
+        Value::Array(
             vec![self.total, self.free, self.avail]
                 .into_iter()
                 .map(|v| v.to_string().to_arma())

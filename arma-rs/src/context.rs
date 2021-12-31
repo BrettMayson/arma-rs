@@ -2,15 +2,15 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{ArmaValue, IntoArma};
+use crate::{IntoArma, Value};
 
 pub struct Context {
-    pub(crate) queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
+    pub(crate) queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_len: usize,
 }
 
 impl Context {
-    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>) -> Self {
+    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<Value>)>>) -> Self {
         Self {
             queue,
             buffer_len: 0,
@@ -22,6 +22,7 @@ impl Context {
         self
     }
 
+    #[must_use]
     /// Returns the length of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.
     pub const fn buffer_len(&self) -> usize {
@@ -29,7 +30,7 @@ impl Context {
     }
 
     /// Sends a callback into Arma
-    /// https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback
+    /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback<V>(&self, name: &str, func: &str, data: Option<V>)
     where
         V: IntoArma,

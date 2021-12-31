@@ -17,7 +17,7 @@ pub fn group() -> Group {
 mod tests {
     use std::time::Duration;
 
-    use arma_rs::{ArmaValue, Extension};
+    use arma_rs::{Value, Extension};
 
     #[test]
     fn sleep_1sec() {
@@ -36,7 +36,7 @@ mod tests {
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
-                assert_eq!(data, Some(ArmaValue::String("test".to_string())));
+                assert_eq!(data, Some(Value::String("test".to_string())));
                 true
             },
             Duration::from_secs(2)
@@ -60,7 +60,7 @@ mod tests {
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
-                assert_eq!(data, Some(ArmaValue::String("test".to_string())));
+                assert_eq!(data, Some(Value::String("test".to_string())));
                 false
             },
             Duration::from_secs(2)

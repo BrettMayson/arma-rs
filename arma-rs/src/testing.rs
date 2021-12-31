@@ -2,23 +2,25 @@ use std::{sync::Arc, time::Duration};
 
 use crossbeam_queue::SegQueue;
 
-use crate::{ArmaValue, Context, Extension};
+use crate::{Context, Value};
 
-pub struct TestingExtension {
-    pub ext: Extension,
-    callback_queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
+pub struct Extension {
+    pub ext: crate::Extension,
+    callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
-const BUFFER_SIZE: i32 = 10240;
+const BUFFER_SIZE: libc::size_t = 10240;
 
-impl TestingExtension {
-    pub fn new(ext: Extension) -> Self {
+impl Extension {
+    #[must_use]
+    pub fn new(ext: crate::Extension) -> Self {
         Self {
             ext,
             callback_queue: Arc::new(SegQueue::new()),
         }
     }
 
+    #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
         Context::new(self.callback_queue.clone()).with_buffer_size(
@@ -26,11 +28,12 @@ impl TestingExtension {
         )
     }
 
+    #[must_use]
     /// Call a function, intended for tests
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        let output = [0; BUFFER_SIZE as usize].as_mut_ptr();
+        let output = [0; BUFFER_SIZE].as_mut_ptr();
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
             v.into_iter()
@@ -39,10 +42,10 @@ impl TestingExtension {
         });
         let res = self.ext.group.handle(
             self.context(),
-            function.to_string(),
+            function,
             output,
             BUFFER_SIZE,
-            args_pointer.as_mut().map(|a| a.as_mut_ptr()),
+            args_pointer.as_mut().map(Vec::as_mut_ptr),
             len,
         );
         (
@@ -64,7 +67,7 @@ impl TestingExtension {
     /// Return false to continue the callback loop
     pub fn callback_handler<F>(&self, handler: F, timeout: Duration) -> bool
     where
-        F: Fn(&str, &str, Option<ArmaValue>) -> bool,
+        F: Fn(&str, &str, Option<Value>) -> bool,
     {
         let queue = self.callback_queue.clone();
         let start = std::time::Instant::now();

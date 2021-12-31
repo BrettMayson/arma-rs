@@ -4,8 +4,11 @@ pub use arma_rs_proc::arma;
 use crossbeam_queue::SegQueue;
 pub use libc;
 
+#[macro_use]
+extern crate log;
+
 mod arma;
-pub use arma::{ArmaValue, FromArma, IntoArma};
+pub use arma::{FromArma, IntoArma, Value};
 mod command;
 mod context;
 mod group;
@@ -14,7 +17,6 @@ mod testing;
 pub use command::*;
 pub use context::Context;
 pub use group::Group;
-pub use testing::TestingExtension;
 
 #[cfg(windows)]
 pub type Callback = extern "stdcall" fn(
@@ -31,10 +33,11 @@ pub struct Extension {
     group: Group,
     allow_no_args: bool,
     callback: Option<Callback>,
-    callback_queue: Arc<SegQueue<(String, String, Option<ArmaValue>)>>,
+    callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
 impl Extension {
+    #[must_use]
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
@@ -44,10 +47,12 @@ impl Extension {
         }
     }
 
+    #[must_use]
     pub fn version(&self) -> &str {
         &self.version
     }
 
+    #[must_use]
     /// Returns if the extension can be called without any arguments.
     /// Example:
     /// ```sqf
@@ -62,6 +67,7 @@ impl Extension {
         self.callback = Some(callback);
     }
 
+    #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(self.callback_queue.clone())
@@ -74,14 +80,18 @@ impl Extension {
         &self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
-        size: libc::c_int,
+        size: libc::size_t,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     ) -> libc::c_int {
-        let function = std::ffi::CStr::from_ptr(function).to_str().unwrap();
+        let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
+            cstring.to_string()
+        } else {
+            return 1;
+        };
         self.group.handle(
-            self.context().with_buffer_size(size.try_into().unwrap()),
-            function.to_string(),
+            self.context().with_buffer_size(size),
+            &function,
             output,
             size,
             args,
@@ -89,9 +99,10 @@ impl Extension {
         )
     }
 
+    #[must_use]
     /// Create a version of the extension that can be used in tests.
-    pub fn testing(self) -> TestingExtension {
-        TestingExtension::new(self)
+    pub fn testing(self) -> testing::Extension {
+        testing::Extension::new(self)
     }
 
     /// Called by generated code, do not call directly.
@@ -101,17 +112,30 @@ impl Extension {
         std::thread::spawn(move || loop {
             if let Some((name, func, data)) = queue.pop() {
                 if let Some(c) = callback {
-                    let name = std::ffi::CString::new(name).unwrap().into_raw();
-                    let func = std::ffi::CString::new(func).unwrap().into_raw();
-                    let data = std::ffi::CString::new(match data {
+                    let name = if let Ok(cstring) = std::ffi::CString::new(name) {
+                        cstring.into_raw()
+                    } else {
+                        error!("callback name was not valid");
+                        continue;
+                    };
+                    let func = if let Ok(cstring) = std::ffi::CString::new(func) {
+                        cstring.into_raw()
+                    } else {
+                        error!("callback func was not valid");
+                        continue;
+                    };
+                    let data = if let Ok(cstring) = std::ffi::CString::new(match data {
                         Some(value) => match value {
-                            ArmaValue::String(s) => s,
+                            Value::String(s) => s,
                             v => v.to_string(),
                         },
                         None => String::new(),
-                    })
-                    .unwrap()
-                    .into_raw();
+                    }) {
+                        cstring.into_raw()
+                    } else {
+                        error!("callback data was not valid");
+                        continue;
+                    };
                     loop {
                         if c(name, func, data) >= 0 {
                             break;
@@ -132,6 +156,7 @@ pub struct ExtensionBuilder {
 
 impl ExtensionBuilder {
     #[inline]
+    #[must_use]
     /// Sets the version of the extension.
     pub fn version(mut self, version: String) -> Self {
         self.version = version;
@@ -149,6 +174,7 @@ impl ExtensionBuilder {
     }
 
     #[inline]
+    #[must_use]
     /// Allows the extension to be called without any arguments.
     /// Example:
     /// ```sqf
@@ -164,13 +190,14 @@ impl ExtensionBuilder {
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
         S: Into<String>,
-        F: CommandFactory<I, R> + 'static,
+        F: Factory<I, R> + 'static,
     {
         self.group = self.group.command(name, handler);
         self
     }
 
     #[inline]
+    #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
         Extension {
@@ -184,23 +211,24 @@ impl ExtensionBuilder {
 }
 
 /// Called by generated code, do not call directly.
+///
 /// # Safety
 /// This function is unsafe because it interacts with the C API.
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
-    buf_size: libc::c_int,
-) -> Option<libc::c_int> {
+    buf_size: libc::size_t,
+) -> Option<libc::size_t> {
     if !string.is_ascii() {
         return None;
     };
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
     let len_to_copy = cstr_bytes.len();
-    if len_to_copy * 8 >= (buf_size - 8).try_into().unwrap() {
+    if len_to_copy * 8 >= buf_size - 8 {
         return None;
     }
     ptr.copy_from(cstr.as_ptr(), len_to_copy);
     ptr.add(len_to_copy).write(0x00);
-    Some(len_to_copy.try_into().unwrap())
+    Some(len_to_copy)
 }
