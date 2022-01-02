@@ -8,6 +8,12 @@ pub trait FromArma: Sized {
     fn from_arma(s: String) -> Result<Self, String>;
 }
 
+impl FromArma for String {
+    fn from_arma(s: String) -> Result<Self, String> {
+        Ok(s.trim_start_matches('"').trim_end_matches('"').to_string())
+    }
+}
+
 macro_rules! impl_from_arma {
     ($($t:ty),*) => {
         $(
@@ -19,7 +25,55 @@ macro_rules! impl_from_arma {
         )*
     };
 }
-impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, String);
+impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool);
+
+macro_rules! impl_from_arma_tuple {
+    ($($t:ident),*) => {
+        impl<$($t),*> FromArma for ($($t),*)
+        where
+            $($t: FromArma),*
+        {
+            fn from_arma(s: String) -> Result<Self, String> {
+                let source = s.trim_start_matches('[').trim_end_matches(']');
+                let mut iter = source.split(',');
+                Ok((
+                    $(
+                        {
+                            let n = iter.next().unwrap().to_string();
+                            $t::from_arma(n.trim().to_string())?
+                        }
+                    ),*
+                ))
+            }
+        }
+    };
+}
+
+// impl_from_arma_tuple!(A);
+impl_from_arma_tuple!(A, B);
+impl_from_arma_tuple!(A, B, C);
+impl_from_arma_tuple!(A, B, C, D);
+impl_from_arma_tuple!(A, B, C, D, E);
+impl_from_arma_tuple!(A, B, C, D, E, F);
+impl_from_arma_tuple!(A, B, C, D, E, F, G);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J);
+
+impl<T> FromArma for Vec<T>
+where
+    T: FromArma,
+{
+    fn from_arma(s: String) -> Result<Self, String> {
+        let source = s.trim_start_matches('[').trim_end_matches(']');
+        let iter = source.split(',');
+        let mut vec = Vec::new();
+        for s in iter {
+            vec.push(FromArma::from_arma(s.to_string())?);
+        }
+        Ok(vec)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -312,5 +366,13 @@ mod tests {
         assert!(!Value::Array(vec![Value::Boolean(false)]).is_empty());
         assert!(!Value::Boolean(true).is_empty());
         assert!(!Value::Number(55.0).is_empty());
+    }
+
+    #[test]
+    fn parse_tuple() {
+        assert_eq!(
+            (String::from("hello"), 123,),
+            <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
+        )
     }
 }
