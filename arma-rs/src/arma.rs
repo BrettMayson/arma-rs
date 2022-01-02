@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use regex::Regex;
+
 /// A trait for converting a value from Arma to a Rust value.
 pub trait FromArma: Sized {
     /// Converts a value from Arma to a Rust value.
@@ -34,12 +36,19 @@ macro_rules! impl_from_arma_tuple {
             $($t: FromArma),*
         {
             fn from_arma(s: String) -> Result<Self, String> {
-                let source = s.trim_start_matches('[').trim_end_matches(']');
-                let mut iter = source.split(',');
+                let source = s
+                    .strip_prefix('[')
+                    .ok_or_else(|| String::from("missing '[' at start of vec"))?
+                    .strip_suffix(']')
+                    .ok_or_else(|| String::from("missing ']' at end of vec"))?;
+                lazy_static::lazy_static! {
+                    static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
+                }
+                let mut iter = RE.captures_iter(source);
                 Ok((
                     $(
                         {
-                            let n = iter.next().unwrap().to_string();
+                            let n = iter.next().unwrap().get(1).unwrap().as_str().to_string();
                             $t::from_arma(n.trim().to_string())?
                         }
                     ),*
@@ -65,13 +74,20 @@ where
     T: FromArma,
 {
     fn from_arma(s: String) -> Result<Self, String> {
-        let source = s.trim_start_matches('[').trim_end_matches(']');
-        let iter = source.split(',');
-        let mut vec = Vec::new();
-        for s in iter {
-            vec.push(FromArma::from_arma(s.to_string())?);
+        let source = s
+            .strip_prefix('[')
+            .ok_or_else(|| String::from("missing '[' at start of vec"))?
+            .strip_suffix(']')
+            .ok_or_else(|| String::from("missing ']' at end of vec"))?;
+        lazy_static::lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
         }
-        Ok(vec)
+        let mut ret = Vec::new();
+        let result = RE.captures_iter(source);
+        for mat in result {
+            ret.push(T::from_arma(mat.get(1).unwrap().as_str().to_string())?);
+        }
+        Ok(ret)
     }
 }
 
@@ -373,6 +389,14 @@ mod tests {
         assert_eq!(
             (String::from("hello"), 123,),
             <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
+        )
+    }
+    #[test]
+    fn parse_vec_tuple() {
+        assert_eq!(
+            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
+            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
+                .unwrap()
         )
     }
 }
