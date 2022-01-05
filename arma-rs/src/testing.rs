@@ -11,6 +11,13 @@ pub struct Extension {
 
 const BUFFER_SIZE: libc::size_t = 10240;
 
+#[derive(PartialEq, Eq)]
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E),
+    Continue,
+    Timeout,
+}
 impl Extension {
     #[must_use]
     pub fn new(ext: crate::Extension) -> Self {
@@ -59,28 +66,29 @@ impl Extension {
 
     /// Create a callback handler
     ///
-    /// Returns returns a tuple of (true, T) if the callback was handled
-    /// returns (false, T::Default) if the timeout is reached
+    /// Returns a testing::Result<T,E> if the callback was handled,
+    /// or returns testing::Result::Timeout if the timeout is reached
     ///
-    /// The handler must return a boolean indicating whether the callback was handled
-    /// Return true to end the callback loop
-    /// Return false to continue the callback loop
-    pub fn callback_handler<F, T>(&self, handler: F, timeout: Duration) -> (bool, T)
+    /// The handler must return an enum indicating whether the callback was handled
+    /// Return Result::Ok or Err to end the callback loop
+    /// Return Result::continue to continue the callback loop
+    pub fn callback_handler<F, T, E>(&self, handler: F, timeout: Duration) -> Result<T, E>
     where
-        F: Fn(&str, &str, Option<Value>) -> (bool, T),
-        T: Default,
+        F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
         let queue = self.callback_queue.clone();
         let start = std::time::Instant::now();
         loop {
             if let Some((name, func, data)) = queue.pop() {
-                let (success, result) = handler(&name, &func, data);
-                if success {
-                    return (true, result);
+                let option = handler(&name, &func, data);
+                match option {
+                    Result::Ok(value) => return Result::Ok(value),
+                    Result::Err(error) => return Result::Err(error),
+                    _ => (),
                 }
             }
             if start.elapsed() > timeout {
-                return (false, T::default());
+                return Result::Timeout;
             }
         }
     }
