@@ -214,7 +214,7 @@ mod tests {
             unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
         assert_eq!(output, "Welcome John");
     }
-
+    
     #[test]
     fn sleep_1sec() {
         let extension = Extension::build()
@@ -228,18 +228,19 @@ mod tests {
             )
         };
         assert_eq!(code, 0);
-        let (success, result) = extension.callback_handler(
+        let result = extension.callback_handler(
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
-                assert_eq!(data, Some(Value::String("test".to_string())));
-                let result = data.unwrap().as_str().unwrap().to_string();
-                (true, result)
+                if let Some(Value::String(s)) = data {
+                    Result::Ok(s)
+                } else {
+                    Result::Err("Data was not a string".to_string())
+                }
             },
-            Duration::from_secs(2)
-        ); 
-        assert!(success);
-        assert!(result == "test");
+            Duration::from_secs(2),
+        );
+        assert!(Result::Ok("test".to_string()) == result);
     }
 }
 ```

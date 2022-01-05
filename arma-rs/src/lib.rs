@@ -12,7 +12,7 @@ pub use arma::{FromArma, IntoArma, Value};
 mod command;
 mod context;
 mod group;
-mod testing;
+pub mod testing;
 
 pub use command::*;
 pub use context::Context;
