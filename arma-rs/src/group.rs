@@ -6,6 +6,8 @@ use crate::{
 };
 
 #[derive(Default)]
+/// A group of commands.
+/// Called from Arma using `[group]:[command]`.
 pub struct Group {
     commands: HashMap<String, Box<Handler>>,
     children: HashMap<String, Self>,

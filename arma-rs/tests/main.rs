@@ -150,7 +150,7 @@ fn invalid_arg_type_position() {
 fn output_overflow() {
     let extension = Extension::build()
         .command("hello", |ctx: Context| -> String {
-            "X".repeat(ctx.buffer_len() + 1)
+            "X".repeat((ctx.buffer_len() / 8) + 1)
         })
         .finish()
         .testing();
@@ -161,14 +161,11 @@ fn output_overflow() {
 #[test]
 fn output_overflow_with_args() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context, item: String| -> String {
-            let size = ctx.buffer_len() / 8;
-            println!("size: {}", size);
-            println!("size: {}", size * 8);
-            item.repeat(size)
+        .command("hello", |ctx: Context, item: char| -> String {
+            item.to_string().repeat((ctx.buffer_len() / 8) + 1)
         })
         .finish()
         .testing();
-    let (_, code) = unsafe { extension.call("hello", Some(vec![String::from("X")])) };
+    let (_, code) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
     assert_eq!(code, 4);
 }

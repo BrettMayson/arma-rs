@@ -1,3 +1,7 @@
+#![warn(missing_docs, nonstandard_style)]
+
+//! Library for building powerful Extensions for Arma 3 easily in Rust
+
 use std::sync::Arc;
 
 pub use arma_rs_proc::arma;
@@ -20,15 +24,19 @@ pub use group::Group;
 pub use testing::Result;
 
 #[cfg(windows)]
+/// Used by generated code to call back into Arma
 pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
     *const libc::c_char,
     *const libc::c_char,
 ) -> libc::c_int;
 #[cfg(not(windows))]
+/// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
+/// Contains all the information about your extension
+/// This is used by the generated code to interface with Arma
 pub struct Extension {
     version: String,
     group: Group,
@@ -49,6 +57,7 @@ impl Extension {
     }
 
     #[must_use]
+    /// Returns the version of the extension.
     pub fn version(&self) -> &str {
         &self.version
     }
@@ -91,7 +100,7 @@ impl Extension {
             return 1;
         };
         self.group.handle(
-            self.context().with_buffer_size(size),
+            self.context().with_buffer_size(size - 8),
             &function,
             output,
             size,
@@ -149,6 +158,7 @@ impl Extension {
     }
 }
 
+/// Used to build an extension.
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
@@ -215,6 +225,9 @@ impl ExtensionBuilder {
 ///
 /// # Safety
 /// This function is unsafe because it interacts with the C API.
+///
+/// # Note
+/// This function assumes buf_size has already been subtracted by 8 bits to allow a null value at the end.
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
@@ -223,7 +236,7 @@ pub unsafe fn write_cstr(
     let cstr = std::ffi::CString::new(string).ok()?;
     let cstr_bytes = cstr.as_bytes();
     let len_to_copy = cstr_bytes.len();
-    if len_to_copy * 8 >= buf_size - 8 {
+    if len_to_copy * 8 >= buf_size {
         return None;
     }
     ptr.copy_from(cstr.as_ptr(), len_to_copy);

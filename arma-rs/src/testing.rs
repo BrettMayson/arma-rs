@@ -12,12 +12,18 @@ pub struct Extension {
 const BUFFER_SIZE: libc::size_t = 10240;
 
 #[derive(Debug, PartialEq, Eq)]
+/// Result of an event handler
 pub enum Result<T, E> {
+    /// an event has been handled and the handler is done, the value of T is the return value of the event handler
     Ok(T),
+    /// the handler has encountered an error, the value of T is the return value of the event handler
     Err(E),
+    /// an event is handled but the handler is not done and should receive another event
     Continue,
+    /// the handler reached the specified timeout
     Timeout,
 }
+
 impl Extension {
     #[must_use]
     pub fn new(ext: crate::Extension) -> Self {
@@ -31,7 +37,7 @@ impl Extension {
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
         Context::new(self.callback_queue.clone()).with_buffer_size(
-            10240, // The sized used by Arma 3 as of 2021-12-30
+            10240 - 8, // The sized used by Arma 3 as of 2021-12-30
         )
     }
 
@@ -67,11 +73,11 @@ impl Extension {
     /// Create a callback handler
     ///
     /// Returns a Result from the handler if the callback was handled,
-    /// or Result::Timeout if either no event was recieved,or the handler
-    /// returned Result::Continue until the timeout was reached.
+    /// or `Result::Timeout` if either no event was recieved,or the handler
+    /// returned `Result::Continue` until the timeout was reached.
     ///
     /// The handler must return a Result indicating the callback was handled to exit
-    /// Result::continue will continue to provide events to the handler until another variant is returned
+    /// `Result::Continue` will continue to provide events to the handler until another variant is returned
     pub fn callback_handler<F, T, E>(&self, handler: F, timeout: Duration) -> Result<T, E>
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,

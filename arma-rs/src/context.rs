@@ -4,6 +4,7 @@ use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, Value};
 
+/// Contains information about the current execution context
 pub struct Context {
     pub(crate) queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_len: usize,
@@ -23,7 +24,7 @@ impl Context {
     }
 
     #[must_use]
-    /// Returns the length of the output buffer.
+    /// Returns the length in bits of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.
     pub const fn buffer_len(&self) -> usize {
         self.buffer_len

@@ -11,11 +11,11 @@ type HandlerFunc = Box<
     ) -> libc::c_int,
 >;
 
-pub struct Handler {
+pub(crate) struct Handler {
     pub(crate) handler: HandlerFunc,
 }
 
-pub fn fn_handler<C, I, R>(command: C) -> Handler
+pub(crate) fn fn_handler<C, I, R>(command: C) -> Handler
 where
     C: Factory<I, R> + 'static,
 {
@@ -33,7 +33,7 @@ where
     }
 }
 
-pub trait Executor: 'static {
+pub(crate) trait Executor: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
@@ -46,6 +46,10 @@ pub trait Executor: 'static {
     );
 }
 
+/// A factory for creating a command handler.
+/// Creates a handler from any function that optionally takes a context and up to 12 arguments.
+/// The arguments must implement `FromArma`
+/// The return value must implement `IntoArma`
 pub trait Factory<A, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -90,7 +94,10 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
-            if $c != 0 {
+            if $c == 0 {
+                (self)($($param::from_arma("".to_string()).unwrap(),)*);
+                0
+            } else {
                 #[allow(unused_variables, unused_mut)]
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
@@ -119,9 +126,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                 )*);
                 0
-            } else {
-                (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                0
             }
         }
     }
@@ -139,7 +143,10 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
-            if $c != 0 {
+            if $c == 0 {
+                (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
+                0
+            } else {
                 #[allow(unused_variables, unused_mut)]
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
@@ -169,9 +176,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                 )*);
                 0
-            } else {
-                (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
-                0
             }
         }
     }
@@ -190,7 +194,24 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
-            if $c != 0 {
+            if $c == 0 {
+                if crate::write_cstr(
+                    {
+                        let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
+                        if let Value::String(s) = ret.to_arma() {
+                            s
+                        } else {
+                            ret.to_arma().to_string()
+                        }
+                    },
+                    output,
+                    size
+                ).is_none() {
+                    4
+                } else {
+                    0
+                }
+            } else {
                 #[allow(unused_variables, unused_mut)]
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
@@ -233,23 +254,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 } else {
                     0
                 }
-            } else {
-                if crate::write_cstr(
-                    {
-                        let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                        if let Value::String(s) = ret.to_arma() {
-                            s
-                        } else {
-                            ret.to_arma().to_string()
-                        }
-                    },
-                    output,
-                    size
-                ).is_none() {
-                    4
-                } else {
-                    0
-                }
             }
         }
     }
@@ -268,7 +272,24 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
-            if $c != 0 {
+            if $c == 0 {
+                if crate::write_cstr(
+                    {
+                        let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
+                        if let Value::String(s) = ret.to_arma() {
+                            s
+                        } else {
+                            ret.to_arma().to_string()
+                        }
+                    },
+                    output,
+                    size
+                ).is_none() {
+                    4
+                } else {
+                    0
+                }
+            } else {
                 #[allow(unused_variables, unused_mut)]
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
@@ -298,23 +319,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                                 return format!("3{}", c).parse::<libc::c_int>().unwrap()
                             },
                         )*);
-                        if let Value::String(s) = ret.to_arma() {
-                            s
-                        } else {
-                            ret.to_arma().to_string()
-                        }
-                    },
-                    output,
-                    size
-                ).is_none() {
-                    4
-                } else {
-                    0
-                }
-            } else {
-                if crate::write_cstr(
-                    {
-                        let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
                         if let Value::String(s) = ret.to_arma() {
                             s
                         } else {

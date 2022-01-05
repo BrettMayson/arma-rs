@@ -27,7 +27,7 @@ macro_rules! impl_from_arma {
         )*
     };
 }
-impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool);
+impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char);
 
 macro_rules! impl_from_arma_tuple {
     ($($t:ident),*) => {
@@ -82,7 +82,7 @@ where
         lazy_static::lazy_static! {
             static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
         }
-        let mut ret = Vec::new();
+        let mut ret = Self::new();
         let result = RE.captures_iter(source);
         for mat in result {
             ret.push(T::from_arma(mat.get(1).unwrap().as_str().to_string())?);
@@ -92,18 +92,32 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+/// A value that can be converted to and from Arma types.
 pub enum Value {
-    Nil,
+    /// Arma's `nil` value.
+    /// Represented as `null`
+    Null,
+    /// Arma's `number` value.
     Number(f64),
+    /// Arma's `array` value.
+    /// Represented as `[...]`
     Array(Vec<Value>),
+    /// Arma's `boolean` value.
+    /// Represented as `true` or `false`
     Boolean(bool),
+    /// Arma's `string` value.
+    /// Represented as `"..."`
+    ///
+    /// Note: Arma escapes quotes with two double quotes.
+    /// This conversation will remove one step of escaping.
+    /// Example: `"My name is ""John""."` will become `My name is "John".`
     String(String),
 }
 
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Nil => write!(f, "null"),
+            Self::Null => write!(f, "null"),
             Self::Number(n) => write!(f, "{}", n),
             Self::Array(a) => write!(
                 f,
@@ -119,7 +133,9 @@ impl Display for Value {
     }
 }
 
+/// Convert a type to a value that can be sent into Arma
 pub trait IntoArma {
+    /// Convert a type to a value that can be sent into Arma
     fn to_arma(&self) -> Value;
 }
 
@@ -164,7 +180,7 @@ impl IntoArma for String {
 
 impl IntoArma for &'static str {
     fn to_arma(&self) -> Value {
-        Value::String(self.to_string())
+        Value::String((*self).to_string())
     }
 }
 
@@ -176,25 +192,25 @@ impl IntoArma for bool {
 
 impl IntoArma for i8 {
     fn to_arma(&self) -> Value {
-        Value::Number(self.to_owned() as f64)
+        Value::Number(f64::from(self.to_owned()))
     }
 }
 
 impl IntoArma for i16 {
     fn to_arma(&self) -> Value {
-        Value::Number(self.to_owned() as f64)
+        Value::Number(f64::from(self.to_owned()))
     }
 }
 
 impl IntoArma for i32 {
     fn to_arma(&self) -> Value {
-        Value::Number(*self as f64)
+        Value::Number(f64::from(*self))
     }
 }
 
 impl IntoArma for f32 {
     fn to_arma(&self) -> Value {
-        Value::Number(*self as f64)
+        Value::Number(f64::from(*self))
     }
 }
 
@@ -208,26 +224,29 @@ impl<T: IntoArma> IntoArma for Option<T> {
     fn to_arma(&self) -> Value {
         match self {
             Some(v) => v.to_arma(),
-            None => Value::Nil,
+            None => Value::Null,
         }
     }
 }
 
 impl Value {
     #[must_use]
+    /// Returns an Option representing if the value is null
     pub const fn as_null(&self) -> Option<()> {
         match self {
-            Self::Nil => Some(()),
+            Self::Null => Some(()),
             _ => None,
         }
     }
 
     #[must_use]
-    pub const fn is_nil(&self) -> bool {
+    /// Checks if the value is a null variant
+    pub const fn is_null(&self) -> bool {
         self.as_null().is_some()
     }
 
     #[must_use]
+    /// Returns an Option representing if the value is a number
     pub const fn as_f64(&self) -> Option<f64> {
         match *self {
             Self::Number(n) => Some(n),
@@ -236,11 +255,13 @@ impl Value {
     }
 
     #[must_use]
+    /// Checks if the value is a number
     pub const fn is_number(&self) -> bool {
         self.as_f64().is_some()
     }
 
     #[must_use]
+    /// Returns an Option representing if the value is an array
     pub const fn as_vec(&self) -> Option<&Vec<Self>> {
         match *self {
             Self::Array(ref vec) => Some(vec),
@@ -249,11 +270,13 @@ impl Value {
     }
 
     #[must_use]
+    /// Checks if the value is an array
     pub const fn is_array(&self) -> bool {
         self.as_vec().is_some()
     }
 
     #[must_use]
+    /// Returns an Option representing if the value is a boolean
     pub const fn as_bool(&self) -> Option<bool> {
         match *self {
             Self::Boolean(bool) => Some(bool),
@@ -262,11 +285,13 @@ impl Value {
     }
 
     #[must_use]
+    /// Checks if the value is a boolean
     pub const fn is_boolean(&self) -> bool {
         self.as_bool().is_some()
     }
 
     #[must_use]
+    /// Returns an Option representing if the value is a string
     pub fn as_str(&self) -> Option<&str> {
         match *self {
             Self::String(ref string) => Some(string),
@@ -275,14 +300,16 @@ impl Value {
     }
 
     #[must_use]
+    /// Checks if the value is a string
     pub fn is_string(&self) -> bool {
         self.as_str().is_some()
     }
 
     #[must_use]
+    /// Checks if the value is empty
     pub fn is_empty(&self) -> bool {
         match self {
-            Self::Nil => true,
+            Self::Null => true,
             Self::Number(n) => (*n as f64) == 0.0,
             Self::Array(a) => a.is_empty(),
             Self::Boolean(b) => !*b,
@@ -296,9 +323,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn is_nil() {
-        assert!(Value::Nil.is_nil());
-        assert!(!Value::Boolean(false).is_nil());
+    fn is_null() {
+        assert!(Value::Null.is_null());
+        assert!(!Value::Boolean(false).is_null());
     }
 
     #[test]
@@ -327,7 +354,7 @@ mod tests {
 
     #[test]
     fn as_nil() {
-        match Value::Nil.as_null() {
+        match Value::Null.as_null() {
             Some(_) => (),
             None => panic!("Failed to retrieve value"),
         }
@@ -355,7 +382,7 @@ mod tests {
     }
 
     #[test]
-    fn as_bool() {
+    fn as_boolean() {
         match Value::Boolean(true).as_bool() {
             Some(b) => assert!(b),
             None => panic!("Failed to retrieve value"),
@@ -389,7 +416,7 @@ mod tests {
         assert_eq!(
             (String::from("hello"), 123,),
             <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
-        )
+        );
     }
     #[test]
     fn parse_vec_tuple() {
@@ -397,6 +424,6 @@ mod tests {
             (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
             <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
                 .unwrap()
-        )
+        );
     }
 }
