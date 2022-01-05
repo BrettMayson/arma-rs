@@ -382,7 +382,7 @@ mod tests {
     }
 
     #[test]
-    fn as_boolean() {
+    fn as_boo() {
         match Value::Boolean(true).as_bool() {
             Some(b) => assert!(b),
             None => panic!("Failed to retrieve value"),
