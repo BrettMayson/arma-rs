@@ -15,7 +15,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use std::{time::Duration, thread::sleep};
+    use std::{time::Duration};
 
     use arma_rs::{Extension, Value};
 
