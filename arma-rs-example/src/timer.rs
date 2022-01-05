@@ -15,7 +15,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{testing::Result, Extension, Value};
+    use arma_rs::{Result, Extension, Value};
     use std::time::Duration;
     #[test]
     fn sleep_1sec() {
