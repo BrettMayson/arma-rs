@@ -11,7 +11,7 @@ pub struct Extension {
 
 const BUFFER_SIZE: libc::size_t = 10240;
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Result<T, E> {
     Ok(T),
     Err(E),
@@ -66,12 +66,12 @@ impl Extension {
 
     /// Create a callback handler
     ///
-    /// Returns a testing::Result<T,E> if the callback was handled,
-    /// or returns testing::Result::Timeout if the timeout is reached
+    /// Returns a Result from the handler if the callback was handled,
+    /// or Result::Timeout if either no event was recieved,or the handler 
+    /// returned Result::Continue until the timeout was reached.
     ///
-    /// The handler must return an enum indicating whether the callback was handled
-    /// Return Result::Ok or Err to end the callback loop
-    /// Return Result::continue to continue the callback loop
+    /// The handler must return a Result indicating the callback was handled to exit
+    /// Result::continue will continue to provide events to the handler until another variant is returned
     pub fn callback_handler<F, T, E>(&self, handler: F, timeout: Duration) -> Result<T, E>
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
@@ -80,10 +80,10 @@ impl Extension {
         let start = std::time::Instant::now();
         loop {
             if let Some((name, func, data)) = queue.pop() {
-                let option = handler(&name, &func, data);
-                match option {
+                match handler(&name, &func, data) {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),
+                    Result::Timeout => return Result::Timeout,
                     _ => (),
                 }
             }

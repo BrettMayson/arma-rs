@@ -214,7 +214,7 @@ mod tests {
             unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
         assert_eq!(output, "Welcome John");
     }
-    
+
     #[test]
     fn sleep_1sec() {
         let extension = Extension::build()
@@ -240,7 +240,7 @@ mod tests {
             },
             Duration::from_secs(2),
         );
-        assert!(Result::Ok("test".to_string()) == result);
+        assert_eq!(Result::Ok("test".to_string()), result);
     }
 }
 ```
