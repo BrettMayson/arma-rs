@@ -15,7 +15,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{Result, Extension, Value};
+    use arma_rs::{Extension, Result, Value};
     use std::time::Duration;
     #[test]
     fn sleep_1sec() {
@@ -42,7 +42,7 @@ mod tests {
             },
             Duration::from_secs(2),
         );
-        assert!(Result::Ok("test".to_string()) == result);
+        assert_eq!(Result::Ok("test".to_string()), result);
     }
 
     #[test]

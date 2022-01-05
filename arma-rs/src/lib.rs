@@ -14,10 +14,10 @@ mod context;
 mod group;
 mod testing;
 
-pub use testing::Result;
 pub use command::*;
 pub use context::Context;
 pub use group::Group;
+pub use testing::Result;
 
 #[cfg(windows)]
 pub type Callback = extern "stdcall" fn(
