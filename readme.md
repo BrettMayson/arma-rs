@@ -228,15 +228,18 @@ mod tests {
             )
         };
         assert_eq!(code, 0);
-        assert!(extension.callback_handler(
+        let (success, result) = extension.callback_handler(
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
-                assert_eq!(data, Some(ArmaValue::String("test".to_string())));
-                true
+                assert_eq!(data, Some(Value::String("test".to_string())));
+                let result = data.unwrap().as_str().unwrap().to_string();
+                (true, result)
             },
             Duration::from_secs(2)
-        ));
+        ); 
+        assert!(success);
+        assert!(result == "test");
     }
 }
 ```

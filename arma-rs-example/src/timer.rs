@@ -15,7 +15,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{time::Duration, thread::sleep};
 
     use arma_rs::{Extension, Value};
 
@@ -32,15 +32,17 @@ mod tests {
             )
         };
         assert_eq!(code, 0);
-        assert!(extension.callback_handler(
+        let (success, result) = extension.callback_handler(
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
                 assert_eq!(data, Some(Value::String("test".to_string())));
-                true
+                (true, data.unwrap().to_string())
             },
             Duration::from_secs(2)
-        ));
+        );
+        assert!(success);
+        assert!(result == "test");
     }
 
     #[test]
@@ -52,18 +54,47 @@ mod tests {
         let (_, code) = unsafe {
             extension.call(
                 "timer:sleep",
-                Some(vec!["1".to_string(), "test".to_string()]),
+                Some(vec!["1".to_string(), "test".to_string()]), 
             )
         };
         assert_eq!(code, 0);
-        assert!(!extension.callback_handler(
+        let (success, result) = extension.callback_handler(
             |name, func, data| {
                 assert_eq!(name, "timer:sleep");
                 assert_eq!(func, "done");
                 assert_eq!(data, Some(Value::String("test".to_string())));
-                false
+                let result = data.unwrap().as_str().unwrap().to_string();
+                (true, result)
             },
             Duration::from_secs(2)
-        ));
+        ); 
+        assert!(success);
+        assert!(result == "test");
+    }
+    #[test]
+    fn failed_callback() {
+        let extension = Extension::build()
+            .group("timer", super::group())
+            .finish()
+            .testing();
+        let (_, code) = unsafe {
+            extension.call(
+                "timer:sleep",
+                Some(vec!["600".to_string(), "test".to_string()]), // 10 minute sleep causes callback to timeout
+            )
+        };
+        assert_eq!(code, 0);
+        let (success, result) = extension.callback_handler(
+            |name, func, data| {
+                assert_eq!(name, "timer:sleep");
+                assert_eq!(func, "done");
+                assert_eq!(data, Some(Value::String("test".to_string())));
+                let result = data.unwrap().as_str().unwrap().to_string();
+                (true, result)
+            },
+            Duration::from_secs(2)
+        ); 
+        assert!(!success);
+        assert!(result == String::default());
     }
 }

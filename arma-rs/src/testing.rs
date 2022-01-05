@@ -59,26 +59,28 @@ impl Extension {
 
     /// Create a callback handler
     ///
-    /// Returns true if the callback was handled
-    /// returns false if the timeout is reached
+    /// Returns returns a tuple of (true, T) if the callback was handled
+    /// returns (false, T::Default) if the timeout is reached
     ///
     /// The handler must return a boolean indicating whether the callback was handled
     /// Return true to end the callback loop
     /// Return false to continue the callback loop
-    pub fn callback_handler<F>(&self, handler: F, timeout: Duration) -> bool
+    pub fn callback_handler<F, T>(&self, handler: F, timeout: Duration) -> (bool, T)
     where
-        F: Fn(&str, &str, Option<Value>) -> bool,
+        F: Fn(&str, &str, Option<Value>) -> (bool, T),
+        T: Default,
     {
         let queue = self.callback_queue.clone();
         let start = std::time::Instant::now();
         loop {
             if let Some((name, func, data)) = queue.pop() {
-                if handler(&name, &func, data) {
-                    return true;
+                let (success, result) = handler(&name, &func, data);
+                if success {
+                    return (true, result);
                 }
             }
             if start.elapsed() > timeout {
-                return false;
+                return (false, T::default());
             }
         }
     }
