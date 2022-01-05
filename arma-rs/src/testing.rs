@@ -67,7 +67,7 @@ impl Extension {
     /// Create a callback handler
     ///
     /// Returns a Result from the handler if the callback was handled,
-    /// or Result::Timeout if either no event was recieved,or the handler 
+    /// or Result::Timeout if either no event was recieved,or the handler
     /// returned Result::Continue until the timeout was reached.
     ///
     /// The handler must return a Result indicating the callback was handled to exit
@@ -84,7 +84,7 @@ impl Extension {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),
                     Result::Timeout => return Result::Timeout,
-                    _ => (),
+                    Result::Continue => {}
                 }
             }
             if start.elapsed() > timeout {
