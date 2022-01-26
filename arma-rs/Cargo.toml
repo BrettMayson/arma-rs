@@ -1,7 +1,7 @@
 [package]
 name = "arma-rs"
 description = "Arma 3 Extensions in Rust"
-version = "1.4.0"
+version = "1.5.0"
 edition = "2021"
 authors = ["Brett Mayson"]
 repository = "https://github.com/brettmayson/arma-rs"
@@ -10,9 +10,12 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = "1.3.0"
+arma-rs-proc = { path = "../arma-rs-proc" }
 crossbeam-queue = "0.3"
 libc = "0.2"
 log = "0.4"
 lazy_static = "1.4"
 regex = "1.5"
+
+[target.'cfg(all(target_os="windows", target_arch="x86"))'.dependencies]
+link_args = "0.6"

@@ -11,8 +11,6 @@ The best way to make Arma 3 Extensions.
 arma-rs = "1.3"
 ```
 
-If you will be targeting 32 bit Windows (i686-pc-windows-msvc) place the files from resources/ into the root of your Rust project.
-
 ### Hello World
 
 ```rust

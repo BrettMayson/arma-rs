@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro2::{Span, Ident};
 use quote::quote;
 use syn::ItemFn;
 
@@ -15,14 +16,42 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
+    #[cfg(all(target_arch="x86", target_os="windows"))]
+    let prefix = "safe32_";
+
+    #[cfg(not(all(target_os="windows", target_arch="x86")))]
+    let prefix = "";
+
+    let versionfn = Ident::new(&format!("{}RVExtensionVersion", prefix), Span::call_site());
+    let noargfn = Ident::new(&format!("{}RVExtension", prefix), Span::call_site());
+    let argfn = Ident::new(&format!("{}RVExtensionArgs", prefix), Span::call_site());
+    let callbackfn = Ident::new(&format!("{}RVExtensionRegisterCallback", prefix), Span::call_site());
+
     TokenStream::from(quote! {
 
         use arma_rs::libc as arma_rs_libc;
 
         static mut RV_EXTENSION: Option<Extension> = None;
 
+        #[cfg(all(target_os="windows", target_arch="x86"))]
+        arma_rs::link_args::windows::raw! {
+            unsafe "/EXPORT:_RVExtensionVersion@8=_safe32_RVExtensionVersion@8"
+        }
+        #[cfg(all(target_os="windows", target_arch="x86"))]
+        arma_rs::link_args::windows::raw! {
+            unsafe "/EXPORT:_RVExtension@12=_safe32_RVExtension@12"
+        }
+        #[cfg(all(target_os="windows", target_arch="x86"))]
+        arma_rs::link_args::windows::raw! {
+            unsafe "/EXPORT:_RVExtensionArgs@20=_safe32_RVExtensionArgs@20"
+        }
+        #[cfg(all(target_os="windows", target_arch="x86"))]
+        arma_rs::link_args::windows::raw! {
+            unsafe "/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4"
+        }
+
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionVersion(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t)-> arma_rs_libc::c_int {
+        pub unsafe extern #extern_type fn #versionfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t)-> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 arma_rs::write_cstr(ext.version().to_string(), output, size);
@@ -31,7 +60,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtension(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char) {
+        pub unsafe extern #extern_type fn #noargfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char) {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 if ext.allow_no_args() {
@@ -41,7 +70,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionArgs(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
+        pub unsafe extern #extern_type fn #argfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 ext.handle(function, output, size, Some(args), Some(arg_count))
@@ -51,7 +80,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn RVExtensionRegisterCallback(callback: arma_rs::Callback) {
+        pub unsafe extern #extern_type fn #callbackfn(callback: arma_rs::Callback) {
             #ext_init
             if let Some(ext) = &mut RV_EXTENSION {
                 ext.register_callback(callback);

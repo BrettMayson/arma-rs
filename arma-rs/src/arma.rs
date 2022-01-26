@@ -128,7 +128,7 @@ impl Display for Value {
                     .join(",")
             ),
             Self::Boolean(b) => write!(f, "{}", b),
-            Self::String(s) => write!(f, "\"{}\"", s.replace("\"", "\"\"")),
+            Self::String(s) => write!(f, "\"{}\"", s.replace('\"', "\"\"")),
         }
     }
 }

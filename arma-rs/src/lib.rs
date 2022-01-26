@@ -8,6 +8,9 @@ pub use arma_rs_proc::arma;
 use crossbeam_queue::SegQueue;
 pub use libc;
 
+#[cfg(all(target_os="windows", target_arch="x86"))]
+pub use link_args;
+
 #[macro_use]
 extern crate log;
 
