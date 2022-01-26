@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use proc_macro2::{Span, Ident};
+use proc_macro2::{Ident, Span};
 use quote::quote;
 use syn::ItemFn;
 
@@ -16,16 +16,19 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    #[cfg(all(target_arch="x86", target_os="windows"))]
+    #[cfg(all(target_arch = "x86", target_os = "windows"))]
     let prefix = "safe32_";
 
-    #[cfg(not(all(target_os="windows", target_arch="x86")))]
+    #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
     let prefix = "";
 
     let versionfn = Ident::new(&format!("{}RVExtensionVersion", prefix), Span::call_site());
     let noargfn = Ident::new(&format!("{}RVExtension", prefix), Span::call_site());
     let argfn = Ident::new(&format!("{}RVExtensionArgs", prefix), Span::call_site());
-    let callbackfn = Ident::new(&format!("{}RVExtensionRegisterCallback", prefix), Span::call_site());
+    let callbackfn = Ident::new(
+        &format!("{}RVExtensionRegisterCallback", prefix),
+        Span::call_site(),
+    );
 
     TokenStream::from(quote! {
 
