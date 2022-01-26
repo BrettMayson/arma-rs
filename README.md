@@ -8,7 +8,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.3"
+arma-rs = "1.5"
 ```
 
 ### Hello World
