@@ -14,8 +14,8 @@ pub use link_args;
 #[macro_use]
 extern crate log;
 
-mod arma;
-pub use arma::{FromArma, IntoArma, Value};
+mod value;
+pub use value::{FromArma, IntoArma, Value};
 mod command;
 mod context;
 mod group;

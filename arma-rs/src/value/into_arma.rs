@@ -1,137 +1,4 @@
-use std::fmt::Display;
-
-use regex::Regex;
-
-/// A trait for converting a value from Arma to a Rust value.
-pub trait FromArma: Sized {
-    /// Converts a value from Arma to a Rust value.
-    /// # Errors
-    /// Will return an error if the value cannot be converted.
-    fn from_arma(s: String) -> Result<Self, String>;
-}
-
-impl FromArma for String {
-    fn from_arma(s: String) -> Result<Self, String> {
-        Ok(s.trim_start_matches('"').trim_end_matches('"').to_string())
-    }
-}
-
-macro_rules! impl_from_arma {
-    ($($t:ty),*) => {
-        $(
-            impl FromArma for $t {
-                fn from_arma(s: String) -> Result<Self, String> {
-                    s.parse::<Self>().map_err(|e| e.to_string())
-                }
-            }
-        )*
-    };
-}
-impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char);
-
-macro_rules! impl_from_arma_tuple {
-    ($($t:ident),*) => {
-        impl<$($t),*> FromArma for ($($t),*)
-        where
-            $($t: FromArma),*
-        {
-            fn from_arma(s: String) -> Result<Self, String> {
-                let source = s
-                    .strip_prefix('[')
-                    .ok_or_else(|| String::from("missing '[' at start of vec"))?
-                    .strip_suffix(']')
-                    .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-                lazy_static::lazy_static! {
-                    static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
-                }
-                let mut iter = RE.captures_iter(source);
-                Ok((
-                    $(
-                        {
-                            let n = iter.next().unwrap().get(1).unwrap().as_str().to_string();
-                            $t::from_arma(n.trim().to_string())?
-                        }
-                    ),*
-                ))
-            }
-        }
-    };
-}
-
-// impl_from_arma_tuple!(A);
-impl_from_arma_tuple!(A, B);
-impl_from_arma_tuple!(A, B, C);
-impl_from_arma_tuple!(A, B, C, D);
-impl_from_arma_tuple!(A, B, C, D, E);
-impl_from_arma_tuple!(A, B, C, D, E, F);
-impl_from_arma_tuple!(A, B, C, D, E, F, G);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J);
-
-impl<T> FromArma for Vec<T>
-where
-    T: FromArma,
-{
-    fn from_arma(s: String) -> Result<Self, String> {
-        let source = s
-            .strip_prefix('[')
-            .ok_or_else(|| String::from("missing '[' at start of vec"))?
-            .strip_suffix(']')
-            .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-        lazy_static::lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
-        }
-        let mut ret = Self::new();
-        let result = RE.captures_iter(source);
-        for mat in result {
-            ret.push(T::from_arma(mat.get(1).unwrap().as_str().to_string())?);
-        }
-        Ok(ret)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-/// A value that can be converted to and from Arma types.
-pub enum Value {
-    /// Arma's `nil` value.
-    /// Represented as `null`
-    Null,
-    /// Arma's `number` value.
-    Number(f64),
-    /// Arma's `array` value.
-    /// Represented as `[...]`
-    Array(Vec<Value>),
-    /// Arma's `boolean` value.
-    /// Represented as `true` or `false`
-    Boolean(bool),
-    /// Arma's `string` value.
-    /// Represented as `"..."`
-    ///
-    /// Note: Arma escapes quotes with two double quotes.
-    /// This conversation will remove one step of escaping.
-    /// Example: `"My name is ""John""."` will become `My name is "John".`
-    String(String),
-}
-
-impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Null => write!(f, "null"),
-            Self::Number(n) => write!(f, "{}", n),
-            Self::Array(a) => write!(
-                f,
-                "[{}]",
-                a.iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<String>>()
-                    .join(",")
-            ),
-            Self::Boolean(b) => write!(f, "{}", b),
-            Self::String(s) => write!(f, "\"{}\"", s.replace('\"', "\"\"")),
-        }
-    }
-}
+use super::Value;
 
 /// Convert a type to a value that can be sent into Arma
 pub trait IntoArma {
@@ -217,6 +84,24 @@ impl IntoArma for f32 {
 impl IntoArma for f64 {
     fn to_arma(&self) -> Value {
         Value::Number(*self)
+    }
+}
+
+impl IntoArma for u8 {
+    fn to_arma(&self) -> Value {
+        Value::Number(f64::from(self.to_owned()))
+    }
+}
+
+impl IntoArma for u16 {
+    fn to_arma(&self) -> Value {
+        Value::Number(f64::from(self.to_owned()))
+    }
+}
+
+impl IntoArma for u32 {
+    fn to_arma(&self) -> Value {
+        Value::Number(f64::from(*self))
     }
 }
 
@@ -320,6 +205,7 @@ impl Value {
 
 #[cfg(test)]
 mod tests {
+    use super::super::FromArma;
     use super::*;
 
     #[test]
@@ -425,5 +311,12 @@ mod tests {
             <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn to_array() {
+        let array = Value::Array(vec![]);
+
+        assert_eq!(array.to_string(), r#"[]"#.to_string());
     }
 }

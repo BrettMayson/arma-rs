@@ -8,7 +8,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.5"
+arma-rs = "1.6.0"
 ```
 
 ### Hello World
@@ -242,6 +242,44 @@ mod tests {
     }
 }
 ```
+
+## Common Rust Libraries
+
+Arma-rs supports some common Rust libraries.
+You can enable their support by adding their name to the featres of arma-rs.
+
+```toml
+arma-rs = { version = "1.6.0", features = ["chrono"] }
+```
+
+### chrono
+
+[`crates.io`](https://crates.io/crates/chrono)
+
+#### chrono - Convert to Arma
+
+[`NaiveDateTime`](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveDateTime.html) and [`DateTime<TimeZone>`](https://docs.rs/chrono/latest/chrono/struct.DateTime.html) will be converted to [Arma's date array](https://community.bistudio.com/wiki/systemTimeUTC).
+The timezone will always be converted to UTC.
+
+#### chrono - Convert From Arma
+
+[Arma's date array](https://community.bistudio.com/wiki/systemTimeUTC) can be converted to `NaiveDateTime`.
+
+### uuid
+
+[`crates.io`](https://crates.io/crates/uuid)
+
+#### uuid - Convert To Arma
+
+[`Uuid`](https://docs.rs/uuid/latest/uuid/struct.Uuid.html) will be converted to a string.
+
+### serde_json
+
+[`crates.io`](https://crates.io/crates/serde_json)
+
+#### serde_json - Convert To Arma
+
+Any variant of [`serde_json::Value`](https://docs.serde.rs/serde_json/enum.Value.html) will be converted to the appropriate Arma type.
 
 ## Contributing
 
