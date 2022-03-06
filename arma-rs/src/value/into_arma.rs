@@ -315,7 +315,9 @@ mod tests {
         map.insert("key1".to_string(), "value1".to_string());
         map.insert("key2".to_string(), "value2".to_string());
         let map = map.to_arma().to_string();
-        if map != r#"[["key1","value1"],["key2","value2"]]"# && map != r#"[["key2","value2"],["key1","value1"]]"# {
+        if map != r#"[["key1","value1"],["key2","value2"]]"#
+            && map != r#"[["key2","value2"],["key1","value1"]]"#
+        {
             panic!("Failed to convert hashmap to arma");
         }
     }

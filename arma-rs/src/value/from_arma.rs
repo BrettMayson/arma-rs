@@ -101,7 +101,7 @@ where
     }
 }
 
-impl <K, V> FromArma for std::collections::HashMap<K, V>
+impl<K, V> FromArma for std::collections::HashMap<K, V>
 where
     K: FromArma + Eq + std::hash::Hash,
     V: FromArma,
