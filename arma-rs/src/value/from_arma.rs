@@ -100,3 +100,40 @@ where
             .map_err(|_| format!("expected {} elements, got {}", N, len))
     }
 }
+
+impl <K, V> FromArma for std::collections::HashMap<K, V>
+where
+    K: FromArma + Eq + std::hash::Hash,
+    V: FromArma,
+{
+    fn from_arma(s: String) -> Result<Self, String> {
+        let data: Vec<(K, V)> = FromArma::from_arma(s)?;
+        let mut ret = Self::new();
+        for (k, v) in data {
+            ret.insert(k, v);
+        }
+        Ok(ret)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_tuple() {
+        assert_eq!(
+            (String::from("hello"), 123,),
+            <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_vec_tuple() {
+        assert_eq!(
+            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
+            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
+                .unwrap()
+        );
+    }
+}

@@ -114,6 +114,15 @@ impl<T: IntoArma> IntoArma for Option<T> {
     }
 }
 
+impl<K: IntoArma, V: IntoArma> IntoArma for std::collections::HashMap<K, V> {
+    fn to_arma(&self) -> Value {
+        self.iter()
+            .map(|(k, v)| vec![k.to_arma(), v.to_arma()])
+            .collect::<Vec<Vec<Value>>>()
+            .to_arma()
+    }
+}
+
 impl Value {
     #[must_use]
     /// Returns an Option representing if the value is null
@@ -205,7 +214,8 @@ impl Value {
 
 #[cfg(test)]
 mod tests {
-    use super::super::FromArma;
+    use std::collections::HashMap;
+
     use super::*;
 
     #[test]
@@ -240,47 +250,34 @@ mod tests {
 
     #[test]
     fn as_nil() {
-        match Value::Null.as_null() {
-            Some(_) => (),
-            None => panic!("Failed to retrieve value"),
-        }
+        assert!(Value::Null.as_null().is_some())
     }
 
     #[test]
     fn as_f32() {
-        match Value::Number(54.0).as_f64() {
-            Some(f) => assert!((54.0 - f) == 0.0),
-            None => panic!("Failed to retrieve value"),
-        }
+        let v = Value::Number(54.0).as_f64().unwrap();
+        assert!((54.0 - v) == 0.0)
     }
 
     #[test]
     fn as_vec() {
-        match Value::Array(vec![Value::String("hello".into())]).as_vec() {
-            Some(v) => {
-                let first_value = v.get(0).unwrap();
-
-                assert!(first_value.is_string());
-                assert_eq!(first_value.to_string(), String::from("\"hello\""));
-            }
-            None => panic!("Failed to retrieve value"),
-        }
+        let arr = Value::Array(vec![Value::String("hello".into())]);
+        let v = arr.as_vec().unwrap();
+        let first_value = v.get(0).unwrap();
+        assert!(first_value.is_string());
+        assert_eq!(first_value.to_string(), String::from("\"hello\""));
     }
 
     #[test]
-    fn as_boo() {
-        match Value::Boolean(true).as_bool() {
-            Some(b) => assert!(b),
-            None => panic!("Failed to retrieve value"),
-        }
+    fn as_bool() {
+        assert!(Value::Boolean(true).as_bool().unwrap());
     }
 
     #[test]
     fn as_str() {
-        match Value::String(String::from("hello world")).as_str() {
-            Some(s) => assert_eq!(s, "hello world"),
-            None => panic!("Failed to retrieve value"),
-        }
+        let v = Value::String("hello world".into());
+        let s = v.as_str().unwrap();
+        assert_eq!(s, "hello world");
     }
 
     #[test]
@@ -290,6 +287,7 @@ mod tests {
         assert!(Value::Boolean(false).is_empty());
         assert!(Value::String(String::new()).is_empty());
         assert!(Value::Number(0.0).is_empty());
+        assert!(Value::Null.is_empty());
 
         assert!(!Value::String("test".into()).is_empty());
         assert!(!Value::Array(vec![Value::Boolean(false)]).is_empty());
@@ -298,25 +296,27 @@ mod tests {
     }
 
     #[test]
-    fn parse_tuple() {
-        assert_eq!(
-            (String::from("hello"), 123,),
-            <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
-        );
-    }
-    #[test]
-    fn parse_vec_tuple() {
-        assert_eq!(
-            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
-            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
-                .unwrap()
-        );
-    }
-
-    #[test]
     fn to_array() {
         let array = Value::Array(vec![]);
-
         assert_eq!(array.to_string(), r#"[]"#.to_string());
+    }
+
+    #[test]
+    fn to_hashmap_single() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), "value".to_string());
+        let map = map.to_arma();
+        assert_eq!(map.to_string(), r#"[["key","value"]]"#.to_string());
+    }
+
+    #[test]
+    fn to_hashmap_multiple() {
+        let mut map = HashMap::new();
+        map.insert("key1".to_string(), "value1".to_string());
+        map.insert("key2".to_string(), "value2".to_string());
+        let map = map.to_arma().to_string();
+        if map != r#"[["key1","value1"],["key2","value2"]]"# && map != r#"[["key2","value2"],["key1","value1"]]"# {
+            panic!("Failed to convert hashmap to arma");
+        }
     }
 }
