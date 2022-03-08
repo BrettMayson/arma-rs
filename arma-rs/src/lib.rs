@@ -4,7 +4,7 @@
 
 use std::sync::Arc;
 
-pub use arma_rs_proc::arma;
+pub use arma_rs_proc::{arma, Arma};
 use crossbeam_queue::SegQueue;
 pub use libc;
 

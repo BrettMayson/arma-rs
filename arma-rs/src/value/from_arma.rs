@@ -1,3 +1,5 @@
+use super::Value;
+
 use regex::Regex;
 
 /// A trait for converting a value from Arma to a Rust value.

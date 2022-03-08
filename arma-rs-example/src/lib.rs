@@ -1,5 +1,6 @@
 use arma_rs::{arma, Extension, Group};
 
+mod derive;
 mod system_info;
 mod timer;
 

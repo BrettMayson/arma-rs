@@ -10,7 +10,8 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = "1.5.0"
+# arma-rs-proc = "1.5.0"
+arma-rs-proc = { path = "../arma-rs-proc" }
 crossbeam-queue = "0.3"
 libc = "0.2"
 log = "0.4"
