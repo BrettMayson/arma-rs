@@ -43,6 +43,7 @@ impl Extension {
 
     #[must_use]
     /// Call a function, intended for tests
+    ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {

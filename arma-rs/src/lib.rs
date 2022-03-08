@@ -230,7 +230,7 @@ impl ExtensionBuilder {
 /// This function is unsafe because it interacts with the C API.
 ///
 /// # Note
-/// This function assumes buf_size has already been subtracted by 8 bits to allow a null value at the end.
+/// This function assumes `buf_size` has already been subtracted by 8 bits to allow a null value at the end.
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,

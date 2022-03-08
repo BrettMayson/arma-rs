@@ -18,7 +18,7 @@ impl Context {
         }
     }
 
-    pub(crate) fn with_buffer_size(mut self, buffer_len: usize) -> Self {
+    pub(crate) const fn with_buffer_size(mut self, buffer_len: usize) -> Self {
         self.buffer_len = buffer_len;
         self
     }

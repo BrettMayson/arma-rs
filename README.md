@@ -40,7 +40,7 @@ pub fn welcome(name: String) -> String {
 
 ## Command Groups
 
-The main reason behind the arma-rs rewrite, command groups! Commands can now be grouped together, making your large projects much easier to manage.
+Commands can be grouped together, making your large projects much easier to manage.
 
 ```rust
 use arma_rs::{arma, Extension, Group};
@@ -186,7 +186,7 @@ pub fn overflow(ctx: Context) -> String {
 "my_extension" callExtension ["sub", [1, 2]]; // Returns ["", 1, 0]
 "my_extension" callExtension ["add", [1, 2, 3]]; // Returns ["", 23, 0], didn't expect 3 elements
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
-"my_extension" callExtension ["overflow", []]; // Returns 4, the return size was larger than the buffer
+"my_extension" callExtension ["overflow", []]; // Returns ["", 4, 0], the return size was larger than the buffer
 ```
 
 ## Testing
@@ -245,12 +245,14 @@ mod tests {
 
 ## Common Rust Libraries
 
-Arma-rs supports some common Rust libraries.
-You can enable their support by adding their name to the featres of arma-rs.
+arma-rs supports some common Rust libraries.
+You can enable their support by adding their name to the features of arma-rs.
 
 ```toml
 arma-rs = { version = "1.6.1", features = ["chrono"] }
 ```
+
+Please create an issue first if you would like to add support for a new library.
 
 ### chrono
 
@@ -263,7 +265,7 @@ The timezone will always be converted to UTC.
 
 #### chrono - Convert From Arma
 
-[Arma's date array](https://community.bistudio.com/wiki/systemTimeUTC) can be converted to `NaiveDateTime`.
+[Arma's date array](https://community.bistudio.com/wiki/systemTimeUTC) can be converted to [`NaiveDateTime`](https://docs.rs/chrono/latest/chrono/naive/struct.NaiveDateTime.html).
 
 ### uuid
 

@@ -6,7 +6,6 @@ mod timer;
 #[arma]
 fn init() -> Extension {
     Extension::build()
-        .command("log", log)
         .group(
             "hello",
             Group::new()
@@ -24,10 +23,6 @@ fn init() -> Extension {
         .group("system", system_info::group())
         .group("timer", timer::group())
         .finish()
-}
-
-pub fn log(s: String) {
-    println!("{}", s);
 }
 
 mod hello {

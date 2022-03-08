@@ -11,11 +11,14 @@ type HandlerFunc = Box<
     ) -> libc::c_int,
 >;
 
-pub(crate) struct Handler {
-    pub(crate) handler: HandlerFunc,
+/// A wrapper for `HandlerFunc`
+pub struct Handler {
+    /// The function to call
+    pub handler: HandlerFunc,
 }
 
-pub(crate) fn fn_handler<C, I, R>(command: C) -> Handler
+/// Create a new handler from a Factory
+pub fn fn_handler<C, I, R>(command: C) -> Handler
 where
     C: Factory<I, R> + 'static,
 {
@@ -33,7 +36,8 @@ where
     }
 }
 
-pub(crate) trait Executor: 'static {
+/// Execute a command
+pub trait Executor: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(

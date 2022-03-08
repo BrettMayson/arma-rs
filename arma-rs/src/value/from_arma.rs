@@ -101,14 +101,15 @@ where
     }
 }
 
-impl<K, V> FromArma for std::collections::HashMap<K, V>
+impl<K, V, S> FromArma for std::collections::HashMap<K, V, S>
 where
     K: FromArma + Eq + std::hash::Hash,
     V: FromArma,
+    S: std::hash::BuildHasher + Default,
 {
     fn from_arma(s: String) -> Result<Self, String> {
         let data: Vec<(K, V)> = FromArma::from_arma(s)?;
-        let mut ret = Self::new();
+        let mut ret = Self::default();
         for (k, v) in data {
             ret.insert(k, v);
         }
@@ -121,10 +122,94 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_tuple() {
+    fn parse_tuple_varying_types() {
         assert_eq!(
             (String::from("hello"), 123,),
             <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
+        );
+        assert!(<(String, i32)>::from_arma(r#"["hello", 123"#.to_string()).is_err());
+        assert!(<(String, i32)>::from_arma(r#""hello", 123"#.to_string()).is_err());
+    }
+
+    #[test]
+    fn test_tuple_2() {
+        assert_eq!(
+            (0, 1),
+            <(u8, u8)>::from_arma(r#"[0, 1]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_3() {
+        assert_eq!(
+            (0, 1, 2),
+            <(u8, u8, u8)>::from_arma(r#"[0, 1, 2]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_4() {
+        assert_eq!(
+            (0, 1, 2, 3),
+            <(u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_5() {
+        assert_eq!(
+            (0, 1, 2, 3, 4),
+            <(u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_6() {
+        assert_eq!(
+            (0, 1, 2, 3, 4, 5),
+            <(u8, u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4, 5]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_7() {
+        assert_eq!(
+            (0, 1, 2, 3, 4, 5, 6),
+            <(u8, u8, u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4, 5, 6]"#.to_string())
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_8() {
+        assert_eq!(
+            (0, 1, 2, 3, 4, 5, 6, 7),
+            <(u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
+                r#"[0, 1, 2, 3, 4, 5, 6, 7]"#.to_string()
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_9() {
+        assert_eq!(
+            (0, 1, 2, 3, 4, 5, 6, 7, 8),
+            <(u8, u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
+                r#"[0, 1, 2, 3, 4, 5, 6, 7, 8]"#.to_string()
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_tuple_10() {
+        assert_eq!(
+            (0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+            <(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
+                r#"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]"#.to_string()
+            )
+            .unwrap()
         );
     }
 
@@ -134,6 +219,37 @@ mod tests {
             (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
             <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
                 .unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_vec() {
+        assert_eq!(
+            vec![String::from("hello"), String::from("bye"),],
+            <Vec<String>>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
+        );
+        assert!(<Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()).is_err());
+        assert!(<Vec<String>>::from_arma(r#"["hello","bye""#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_slice() {
+        assert_eq!(
+            vec![String::from("hello"), String::from("bye"),],
+            <[String; 2]>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
+        );
+    }
+
+    #[test]
+    fn parse_hashmap() {
+        assert_eq!(
+            std::collections::HashMap::from_iter(
+                vec![(String::from("hello"), 123), (String::from("bye"), 321),].into_iter()
+            ),
+            <std::collections::HashMap<String, i32>>::from_arma(
+                r#"[["hello", 123],["bye",321]]"#.to_string()
+            )
+            .unwrap()
         );
     }
 }
