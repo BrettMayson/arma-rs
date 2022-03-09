@@ -173,9 +173,7 @@ fn output_overflow_with_args() {
 #[test]
 fn application_error() {
     let extension = Extension::build()
-        .command("hello", || -> Result<&'static str, &'static str> {
-            Err("error")
-        })
+        .command("hello", || -> Result<&str, &str> { Err("error") })
         .finish()
         .testing();
     let (_, code) = unsafe { extension.call("hello", None) };

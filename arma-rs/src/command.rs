@@ -1,4 +1,5 @@
-use crate::value::{FromArma, IntoArma, Value};
+use crate::ext_result::IntoExtResult;
+use crate::value::{FromArma, Value};
 use crate::Context;
 
 type HandlerFunc = Box<
@@ -53,7 +54,7 @@ pub trait Executor: 'static {
 /// A factory for creating a command handler.
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`
-/// The return value must implement `IntoArma`
+/// The return value must implement `IntoExtResult`
 pub trait Factory<A, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -187,7 +188,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     // No context with input and return
     impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
-        R: IntoArma + 'static,
+        R: IntoExtResult + 'static,
         Func: Fn($($param),*) -> R,
         $($param: FromArma,)*
     {
@@ -199,19 +200,25 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
+                let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*).to_ext_result();
                 if crate::write_cstr(
                     {
-                        let ret = (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                        if let Value::String(s) = ret.to_arma() {
+                        let value = match &ret {
+                            Ok(x) => x.to_owned(),
+                            Err(x) => x.to_owned(),
+                        };
+                        if let Value::String(s) = value {
                             s
                         } else {
-                            ret.to_arma().to_string()
+                            value.to_string()
                         }
                     },
                     output,
                     size
                 ).is_none() {
                     4
+                } else if ret.is_err() {
+                    9
                 } else {
                     0
                 }
@@ -232,29 +239,35 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     argv.reverse();
                     argv
                 };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                let ret = (self)($(
+                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                        c += 1;
+                        val
+                    } else {
+                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                    },
+                )*).to_ext_result();
                 if crate::write_cstr(
                     {
-                        #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                        let mut c = 0;
-                        #[allow(unused_assignments, clippy::eval_order_dependence)]
-                        let ret = (self)($(
-                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                                c += 1;
-                                val
-                            } else {
-                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                            },
-                        )*);
-                        if let Value::String(s) = ret.to_arma() {
+                        let value = match &ret {
+                            Ok(x) => x.to_owned(),
+                            Err(x) => x.to_owned(),
+                        };
+                        if let Value::String(s) = value {
                             s
                         } else {
-                            ret.to_arma().to_string()
+                            value.to_string()
                         }
                     },
                     output,
                     size
                 ).is_none() {
                     4
+                } else if ret.is_err() {
+                    9
                 } else {
                     0
                 }
@@ -265,7 +278,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     // Context with input and return
     impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
-        R: IntoArma + 'static,
+        R: IntoExtResult + 'static,
         Func: Fn(Context, $($param),*) -> R,
         $($param: FromArma,)*
     {
@@ -277,19 +290,25 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
+                let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*).to_ext_result();
                 if crate::write_cstr(
                     {
-                        let ret = (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
-                        if let Value::String(s) = ret.to_arma() {
+                        let value = match &ret {
+                            Ok(x) => x.to_owned(),
+                            Err(x) => x.to_owned(),
+                        };
+                        if let Value::String(s) = value {
                             s
                         } else {
-                            ret.to_arma().to_string()
+                            value.to_string()
                         }
                     },
                     output,
                     size
                 ).is_none() {
                     4
+                } else if ret.is_err() {
+                    9
                 } else {
                     0
                 }
@@ -310,29 +329,35 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     argv.reverse();
                     argv
                 };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                let ret = (self)(context, $(
+                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                        c += 1;
+                        val
+                    } else {
+                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                    },
+                )*).to_ext_result();
                 if crate::write_cstr(
                     {
-                        #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                        let mut c = 0;
-                        #[allow(unused_assignments, clippy::eval_order_dependence)]
-                        let ret = (self)(context, $(
-                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                                c += 1;
-                                val
-                            } else {
-                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                            },
-                        )*);
-                        if let Value::String(s) = ret.to_arma() {
+                        let value = match &ret {
+                            Ok(x) => x.to_owned(),
+                            Err(x) => x.to_owned(),
+                        };
+                        if let Value::String(s) = value {
                             s
                         } else {
-                            ret.to_arma().to_string()
+                            value.to_string()
                         }
                     },
                     output,
                     size
                 ).is_none() {
                     4
+                } else if ret.is_err() {
+                    9
                 } else {
                     0
                 }

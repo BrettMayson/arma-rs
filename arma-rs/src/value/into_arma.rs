@@ -207,22 +207,6 @@ fn test_option() {
     assert_eq!(String::from("1"), Some(1).to_arma().to_string());
 }
 
-impl<T: IntoArma, E: IntoArma> IntoArma for Result<T, E> {
-    fn to_arma(&self) -> Value {
-        match self {
-            Err(e) => e.to_arma(),
-            Ok(v) => v.to_arma(),
-        }
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_result() {
-    assert_eq!(String::from("0"), Ok::<i32, i32>(0).to_arma().to_string());
-    assert_eq!(String::from("1"), Err::<i32, i32>(1).to_arma().to_string());
-}
-
 impl<K: IntoArma, V: IntoArma, S: std::hash::BuildHasher> IntoArma
     for std::collections::HashMap<K, V, S>
 {
