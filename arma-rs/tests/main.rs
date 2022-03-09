@@ -169,3 +169,15 @@ fn output_overflow_with_args() {
     let (_, code) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
     assert_eq!(code, 4);
 }
+
+#[test]
+fn application_error() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&'static str, &'static str> {
+            Err("error")
+        })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", None) };
+    assert_eq!(code, 9);
+}
