@@ -15,7 +15,7 @@ pub use link_args;
 extern crate log;
 
 mod ext_result;
-pub use ext_result::{ExtResult, IntoExtResult};
+pub use ext_result::IntoExtResult;
 mod value;
 pub use value::{FromArma, IntoArma, Value};
 mod command;
