@@ -1,6 +1,8 @@
 use crate::value::{IntoArma, Value};
 
+/// Convert a type to a successfully or failed extension result
 pub trait IntoExtResult {
+    /// Convert a type to a successfully or failed extension result
     fn to_ext_result(&self) -> Result<Value, Value>;
 }
 
