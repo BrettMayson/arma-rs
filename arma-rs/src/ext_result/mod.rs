@@ -16,7 +16,16 @@ where
     T: IntoArma,
 {
     fn to_ext_result(&self) -> ExtResult {
-        Ok(self.to_arma())
+        self.to_arma().to_ext_result()
+    }
+}
+
+impl IntoExtResult for Result<Value, Value> {
+    fn to_ext_result(&self) -> ExtResult {
+        match self {
+            Ok(v) => Ok(v.to_owned()),
+            Err(e) => Err(e.to_owned()),
+        }
     }
 }
 
