@@ -7,7 +7,7 @@ pub trait IntoExtResult {
 
 impl IntoExtResult for Value {
     fn to_ext_result(&self) -> ExtResult {
-        Ok(self.to_owned())
+        ExtResult::Ok(self.to_owned())
     }
 }
 
@@ -23,8 +23,8 @@ where
 impl IntoExtResult for Result<Value, Value> {
     fn to_ext_result(&self) -> ExtResult {
         match self {
-            Ok(v) => Ok(v.to_owned()),
-            Err(e) => Err(e.to_owned()),
+            Ok(v) => ExtResult::Ok(v.to_owned()),
+            Err(e) => ExtResult::Err(e.to_owned()),
         }
     }
 }
@@ -36,8 +36,92 @@ where
 {
     fn to_ext_result(&self) -> ExtResult {
         match self {
-            Ok(v) => Ok(v.to_arma()),
-            Err(e) => Err(e.to_arma()),
+            Ok(v) => ExtResult::Ok(v.to_arma()),
+            Err(e) => ExtResult::Err(e.to_arma()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn value() {
+        assert_eq!(
+            ExtResult::Ok(Value::Boolean(true)),
+            Value::Boolean(true).to_ext_result()
+        );
+    }
+
+    #[test]
+    fn option_none() {
+        assert_eq!(ExtResult::Ok(Value::Null), None::<&str>.to_ext_result());
+    }
+
+    #[test]
+    fn option_some() {
+        assert_eq!(
+            ExtResult::Ok(Value::String("Hello".into())),
+            Some("Hello".to_string()).to_ext_result()
+        );
+    }
+
+    #[test]
+    fn number() {
+        assert_eq!(ExtResult::Ok(Value::Number(42.0)), 42.0.to_ext_result());
+    }
+
+    #[test]
+    fn boolean() {
+        assert_eq!(ExtResult::Ok(Value::Boolean(true)), true.to_ext_result());
+    }
+
+    #[test]
+    fn string() {
+        assert_eq!(
+            ExtResult::Ok(Value::String("Hello".into())),
+            "Hello".to_ext_result()
+        );
+    }
+
+    #[test]
+    fn array() {
+        assert_eq!(
+            ExtResult::Ok(Value::Array(vec![Value::Number(42.0)])),
+            vec![Value::Number(42.0)].to_ext_result()
+        );
+    }
+
+    #[test]
+    fn ext_result_err() {
+        assert_eq!(
+            ExtResult::Ok(Value::Number(42.0)),
+            Ok(Value::Number(42.0)).to_ext_result()
+        );
+    }
+
+    #[test]
+    fn ext_result_ok() {
+        assert_eq!(
+            ExtResult::Err(Value::String("Hello".into())),
+            Err(Value::String("Hello".into())).to_ext_result()
+        );
+    }
+
+    #[test]
+    fn result_ok() {
+        assert_eq!(
+            ExtResult::Ok(Value::Number(42.0)),
+            Ok::<f64, &str>(42.0).to_ext_result()
+        );
+    }
+
+    #[test]
+    fn result_err() {
+        assert_eq!(
+            ExtResult::Err(Value::String("Hello".into())),
+            Err::<f64, &str>("Hello").to_ext_result()
+        );
     }
 }
