@@ -161,6 +161,7 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 |  2x  | Invalid argument count, x is received count       |
 |  3x  | Invalid argument type, x is argument position     |
 |  4   | Attempted to write a value larger than the buffer |
+|  9   | Application error, from using a Result            |
 
 ### Error Examples
 
@@ -181,6 +182,15 @@ pub fn add(a: i32, b: i32) -> i32 {
 pub fn overflow(ctx: Context) -> String {
     "X".repeat(ctx.buffer_len() + 1)
 }
+
+pub fn should_error(error: bool) -> Result<String, String> {
+  if error {
+    Err(String::from("told to error")
+  } else {
+    Ok(String::from("told to succeed")
+  }
+}
+
 ```
 
 ```sqf
@@ -189,6 +199,8 @@ pub fn overflow(ctx: Context) -> String {
 "my_extension" callExtension ["add", [1, 2, 3]]; // Returns ["", 23, 0], didn't expect 3 elements
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
 "my_extension" callExtension ["overflow", []]; // Returns ["", 4, 0], the return size was larger than the buffer
+"my_extension" callExtension ["should_error", [true]]; // Return ["told to error", 9, 0]
+"my_extension" callExtension ["should_error", [false]]; // Return ["told to succeed", 0, 0]
 ```
 
 ## Testing
