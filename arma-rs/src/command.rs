@@ -314,8 +314,7 @@ where
     if crate::write_cstr(
         {
             let value = match &ret {
-                Ok(x) => x.to_owned(),
-                Err(x) => x.to_owned(),
+                Ok(x) | Err(x) => x.clone(),
             };
             match value {
                 Value::String(s) => s,
