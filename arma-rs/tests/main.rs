@@ -105,6 +105,26 @@ fn sub_group_command_with_args() {
 }
 
 #[test]
+fn result_ok() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Ok("Hello") })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", None) };
+    assert_eq!(result, "Hello");
+}
+
+#[test]
+fn result_err() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Err("Error") })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", None) };
+    assert_eq!(result, "Error");
+}
+
+#[test]
 fn not_found() {
     let extension = Extension::build().finish().testing();
     let (_, code) = unsafe { extension.call("hello", None) };
@@ -168,4 +188,14 @@ fn output_overflow_with_args() {
         .testing();
     let (_, code) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
     assert_eq!(code, 4);
+}
+
+#[test]
+fn application_error() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Err("Error") })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", None) };
+    assert_eq!(code, 9);
 }
