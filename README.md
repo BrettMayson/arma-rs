@@ -1,8 +1,7 @@
 # arma-rs
+
 [Join the arma-rs Discord!](https://discord.gg/qXWUrrwy5d)
-
 [![codecov](https://codecov.io/gh/BrettMayson/arma-rs/branch/main/graph/badge.svg?token=A1H7SEZ434)](https://codecov.io/gh/BrettMayson/arma-rs)
-
 
 The best way to make Arma 3 Extensions.
 
@@ -10,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.6.1"
+arma-rs = "1.7.0"
 ```
 
 ### Hello World
@@ -189,8 +188,8 @@ pub fn should_error(error: bool) -> Result<String, String> {
 "my_extension" callExtension ["add", [1, 2, 3]]; // Returns ["", 23, 0], didn't expect 3 elements
 "my_extension" callExtension ["add", [1, "two"]]; // Returns ["", 31, 0], unable to parse the second argument
 "my_extension" callExtension ["overflow", []]; // Returns ["", 4, 0], the return size was larger than the buffer
-"my_extension" callExtension ["should_error", [true]]; // Return ["told to error", 9, 0]
-"my_extension" callExtension ["should_error", [false]]; // Return ["told to succeed", 0, 0]
+"my_extension" callExtension ["should_error", [true]]; // Returns ["told to error", 9, 0]
+"my_extension" callExtension ["should_error", [false]]; // Returns ["told to succeed", 0, 0]
 ```
 
 ## Testing
@@ -253,7 +252,7 @@ arma-rs supports some common Rust libraries.
 You can enable their support by adding their name to the features of arma-rs.
 
 ```toml
-arma-rs = { version = "1.6.1", features = ["chrono"] }
+arma-rs = { version = "1.7.0", features = ["chrono"] }
 ```
 
 Please create an issue first if you would like to add support for a new library.
