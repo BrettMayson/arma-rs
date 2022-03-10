@@ -69,29 +69,6 @@ mod tests {
     }
 
     #[test]
-    fn number() {
-        assert_eq!(Ok(Value::Number(42.0)), 42.0.to_ext_result());
-    }
-
-    #[test]
-    fn boolean() {
-        assert_eq!(Ok(Value::Boolean(true)), true.to_ext_result());
-    }
-
-    #[test]
-    fn string() {
-        assert_eq!(Ok(Value::String("Hello".into())), "Hello".to_ext_result());
-    }
-
-    #[test]
-    fn array() {
-        assert_eq!(
-            Ok(Value::Array(vec![Value::Number(42.0)])),
-            vec![Value::Number(42.0)].to_ext_result()
-        );
-    }
-
-    #[test]
     fn ext_result_err() {
         assert_eq!(
             Ok(Value::Number(42.0)),
