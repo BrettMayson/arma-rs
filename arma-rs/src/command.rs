@@ -311,10 +311,11 @@ where
     R: IntoExtResult + 'static,
 {
     let ret = ret.to_ext_result();
+    let ok = ret.is_ok();
     if crate::write_cstr(
         {
-            let value = match &ret {
-                Ok(x) | Err(x) => x.clone(),
+            let value = match ret {
+                Ok(x) | Err(x) => x,
             };
             match value {
                 Value::String(s) => s,
@@ -327,10 +328,10 @@ where
     .is_none()
     {
         4
-    } else if ret.is_err() {
-        9
-    } else {
+    } else if ok {
         0
+    } else {
+        9
     }
 }
 
