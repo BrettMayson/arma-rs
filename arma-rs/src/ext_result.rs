@@ -1,8 +1,8 @@
 use crate::value::{IntoArma, Value};
 
-/// Convert a type to a successfully or failed extension result
+/// Convert a type to a successful or failed extension result
 pub trait IntoExtResult {
-    /// Convert a type to a successfully or failed extension result
+    /// Convert a type to a successful or failed extension result
     fn to_ext_result(self) -> Result<Value, Value>;
 }
 
@@ -23,10 +23,7 @@ where
 
 impl IntoExtResult for Result<Value, Value> {
     fn to_ext_result(self) -> Result<Value, Value> {
-        match self {
-            Ok(v) => Ok(v),
-            Err(e) => Err(e),
-        }
+        self
     }
 }
 
