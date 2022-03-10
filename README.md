@@ -1,6 +1,8 @@
 # arma-rs
+[Join the arma-rs Discord!](https://discord.gg/qXWUrrwy5d)
 
 [![codecov](https://codecov.io/gh/BrettMayson/arma-rs/branch/main/graph/badge.svg?token=A1H7SEZ434)](https://codecov.io/gh/BrettMayson/arma-rs)
+
 
 The best way to make Arma 3 Extensions.
 
