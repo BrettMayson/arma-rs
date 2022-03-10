@@ -166,15 +166,6 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 ### Error Examples
 
 ```rust
-use arma_rs::{arma, Extension, Context};
-
-#[arma]
-fn init() -> Extension {
-    Extension::build()
-        .command("add", add)
-        .finish()
-}
-
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -190,7 +181,6 @@ pub fn should_error(error: bool) -> Result<String, String> {
     Ok(String::from("told to succeed")
   }
 }
-
 ```
 
 ```sqf
