@@ -128,13 +128,13 @@ impl Extension {
             if let Some((name, func, data)) = queue.pop() {
                 if let Some(c) = callback {
                     let name = if let Ok(cstring) = std::ffi::CString::new(name) {
-                        cstring.into_raw()
+                        cstring
                     } else {
                         error!("callback name was not valid");
                         continue;
                     };
                     let func = if let Ok(cstring) = std::ffi::CString::new(func) {
-                        cstring.into_raw()
+                        cstring
                     } else {
                         error!("callback func was not valid");
                         continue;
@@ -146,16 +146,23 @@ impl Extension {
                         },
                         None => String::new(),
                     }) {
-                        cstring.into_raw()
+                        cstring
                     } else {
                         error!("callback data was not valid");
                         continue;
                     };
+
+                    let (name, func, data) = (name.into_raw(), func.into_raw(), data.into_raw());
                     loop {
                         if c(name, func, data) >= 0 {
                             break;
                         }
                         std::thread::sleep(std::time::Duration::from_millis(1));
+                    }
+                    unsafe {
+                        drop(std::ffi::CString::from_raw(name));
+                        drop(std::ffi::CString::from_raw(func));
+                        drop(std::ffi::CString::from_raw(data));
                     }
                 }
             }
