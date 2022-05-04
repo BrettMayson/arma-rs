@@ -170,7 +170,7 @@ fn invalid_arg_type_position() {
 fn output_overflow() {
     let extension = Extension::build()
         .command("hello", |ctx: Context| -> String {
-            "X".repeat((ctx.buffer_len() / 8) + 1)
+            "X".repeat(ctx.buffer_len() + 1)
         })
         .finish()
         .testing();
@@ -182,7 +182,7 @@ fn output_overflow() {
 fn output_overflow_with_args() {
     let extension = Extension::build()
         .command("hello", |ctx: Context, item: char| -> String {
-            item.to_string().repeat((ctx.buffer_len() / 8) + 1)
+            item.to_string().repeat(ctx.buffer_len() + 1)
         })
         .finish()
         .testing();
