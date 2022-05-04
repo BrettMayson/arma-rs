@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn write_size_zero() {
         const BUF_SIZE: libc::size_t = 0;
-        let mut buf = [0i8; BUF_SIZE];
+        let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, None);
@@ -272,53 +272,50 @@ mod tests {
     #[test]
     fn write_one() {
         const BUF_SIZE: libc::size_t = 1;
-        let mut buf = [0i8; BUF_SIZE];
+        let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(BUF_SIZE - 1));
-        assert_eq!(buf, ['\0'].map(|c| c as i8));
+        assert_eq!(buf, (b"\0").map(|c| c as i8));
     }
 
     #[test]
     fn write_half() {
         const BUF_SIZE: libc::size_t = 7;
-        let mut buf = [0i8; BUF_SIZE];
+        let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("foo".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(3));
-        assert_eq!(
-            buf,
-            ['f', 'o', 'o', '\0', '\0', '\0', '\0'].map(|c| c as i8)
-        );
+        assert_eq!(buf, (b"foo\0\0\0\0").map(|c| c as i8));
     }
 
     #[test]
     fn write_full() {
         const BUF_SIZE: libc::size_t = 7;
-        let mut buf = [0i8; BUF_SIZE];
+        let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("foobar".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(6));
-        assert_eq!(buf, ['f', 'o', 'o', 'b', 'a', 'r', '\0'].map(|c| c as i8));
+        assert_eq!(buf, (b"foobar\0").map(|c| c as i8));
     }
 
     #[test]
     fn write_overflow() {
         const BUF_SIZE: libc::size_t = 4;
-        let mut buf = [0i8; BUF_SIZE];
+        let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("overflow".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, None);
-        assert_eq!(buf, ['\0', '\0', '\0', '\0'].map(|c| c as i8));
+        assert_eq!(buf, [0; BUF_SIZE]);
     }
 
     #[test]
     fn write_overwrite() {
         const BUF_SIZE: libc::size_t = 4;
-        let mut buf = ['z', 'z', 'z', '\0'].map(|c| c as i8);
+        let mut buf = (b"zzz\0").map(|c| c as i8);
         let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(1));
-        assert_eq!(buf, ['a', '\0', 'z', '\0'].map(|c| c as i8));
+        assert_eq!(buf, (b"a\0z\0").map(|c| c as i8));
     }
 }
