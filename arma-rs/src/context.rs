@@ -24,7 +24,7 @@ impl Context {
     }
 
     #[must_use]
-    /// Returns the length in bits of the output buffer.
+    /// Returns the length in bytes of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.
     pub const fn buffer_len(&self) -> usize {
         if self.buffer_size != 0 {
