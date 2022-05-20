@@ -9,7 +9,7 @@ pub struct Extension {
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
-const BUFFER_SIZE: libc::size_t = 10240;
+const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
 
 #[derive(Debug, PartialEq, Eq)]
 /// Result of an event handler
@@ -36,9 +36,7 @@ impl Extension {
     #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone()).with_buffer_size(
-            10240 - 8, // The sized used by Arma 3 as of 2021-12-30
-        )
+        Context::new(self.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
     }
 
     #[must_use]

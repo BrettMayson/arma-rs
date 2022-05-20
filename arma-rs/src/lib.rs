@@ -105,7 +105,7 @@ impl Extension {
             return 1;
         };
         self.group.handle(
-            self.context().with_buffer_size(size - 8),
+            self.context().with_buffer_size(size),
             &function,
             output,
             size,
@@ -239,19 +239,83 @@ impl ExtensionBuilder {
 /// This function is unsafe because it interacts with the C API.
 ///
 /// # Note
-/// This function assumes `buf_size` has already been subtracted by 8 bits to allow a null value at the end.
+/// This function assumes `buf_size` includes space for a single terminating zero byte at the end.
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
     buf_size: libc::size_t,
 ) -> Option<libc::size_t> {
     let cstr = std::ffi::CString::new(string).ok()?;
-    let cstr_bytes = cstr.as_bytes();
-    let len_to_copy = cstr_bytes.len();
-    if len_to_copy * 8 >= buf_size {
+    let len_to_copy = cstr.as_bytes().len();
+    if len_to_copy >= buf_size {
         return None;
     }
+
     ptr.copy_from(cstr.as_ptr(), len_to_copy);
     ptr.add(len_to_copy).write(0x00);
     Some(len_to_copy)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn write_size_zero() {
+        const BUF_SIZE: libc::size_t = 0;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn write_one() {
+        const BUF_SIZE: libc::size_t = 1;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, Some(BUF_SIZE - 1));
+        assert_eq!(buf, (b"\0").map(|c| c as i8));
+    }
+
+    #[test]
+    fn write_half() {
+        const BUF_SIZE: libc::size_t = 7;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("foo".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, Some(3));
+        assert_eq!(buf, (b"foo\0\0\0\0").map(|c| c as i8));
+    }
+
+    #[test]
+    fn write_full() {
+        const BUF_SIZE: libc::size_t = 7;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("foobar".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, Some(6));
+        assert_eq!(buf, (b"foobar\0").map(|c| c as i8));
+    }
+
+    #[test]
+    fn write_overflow() {
+        const BUF_SIZE: libc::size_t = 4;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("overflow".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, None);
+        assert_eq!(buf, [0; BUF_SIZE]);
+    }
+
+    #[test]
+    fn write_overwrite() {
+        const BUF_SIZE: libc::size_t = 4;
+        let mut buf = (b"zzz\0").map(|c| c as i8);
+        let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, Some(1));
+        assert_eq!(buf, (b"a\0z\0").map(|c| c as i8));
+    }
 }
