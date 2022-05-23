@@ -218,6 +218,15 @@ impl<K: IntoArma, V: IntoArma, S: std::hash::BuildHasher> IntoArma
     }
 }
 
+impl<K: IntoArma, S: std::hash::BuildHasher> IntoArma for std::collections::HashMap<K, Value, S> {
+    fn to_arma(&self) -> Value {
+        self.iter()
+            .map(|(k, v)| vec![k.to_arma(), v.clone()])
+            .collect::<Vec<Vec<Value>>>()
+            .to_arma()
+    }
+}
+
 #[cfg(test)]
 #[test]
 fn test_hashmap() {

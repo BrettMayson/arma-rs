@@ -95,68 +95,89 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     })
 }
 
-#[proc_macro_derive(Arma)]
+#[proc_macro_derive(IntoArma)]
 pub fn derive_into_arma(item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as syn::ItemStruct);
     let ident = &ast.ident.clone();
 
     let tokens = match &ast.fields {
         syn::Fields::Named(fields) => {
-            let count = fields.named.len();
-            let fieldidents = fields
-                .named
-                .iter()
-                .map(|f| &f.ident)
-                .collect::<Vec<_>>();
-            let fieldnames = fieldidents
+            let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
+            let field_names: Vec<_> = field_idents
                 .iter()
                 .map(|f| f.as_ref().unwrap().to_string())
-                .collect::<Vec<_>>();
-            let fieldtypes = fields.named.iter().map(|f| &f.ty).collect::<Vec<_>>();
+                .collect();
             quote! {
-                use arma_rs::{IntoArma, FromArma};
-                impl IntoArma for #ident {
-                    fn into_arma(self) -> arma_rs::Arma {
+                impl arma_rs::IntoArma for #ident {
+                    fn to_arma(&self) -> arma_rs::Value {
                         let mut map = std::collections::HashMap::new();
                         #(
-                            map.insert(#fieldnames, self.#fieldidents.into_arma());
+                            map.insert(#field_names, self.#field_idents.to_arma());
                         )*
                         map.to_arma()
                     }
                 }
             }
-        },
+        }
         syn::Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
-            let fieldindexes = (0..count).into_iter().map(syn::Index::from).collect::<Vec<_>>();
-            let fieldtypes = fields.unnamed.iter().map(|f| &f.ty).collect::<Vec<_>>();
+            let field_indexes: Vec<_> = (0..count).map(syn::Index::from).collect();
             quote! {
-                use arma_rs::{IntoArma, FromArma};
                 impl arma_rs::IntoArma for #ident {
                     fn to_arma(&self) -> arma_rs::Value {
-                        arma_rs::Value::Array(vec![
-                            #(
-                                self.#fieldindexes.to_arma(),
-                            )*
-                        ])
-                    }
-                }
-                impl arma_rs::FromArma for #ident {
-                    fn from_arma(source: String) -> Result<Self, String> { 
-                        let mut values: (#(
-                            #fieldtypes,
-                        )*) = arma_rs::FromArma::from_arma(source)?;
-                        Ok(#ident {
-                            #(
-                                #fieldindexes: values.#fieldindexes,
-                            )*
-                        })
+                        vec![#(
+                            self.#field_indexes.to_arma(),
+                        )*].to_arma()
                     }
                 }
             }
-        },
+        }
         syn::Fields::Unit => panic!("Unit structs are not supported"),
     };
-    println!("{:?}", tokens.to_string());
+    TokenStream::from(tokens)
+}
+
+#[proc_macro_derive(FromArma)]
+pub fn derive_from_arma(item: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(item as syn::ItemStruct);
+    let ident = &ast.ident.clone();
+
+    let tokens = match &ast.fields {
+        syn::Fields::Named(fields) => {
+            let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
+            let field_names: Vec<_> = field_idents
+                .iter()
+                .map(|f| f.as_ref().unwrap().to_string())
+                .collect();
+            quote! {
+                impl arma_rs::FromArma for #ident {
+                    fn from_arma(source: String) -> Result<Self, String> {
+                        let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+                        Ok(#ident {#(
+                            #field_idents: arma_rs::FromArma::from_arma(values[#field_names].clone())?,
+                        )*})
+                    }
+                }
+            }
+        }
+        syn::Fields::Unnamed(fields) => {
+            let count = fields.unnamed.len();
+            let field_indexes: Vec<_> = (0..count).map(syn::Index::from).collect();
+            let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
+            quote! {
+                impl arma_rs::FromArma for #ident {
+                    fn from_arma(source: String) -> Result<Self, String> {
+                        let values: (#(
+                            #field_types,
+                        )*) = arma_rs::FromArma::from_arma(source)?;
+                        Ok(#ident {#(
+                            #field_indexes: values.#field_indexes,
+                        )*})
+                    }
+                }
+            }
+        }
+        syn::Fields::Unit => panic!("Unit structs are not supported"),
+    };
     TokenStream::from(tokens)
 }
