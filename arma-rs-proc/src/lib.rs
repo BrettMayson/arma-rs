@@ -54,7 +54,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn #versionfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t)-> arma_rs_libc::c_int {
+        pub unsafe extern #extern_type fn #versionfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 arma_rs::write_cstr(ext.version().to_string(), output, size);

@@ -105,6 +105,26 @@ fn sub_group_command_with_args() {
 }
 
 #[test]
+fn result_ok() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Ok("Hello") })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", None) };
+    assert_eq!(result, "Hello");
+}
+
+#[test]
+fn result_err() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Err("Error") })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", None) };
+    assert_eq!(result, "Error");
+}
+
+#[test]
 fn not_found() {
     let extension = Extension::build().finish().testing();
     let (_, code) = unsafe { extension.call("hello", None) };
@@ -147,10 +167,34 @@ fn invalid_arg_type_position() {
 }
 
 #[test]
+fn filled_output() {
+    let extension = Extension::build()
+        .command("hello", |ctx: Context| -> String {
+            "X".repeat(ctx.buffer_len())
+        })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", None) };
+    assert_eq!(result.len(), extension.context().buffer_len());
+}
+
+#[test]
+fn filled_output_with_args() {
+    let extension = Extension::build()
+        .command("hello", |ctx: Context, item: String| -> String {
+            item.repeat(ctx.buffer_len())
+        })
+        .finish()
+        .testing();
+    let (result, _) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
+    assert_eq!(result.len(), extension.context().buffer_len());
+}
+
+#[test]
 fn output_overflow() {
     let extension = Extension::build()
         .command("hello", |ctx: Context| -> String {
-            "X".repeat((ctx.buffer_len() / 8) + 1)
+            "X".repeat(ctx.buffer_len() + 1)
         })
         .finish()
         .testing();
@@ -161,11 +205,31 @@ fn output_overflow() {
 #[test]
 fn output_overflow_with_args() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context, item: char| -> String {
-            item.to_string().repeat((ctx.buffer_len() / 8) + 1)
+        .command("hello", |ctx: Context, item: String| -> String {
+            item.repeat(ctx.buffer_len() + 1)
         })
         .finish()
         .testing();
     let (_, code) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
     assert_eq!(code, 4);
+}
+
+#[test]
+fn application_error_ok() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Ok("Ok") })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", None) };
+    assert_eq!(code, 0);
+}
+
+#[test]
+fn application_error_err() {
+    let extension = Extension::build()
+        .command("hello", || -> Result<&str, &str> { Err("Error") })
+        .finish()
+        .testing();
+    let (_, code) = unsafe { extension.call("hello", None) };
+    assert_eq!(code, 9);
 }
