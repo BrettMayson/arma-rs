@@ -122,14 +122,23 @@ pub fn derive_into_arma(item: TokenStream) -> TokenStream {
         syn::Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
             let field_indexes: Vec<_> = (0..count).map(syn::Index::from).collect();
-            quote! {
-                impl arma_rs::IntoArma for #ident {
-                    fn to_arma(&self) -> arma_rs::Value {
-                        vec![#(
-                            self.#field_indexes.to_arma(),
-                        )*].to_arma()
+            match count {
+                1 => quote! {
+                    impl arma_rs::IntoArma for #ident {
+                        fn to_arma(&self) -> arma_rs::Value {
+                            self.0.to_arma()
+                        }
                     }
-                }
+                },
+                _ => quote! {
+                    impl arma_rs::IntoArma for #ident {
+                        fn to_arma(&self) -> arma_rs::Value {
+                            vec![#(
+                                self.#field_indexes.to_arma(),
+                            )*].to_arma()
+                        }
+                    }
+                },
             }
         }
         syn::Fields::Unit => panic!("Unit structs are not supported"),
@@ -164,17 +173,26 @@ pub fn derive_from_arma(item: TokenStream) -> TokenStream {
             let count = fields.unnamed.len();
             let field_indexes: Vec<_> = (0..count).map(syn::Index::from).collect();
             let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
-            quote! {
-                impl arma_rs::FromArma for #ident {
-                    fn from_arma(source: String) -> Result<Self, String> {
-                        let values: (#(
-                            #field_types,
-                        )*) = arma_rs::FromArma::from_arma(source)?;
-                        Ok(#ident {#(
-                            #field_indexes: values.#field_indexes,
-                        )*})
+            match count {
+                1 => quote! {
+                    impl arma_rs::FromArma for #ident {
+                        fn from_arma(source: String) -> Result<Self, String> {
+                            Ok(#ident (<#(#field_types)*>::from_arma(source)?))
+                        }
                     }
-                }
+                },
+                _ => quote! {
+                    impl arma_rs::FromArma for #ident {
+                        fn from_arma(source: String) -> Result<Self, String> {
+                            let values: (#(
+                                #field_types,
+                            )*) = arma_rs::FromArma::from_arma(source)?;
+                            Ok(#ident {#(
+                                #field_indexes: values.#field_indexes,
+                            )*})
+                        }
+                    }
+                },
             }
         }
         syn::Fields::Unit => panic!("Unit structs are not supported"),

@@ -20,6 +20,21 @@ fn test_unnamed_struct_from() {
 }
 
 #[derive(arma_rs_proc::IntoArma, arma_rs_proc::FromArma)]
+struct MySingleStruct(i32);
+
+#[test]
+fn test_single_struct_into() {
+    let my_single_struct = MySingleStruct(42);
+    assert_eq!(my_single_struct.to_arma().to_string(), r#"42"#.to_string());
+}
+
+#[test]
+fn test_single_struct_from() {
+    let my_single_struct = MySingleStruct::from_arma(r#"42"#.to_string()).unwrap();
+    assert_eq!(my_single_struct.0, 42);
+}
+
+#[derive(arma_rs_proc::IntoArma, arma_rs_proc::FromArma)]
 struct MyNamedStruct {
     id: i32,
     message: String,
