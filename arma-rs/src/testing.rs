@@ -45,7 +45,7 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        let output = [0; BUFFER_SIZE].as_mut_ptr();
+        let mut output = [0; BUFFER_SIZE];
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
             v.into_iter()
@@ -55,13 +55,13 @@ impl Extension {
         let res = self.ext.group.handle(
             self.context(),
             function,
-            output,
+            output.as_mut_ptr(),
             BUFFER_SIZE,
             args_pointer.as_mut().map(Vec::as_mut_ptr),
             len,
         );
         (
-            std::ffi::CStr::from_ptr(output)
+            std::ffi::CStr::from_ptr(output.as_ptr())
                 .to_str()
                 .unwrap()
                 .to_string(),
