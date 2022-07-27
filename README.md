@@ -250,7 +250,7 @@ mod tests {
 
 arma-rs includes a [loadout module](https://docs.rs/arma-rs/latest/arma_rs/loadout/index.html) to assist with the handling of [Arma's Unit Loadout Array](https://community.bistudio.com/wiki/Unit_Loadout_Array).
 
-```rs
+```rust
 let l = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
 let mut loadout = Loadout::from_arma(l.to_string()).unwrap();
 loadout.set_secondary({
