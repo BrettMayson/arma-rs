@@ -3,6 +3,7 @@ use std::fmt::Display;
 mod features;
 mod from_arma;
 mod into_arma;
+pub mod loadout;
 
 pub use from_arma::FromArma;
 pub use into_arma::IntoArma;

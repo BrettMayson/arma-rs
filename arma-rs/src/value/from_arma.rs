@@ -1,4 +1,24 @@
-use regex::Regex;
+fn split_array(s: &str) -> Option<Vec<String>> {
+    let mut nest = 0;
+    let mut parts = Vec::new();
+    let mut part = String::new();
+    for c in s.chars() {
+        if c == '[' {
+            part.push(c);
+            nest += 1;
+        } else if c == ']' {
+            nest -= 1;
+            part.push(c);
+        } else if c == ',' && nest == 0 {
+            parts.push(part.trim().to_string());
+            part = String::new();
+        } else {
+            part.push(c);
+        }
+    }
+    parts.push(part.trim().to_string());
+    Some(parts)
+}
 
 /// A trait for converting a value from Arma to a Rust value.
 pub trait FromArma: Sized {
@@ -33,20 +53,20 @@ macro_rules! impl_from_arma_tuple {
         where
             $($t: FromArma),*
         {
+            #[allow(unused_assignments)]
+            #[allow(clippy::eval_order_dependence)]
             fn from_arma(s: String) -> Result<Self, String> {
                 let source = s
                     .strip_prefix('[')
                     .ok_or_else(|| String::from("missing '[' at start of vec"))?
                     .strip_suffix(']')
                     .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-                lazy_static::lazy_static! {
-                    static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
-                }
-                let mut iter = RE.captures_iter(source);
+                let parts = split_array(&source).ok_or_else(|| "Could not split array".to_string())?;
+                let mut parts_iter = parts.iter();
                 Ok((
                     $(
                         {
-                            let n = iter.next().unwrap().get(1).unwrap().as_str().to_string();
+                            let n = parts_iter.next().unwrap().to_string();
                             $t::from_arma(n.trim().to_string())?
                         }
                     ),*
@@ -77,13 +97,14 @@ where
             .ok_or_else(|| String::from("missing '[' at start of vec"))?
             .strip_suffix(']')
             .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-        lazy_static::lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?m)(\[.+?\]|[^,]+),?").unwrap();
+        let parts = split_array(source).ok_or_else(|| "Could not split array".to_string())?;
+        if parts.len() == 1 && parts[0].is_empty() {
+            return Ok(Vec::new());
         }
+        let parts_iter = parts.iter();
         let mut ret = Self::new();
-        let result = RE.captures_iter(source);
-        for mat in result {
-            ret.push(T::from_arma(mat.get(1).unwrap().as_str().to_string())?);
+        for n in parts_iter {
+            ret.push(T::from_arma(n.trim().to_string())?);
         }
         Ok(ret)
     }

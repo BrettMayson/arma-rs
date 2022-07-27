@@ -17,7 +17,7 @@ extern crate log;
 mod ext_result;
 pub use ext_result::IntoExtResult;
 mod value;
-pub use value::{FromArma, IntoArma, Value};
+pub use value::{loadout, FromArma, IntoArma, Value};
 mod command;
 mod context;
 mod group;
