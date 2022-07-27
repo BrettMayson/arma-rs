@@ -100,10 +100,10 @@ impl InventoryItem {
     }
 
     /// Set the class name of the item
-    pub fn set_class(&mut self, class: &str) {
+    pub fn set_class(&mut self, class: String) {
         match self {
-            InventoryItem::Item(c, _) => *c = class.to_string(),
-            InventoryItem::Magazine(c, _, _) => *c = class.to_string(),
+            InventoryItem::Item(c, _) => *c = class,
+            InventoryItem::Magazine(c, _, _) => *c = class,
         }
     }
 
@@ -758,7 +758,30 @@ mod tests {
             weapon
         });
         Loadout::from_arma(loadout.to_arma().to_string()).unwrap();
+    }
+
+    #[test]
+    fn marshal() {
         let loadout = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
-        Loadout::from_arma(loadout.to_string()).unwrap();
+        let mut loadout = Loadout::from_arma(loadout.to_string()).unwrap();
+        loadout.set_secondary({
+            let mut weapon = Weapon::new("launch_B_Titan_short_F".to_string());
+            weapon.set_primary_magazine(Magazine::new("Titan_AT".to_string(), 1));
+            weapon
+        });
+        loadout.set_primary({
+            let mut weapon = Weapon::new("arifle_MXC_F".to_string());
+            weapon.set_optic("optic_Holosight".to_string());
+            weapon
+        });
+        let uniform = loadout.uniform_mut();
+        uniform.set_class("U_B_CombatUniform_mcam".to_string());
+        let uniform_items = uniform.items_mut().unwrap();
+        uniform_items.push(InventoryItem::new_item("FirstAidKit".to_string(), 3));
+        uniform_items.push(InventoryItem::new_magazine(
+            "30Rnd_65x39_caseless_mag".to_string(),
+            5,
+            30,
+        ));
     }
 }

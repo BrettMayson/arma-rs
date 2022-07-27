@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.7.0"
+arma-rs = "1.7.4"
 ```
 
 ### Hello World
@@ -244,6 +244,30 @@ mod tests {
         assert_eq!(Result::Ok("test".to_string()), result);
     }
 }
+```
+
+## Unit Loadout Array
+
+arma-rs includes a [loadout module](https://docs.rs/arma-rs/latest/arma_rs/loadout/index.html) to assist with the handling of [Arma's Unit Loadout Array](https://community.bistudio.com/wiki/Unit_Loadout_Array).
+
+```rs
+let l = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
+let mut loadout = Loadout::from_arma(l.to_string()).unwrap();
+loadout.set_secondary({
+    let mut weapon = Weapon::new("launch_B_Titan_short_F".to_string());
+    weapon.set_primary_magazine(Magazine::new("Titan_AT".to_string(), 1));
+    weapon
+});
+loadout.set_primary({
+    let mut weapon = Weapon::new("arifle_MXC_F".to_string());
+    weapon.set_optic("optic_Holosight".to_string());
+    weapon
+});
+let uniform = loadout.uniform_mut();
+uniform.set_class("U_B_CombatUniform_mcam".to_string());
+let uniform_items = uniform.items_mut().unwrap();
+uniform_items.push(InventoryItem::new_item("FirstAidKit".to_string(), 3));
+uniform_items.push(InventoryItem::new_magazine("30Rnd_65x39_caseless_mag".to_string(), 5, 30));
 ```
 
 ## Common Rust Libraries
