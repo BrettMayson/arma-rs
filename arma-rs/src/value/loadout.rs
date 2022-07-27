@@ -92,10 +92,10 @@ impl InventoryItem {
     }
 
     /// The class name of the item
-    pub fn class(&self) -> Option<&str> {
+    pub fn class(&self) -> &str {
         match self {
-            InventoryItem::Item(c, _) => Some(c.as_str()),
-            InventoryItem::Magazine(c, _, _) => Some(c.as_str()),
+            InventoryItem::Item(c, _) => c.as_str(),
+            InventoryItem::Magazine(c, _, _) => c.as_str(),
         }
     }
 
@@ -108,10 +108,10 @@ impl InventoryItem {
     }
 
     /// The amount of the item
-    pub fn count(&self) -> Option<u32> {
+    pub fn count(&self) -> u32 {
         match self {
-            InventoryItem::Item(_, c) => Some(c.to_owned()),
-            InventoryItem::Magazine(_, c, _) => Some(c.to_owned()),
+            InventoryItem::Item(_, c) => c.to_owned(),
+            InventoryItem::Magazine(_, c, _) => c.to_owned(),
         }
     }
 
@@ -496,6 +496,18 @@ impl AssignedItems {
     /// Set the class name of the assigned NVG
     pub fn set_nvg(&mut self, nvg: String) {
         self.5 = nvg;
+    }
+
+    /// Get all items
+    pub fn items(&self) -> [&str; 6] {
+        [
+            self.map(),
+            self.terminal(),
+            self.radio(),
+            self.compass(),
+            self.watch(),
+            self.nvg(),
+        ]
     }
 }
 impl FromArma for AssignedItems {
