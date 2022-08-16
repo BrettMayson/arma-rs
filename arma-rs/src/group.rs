@@ -24,6 +24,7 @@ impl Group {
     }
 
     #[inline]
+    #[must_use]
     /// Add a command to the group
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
@@ -36,6 +37,7 @@ impl Group {
     }
 
     #[inline]
+    #[must_use]
     /// Add a group to the group
     pub fn group<S>(mut self, name: S, child: Self) -> Self
     where

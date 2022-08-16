@@ -121,7 +121,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 (self)($(
                     if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
                         c += 1;
@@ -170,7 +170,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 (self)(context,
                 $(
                     if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
@@ -224,7 +224,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)($(
@@ -282,7 +282,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)(context, $(
