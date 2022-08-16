@@ -107,21 +107,56 @@ fn sub_group_command_with_args() {
 #[test]
 fn result_ok() {
     let extension = Extension::build()
-        .command("hello", || -> Result<&str, &str> { Ok("Hello") })
+        .command("result", || -> Result<&str, &str> { Ok("Ok") })
         .finish()
         .testing();
-    let (result, _) = unsafe { extension.call("hello", None) };
-    assert_eq!(result, "Hello");
+    let (result, code) = unsafe { extension.call("result", None) };
+    assert_eq!(code, 0);
+    assert_eq!(result, "Ok");
 }
 
 #[test]
 fn result_err() {
     let extension = Extension::build()
-        .command("hello", || -> Result<&str, &str> { Err("Error") })
+        .command("result", || -> Result<&str, &str> { Err("Err") })
         .finish()
         .testing();
-    let (result, _) = unsafe { extension.call("hello", None) };
-    assert_eq!(result, "Error");
+    let (result, code) = unsafe { extension.call("result", None) };
+    assert_eq!(code, 9);
+    assert_eq!(result, "Err");
+}
+
+#[test]
+fn result_unit_ok() {
+    let extension = Extension::build()
+        .command("result", || -> Result<(), &str> { Ok(()) })
+        .finish()
+        .testing();
+    let (result, code) = unsafe { extension.call("result", None) };
+    assert_eq!(code, 0);
+    assert_eq!(result, "");
+}
+
+#[test]
+fn result_unit_err() {
+    let extension = Extension::build()
+        .command("result", || -> Result<&str, ()> { Err(()) })
+        .finish()
+        .testing();
+    let (result, code) = unsafe { extension.call("result", None) };
+    assert_eq!(code, 9);
+    assert_eq!(result, "");
+}
+
+#[test]
+fn result_unit_both() {
+    let extension = Extension::build()
+        .command("result", || -> Result<(), ()> { Ok(()) })
+        .finish()
+        .testing();
+    let (result, code) = unsafe { extension.call("result", None) };
+    assert_eq!(code, 0);
+    assert_eq!(result, "");
 }
 
 #[test]

@@ -266,6 +266,10 @@ pub unsafe fn write_cstr(
     ptr: *mut libc::c_char,
     buf_size: libc::size_t,
 ) -> Option<libc::size_t> {
+    if string.is_empty() {
+        return Some(0)
+    }
+
     let cstr = std::ffi::CString::new(string).ok()?;
     let len_to_copy = cstr.as_bytes().len();
     if len_to_copy >= buf_size {
@@ -282,22 +286,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn write_size_zero() {
+    fn write_size_zero_empty() {
         const BUF_SIZE: libc::size_t = 0;
         let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
-        assert_eq!(result, None);
+        assert_eq!(result, Some(0));
     }
 
     #[test]
-    fn write_one() {
+    fn write_size_one_empty() {
         const BUF_SIZE: libc::size_t = 1;
         let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
-        assert_eq!(result, Some(BUF_SIZE - 1));
+        assert_eq!(result, Some(0));
         assert_eq!(buf, (b"\0").map(|c| c as i8));
+    }
+
+    #[test]
+    fn write_empty() {
+        const BUF_SIZE: libc::size_t = 7;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, Some(0));
+        assert_eq!(buf, [0; BUF_SIZE]);
     }
 
     #[test]
@@ -322,9 +336,9 @@ mod tests {
 
     #[test]
     fn write_overflow() {
-        const BUF_SIZE: libc::size_t = 4;
+        const BUF_SIZE: libc::size_t = 7;
         let mut buf = [0; BUF_SIZE];
-        let result = unsafe { write_cstr("overflow".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+        let result = unsafe { write_cstr("foo bar".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, None);
         assert_eq!(buf, [0; BUF_SIZE]);
@@ -332,11 +346,11 @@ mod tests {
 
     #[test]
     fn write_overwrite() {
-        const BUF_SIZE: libc::size_t = 4;
-        let mut buf = (b"zzz\0").map(|c| c as i8);
+        const BUF_SIZE: libc::size_t = 7;
+        let mut buf = (b"zzzzzz\0").map(|c| c as i8);
         let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(1));
-        assert_eq!(buf, (b"a\0z\0").map(|c| c as i8));
+        assert_eq!(buf, (b"a\0zzzz\0").map(|c| c as i8));
     }
 }
