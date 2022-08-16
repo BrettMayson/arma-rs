@@ -15,6 +15,12 @@ where
     }
 }
 
+impl IntoArma for () {
+    fn to_arma(&self) -> Value {
+        Value::String(String::from(""))
+    }
+}
+
 impl IntoArma for Vec<Value> {
     fn to_arma(&self) -> Value {
         Value::Array(self.clone())
