@@ -3,12 +3,12 @@ use crate::value::{IntoArma, Value};
 /// Convert a type to a successful or failed extension result
 pub trait IntoExtResult {
     /// Convert a type to a successful or failed extension result
-    fn to_ext_result(self) -> Result<Value, Value>;
+    fn to_ext_result(&self) -> Result<Value, Value>;
 }
 
 impl IntoExtResult for Value {
-    fn to_ext_result(self) -> Result<Value, Value> {
-        Ok(self)
+    fn to_ext_result(&self) -> Result<Value, Value> {
+        Ok(self.to_owned())
     }
 }
 
@@ -16,14 +16,14 @@ impl<T> IntoExtResult for T
 where
     T: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         self.to_arma().to_ext_result()
     }
 }
 
 impl IntoExtResult for Result<Value, Value> {
-    fn to_ext_result(self) -> Result<Value, Value> {
-        self
+    fn to_ext_result(&self) -> Result<Value, Value> {
+        self.to_owned()
     }
 }
 
@@ -32,7 +32,7 @@ where
     T: IntoArma,
     E: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         match self {
             Ok(v) => Ok(v.to_arma()),
             Err(e) => Err(e.to_arma()),
@@ -44,7 +44,7 @@ impl<E> IntoExtResult for Result<(), E>
 where
     E: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         match self {
             Ok(_) => Ok(Value::String("".into())),
             Err(e) => Err(e.to_arma()),
@@ -56,7 +56,7 @@ impl<T> IntoExtResult for Result<T, ()>
 where
     T: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         match self {
             Ok(v) => Ok(v.to_arma()),
             Err(_) => Err(Value::String("".into())),
@@ -65,7 +65,7 @@ where
 }
 
 impl IntoExtResult for Result<(), ()> {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         match self {
             Ok(_) => Ok(Value::String("".into())),
             Err(_) => Err(Value::String("".into())),
