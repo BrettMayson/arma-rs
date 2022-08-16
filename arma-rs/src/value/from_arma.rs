@@ -1,4 +1,4 @@
-fn split_array(s: &str) -> Option<Vec<String>> {
+fn split_array(s: &str) -> Vec<String> {
     let mut nest = 0;
     let mut parts = Vec::new();
     let mut part = String::new();
@@ -17,7 +17,7 @@ fn split_array(s: &str) -> Option<Vec<String>> {
         }
     }
     parts.push(part.trim().to_string());
-    Some(parts)
+    parts
 }
 
 /// A trait for converting a value from Arma to a Rust value.
@@ -54,15 +54,14 @@ macro_rules! impl_from_arma_tuple {
             $($t: FromArma),*
         {
             #[allow(unused_assignments)]
-            #[allow(clippy::eval_order_dependence)]
+            #[allow(clippy::mixed_read_write_in_expression)]
             fn from_arma(s: String) -> Result<Self, String> {
                 let source = s
                     .strip_prefix('[')
                     .ok_or_else(|| String::from("missing '[' at start of vec"))?
                     .strip_suffix(']')
                     .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-                let parts = split_array(&source).ok_or_else(|| "Could not split array".to_string())?;
-                let mut parts_iter = parts.iter();
+                let mut parts_iter = split_array(&source).into_iter();
                 Ok((
                     $(
                         {
@@ -97,9 +96,9 @@ where
             .ok_or_else(|| String::from("missing '[' at start of vec"))?
             .strip_suffix(']')
             .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-        let parts = split_array(source).ok_or_else(|| "Could not split array".to_string())?;
+        let parts = split_array(source);
         if parts.len() == 1 && parts[0].is_empty() {
-            return Ok(Vec::new());
+            return Ok(Self::new());
         }
         let parts_iter = parts.iter();
         let mut ret = Self::new();

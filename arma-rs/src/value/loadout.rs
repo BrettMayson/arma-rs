@@ -2,21 +2,24 @@
 
 use crate::{FromArma, IntoArma, Value};
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// A magazine loaded into a weapon
 pub struct Magazine(Option<(String, u32)>);
 impl Magazine {
     /// Create a new magazine
-    pub fn new(class: String, count: u32) -> Self {
+    #[must_use]
+    pub const fn new(class: String, count: u32) -> Self {
         Self(Some((class, count)))
     }
 
     /// The magazine exists
-    pub fn exists(&self) -> bool {
+    #[must_use]
+    pub const fn exists(&self) -> bool {
         self.0.is_some()
     }
 
     /// Arma class name of the magazine
+    #[must_use]
     pub fn class(&self) -> Option<&str> {
         self.0.as_ref().map(|(c, _)| c.as_str())
     }
@@ -31,6 +34,7 @@ impl Magazine {
     }
 
     /// The remaining ammo in the magazine
+    #[must_use]
     pub fn ammo(&self) -> Option<u32> {
         self.0.as_ref().map(|(_, a)| a.to_owned())
     }
@@ -51,23 +55,24 @@ impl FromArma for Magazine {
         if s == "[]" {
             return Ok(Self(None));
         }
-        <(String, u32)>::from_arma(s).map(|(name, count)| Magazine(Some((name, count))))
+        <(String, u32)>::from_arma(s).map(|(name, count)| Self(Some((name, count))))
     }
 }
 impl IntoArma for Magazine {
     fn to_arma(&self) -> Value {
-        if let Some(magazine) = self.0.as_ref() {
-            Value::Array(vec![
-                Value::String(magazine.0.to_owned()),
-                Value::Number(magazine.1 as f64),
-            ])
-        } else {
-            Value::Array(vec![])
-        }
+        self.0.as_ref().map_or_else(
+            || Value::Array(vec![]),
+            |magazine| {
+                Value::Array(vec![
+                    Value::String(magazine.0.clone()),
+                    Value::Number(f64::from(magazine.1)),
+                ])
+            },
+        )
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// An item stored in a uniform, vest, or backpack
 pub enum InventoryItem {
     /// An item that is not a magazine
@@ -77,57 +82,59 @@ pub enum InventoryItem {
 }
 impl InventoryItem {
     /// Create a new item
-    pub fn new_item(class: String, count: u32) -> Self {
+    #[must_use]
+    pub const fn new_item(class: String, count: u32) -> Self {
         Self::Item(class, count)
     }
 
     /// Create a new magazine
-    pub fn new_magazine(class: String, count: u32, ammo: u32) -> Self {
+    #[must_use]
+    pub const fn new_magazine(class: String, count: u32, ammo: u32) -> Self {
         Self::Magazine(class, count, ammo)
     }
 
     /// The item is a magazine
-    pub fn is_magazine(&self) -> bool {
-        matches!(self, InventoryItem::Magazine(_, _, _))
+    #[must_use]
+    pub const fn is_magazine(&self) -> bool {
+        matches!(self, Self::Magazine(_, _, _))
     }
 
     /// The class name of the item
+    #[must_use]
     pub fn class(&self) -> &str {
         match self {
-            InventoryItem::Item(c, _) => c.as_str(),
-            InventoryItem::Magazine(c, _, _) => c.as_str(),
+            Self::Item(c, _) | Self::Magazine(c, _, _) => c.as_str(),
         }
     }
 
     /// Set the class name of the item
     pub fn set_class(&mut self, class: String) {
         match self {
-            InventoryItem::Item(c, _) => *c = class,
-            InventoryItem::Magazine(c, _, _) => *c = class,
+            Self::Item(c, _) | Self::Magazine(c, _, _) => *c = class,
         }
     }
 
     /// The amount of the item
+    #[must_use]
     pub fn count(&self) -> u32 {
         match self {
-            InventoryItem::Item(_, c) => c.to_owned(),
-            InventoryItem::Magazine(_, c, _) => c.to_owned(),
+            Self::Item(_, c) | Self::Magazine(_, c, _) => c.to_owned(),
         }
     }
 
     /// Set the amount of the item
     pub fn set_count(&mut self, count: u32) {
         match self {
-            InventoryItem::Item(_, c) => *c = count,
-            InventoryItem::Magazine(_, c, _) => *c = count,
+            Self::Item(_, c) | Self::Magazine(_, c, _) => *c = count,
         }
     }
 
     /// The amount of ammo in the magazine
+    #[must_use]
     pub fn ammo(&self) -> Option<u32> {
         match self {
-            InventoryItem::Magazine(_, _, a) => Some(a.to_owned()),
-            _ => None,
+            Self::Item(..) => None,
+            Self::Magazine(_, _, a) => Some(a.to_owned()),
         }
     }
 
@@ -135,11 +142,11 @@ impl InventoryItem {
     /// Returns true if the ammo was set, false if the item is not a magazine
     pub fn set_ammo(&mut self, ammo: u32) -> bool {
         match self {
-            InventoryItem::Magazine(_, _, a) => {
+            Self::Magazine(_, _, a) => {
                 *a = ammo;
                 true
             }
-            _ => false,
+            Self::Item(..) => false,
         }
     }
 }
@@ -147,11 +154,9 @@ impl FromArma for InventoryItem {
     fn from_arma(s: String) -> Result<Self, String> {
         let commas = s.matches(',').count();
         match commas {
-            1 => {
-                <(String, u32)>::from_arma(s).map(|(name, count)| InventoryItem::Item(name, count))
-            }
+            1 => <(String, u32)>::from_arma(s).map(|(name, count)| Self::Item(name, count)),
             2 => <(String, u32, u32)>::from_arma(s)
-                .map(|(name, count, ammo)| InventoryItem::Magazine(name, count, ammo)),
+                .map(|(name, count, ammo)| Self::Magazine(name, count, ammo)),
             _ => Err(format!("Invalid inventory item: {}", s)),
         }
     }
@@ -159,24 +164,25 @@ impl FromArma for InventoryItem {
 impl IntoArma for InventoryItem {
     fn to_arma(&self) -> Value {
         match self {
-            InventoryItem::Item(name, count) => Value::Array(vec![
-                Value::String(name.to_owned()),
-                Value::Number(*count as f64),
+            Self::Item(name, count) => Value::Array(vec![
+                Value::String(name.clone()),
+                Value::Number(f64::from(*count)),
             ]),
-            InventoryItem::Magazine(name, count, ammo) => Value::Array(vec![
-                Value::String(name.to_owned()),
-                Value::Number(*count as f64),
-                Value::Number(*ammo as f64),
+            Self::Magazine(name, count, ammo) => Value::Array(vec![
+                Value::String(name.clone()),
+                Value::Number(f64::from(*count)),
+                Value::Number(f64::from(*ammo)),
             ]),
         }
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// A primary, secondary, or handgun weapon
 pub struct Weapon(Option<(String, String, String, String, Magazine, Magazine, String)>);
 impl Weapon {
     /// Create a new weapon
+    #[must_use]
     pub fn new(class: String) -> Self {
         Self(Some((
             class,
@@ -190,11 +196,13 @@ impl Weapon {
     }
 
     /// The weapon slot is occupied
-    pub fn exists(&self) -> bool {
+    #[must_use]
+    pub const fn exists(&self) -> bool {
         self.0.is_some()
     }
 
     /// The class name of the weapon
+    #[must_use]
     pub fn class(&self) -> Option<&str> {
         self.0
             .as_ref()
@@ -219,6 +227,7 @@ impl Weapon {
     }
 
     /// The class name of the attached suppressor
+    #[must_use]
     pub fn suppressor(&self) -> Option<&str> {
         self.0
             .as_ref()
@@ -237,6 +246,7 @@ impl Weapon {
     }
 
     /// The class name of the attached pointer
+    #[must_use]
     pub fn pointer(&self) -> Option<&str> {
         self.0
             .as_ref()
@@ -255,6 +265,7 @@ impl Weapon {
     }
 
     /// The class name of the attached optic
+    #[must_use]
     pub fn optic(&self) -> Option<&str> {
         self.0
             .as_ref()
@@ -273,6 +284,7 @@ impl Weapon {
     }
 
     /// Get the inserted primary magazine
+    #[must_use]
     pub fn primary_magazine(&self) -> Option<&Magazine> {
         self.0.as_ref().map(|(_, _, _, _, primary, _, _)| primary)
     }
@@ -294,6 +306,7 @@ impl Weapon {
     }
 
     /// Get the inserted secondary magazine
+    #[must_use]
     pub fn secondary_magazine(&self) -> Option<&Magazine> {
         self.0
             .as_ref()
@@ -319,6 +332,7 @@ impl Weapon {
     }
 
     /// The class name of the attached bipod
+    #[must_use]
     pub fn bipod(&self) -> Option<&str> {
         self.0
             .as_ref()
@@ -343,7 +357,7 @@ impl FromArma for Weapon {
         }
         <(String, String, String, String, Magazine, Magazine, String)>::from_arma(s).map(
             |(weapon, suppressor, pointer, optic, primary_mag, secondary_mag, bipod)| {
-                Weapon(Some((
+                Self(Some((
                     weapon,
                     suppressor,
                     pointer,
@@ -358,37 +372,41 @@ impl FromArma for Weapon {
 }
 impl IntoArma for Weapon {
     fn to_arma(&self) -> Value {
-        if let Some(weapon) = self.0.as_ref() {
-            Value::Array(vec![
-                Value::String(weapon.0.to_owned()),
-                Value::String(weapon.1.to_owned()),
-                Value::String(weapon.2.to_owned()),
-                Value::String(weapon.3.to_owned()),
-                weapon.4.to_arma(),
-                weapon.5.to_arma(),
-                Value::String(weapon.6.to_owned()),
-            ])
-        } else {
-            Value::Array(vec![])
-        }
+        self.0.as_ref().map_or_else(
+            || Value::Array(vec![]),
+            |weaon| {
+                Value::Array(vec![
+                    Value::String(weaon.0.clone()),
+                    Value::String(weaon.1.clone()),
+                    Value::String(weaon.2.clone()),
+                    Value::String(weaon.3.clone()),
+                    weaon.4.to_arma(),
+                    weaon.5.to_arma(),
+                    Value::String(weaon.6.clone()),
+                ])
+            },
+        )
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// A uniform, vest, or backpack
 pub struct Container(Option<(String, Vec<InventoryItem>)>);
 impl Container {
     /// Create a new container
-    pub fn new(class: String) -> Self {
-        Container(Some((class, vec![])))
+    #[must_use]
+    pub const fn new(class: String) -> Self {
+        Self(Some((class, vec![])))
     }
 
     /// The container exists
-    pub fn exists(&self) -> bool {
+    #[must_use]
+    pub const fn exists(&self) -> bool {
         self.0.is_some()
     }
 
     /// The class name of the container
+    #[must_use]
     pub fn class(&self) -> Option<&str> {
         self.0.as_ref().map(|(class, _)| class.as_str())
     }
@@ -403,6 +421,7 @@ impl Container {
     }
 
     /// The items in the container
+    #[must_use]
     pub fn items(&self) -> Option<&Vec<InventoryItem>> {
         self.0.as_ref().map(|(_, items)| items)
     }
@@ -417,28 +436,29 @@ impl FromArma for Container {
         if s == "[]" {
             return Ok(Self(None));
         }
-        <(String, Vec<InventoryItem>)>::from_arma(s)
-            .map(|(name, items)| Container(Some((name, items))))
+        <(String, Vec<InventoryItem>)>::from_arma(s).map(|(name, items)| Self(Some((name, items))))
     }
 }
 impl IntoArma for Container {
     fn to_arma(&self) -> Value {
-        if let Some(container) = self.0.as_ref() {
-            Value::Array(vec![
-                Value::String(container.0.to_owned()),
-                Value::Array(container.1.iter().map(|i| i.to_arma()).collect()),
-            ])
-        } else {
-            Value::Array(vec![])
-        }
+        self.0.as_ref().map_or_else(
+            || Value::Array(vec![]),
+            |container| {
+                Value::Array(vec![
+                    Value::String(container.0.clone()),
+                    Value::Array(container.1.iter().map(IntoArma::to_arma).collect()),
+                ])
+            },
+        )
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// Assigned items in the loadout
 pub struct AssignedItems(String, String, String, String, String, String);
 impl AssignedItems {
     /// The class name of the assigned map
+    #[must_use]
     pub fn map(&self) -> &str {
         &self.0
     }
@@ -449,6 +469,7 @@ impl AssignedItems {
     }
 
     /// The class name of the assigned terminal
+    #[must_use]
     pub fn terminal(&self) -> &str {
         &self.1
     }
@@ -459,6 +480,7 @@ impl AssignedItems {
     }
 
     /// The class name of the assigned radio
+    #[must_use]
     pub fn radio(&self) -> &str {
         &self.2
     }
@@ -469,6 +491,7 @@ impl AssignedItems {
     }
 
     /// The class name of the assigned compass
+    #[must_use]
     pub fn compass(&self) -> &str {
         &self.3
     }
@@ -479,6 +502,7 @@ impl AssignedItems {
     }
 
     /// The class name of the assigned watch
+    #[must_use]
     pub fn watch(&self) -> &str {
         &self.4
     }
@@ -489,6 +513,7 @@ impl AssignedItems {
     }
 
     /// The class name of the assigned NVG
+    #[must_use]
     pub fn nvg(&self) -> &str {
         &self.5
     }
@@ -499,6 +524,7 @@ impl AssignedItems {
     }
 
     /// Get all items
+    #[must_use]
     pub fn items(&self) -> [&str; 6] {
         [
             self.map(),
@@ -513,9 +539,7 @@ impl AssignedItems {
 impl FromArma for AssignedItems {
     fn from_arma(s: String) -> Result<Self, String> {
         <(String, String, String, String, String, String)>::from_arma(s).map(
-            |(map, gps, radio, compass, watch, nvg)| {
-                AssignedItems(map, gps, radio, compass, watch, nvg)
-            },
+            |(map, gps, radio, compass, watch, nvg)| Self(map, gps, radio, compass, watch, nvg),
         )
     }
 }
@@ -532,7 +556,7 @@ impl IntoArma for AssignedItems {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// Arma Unit Loadout Array
 pub struct Loadout(
     Weapon,
@@ -548,7 +572,8 @@ pub struct Loadout(
 );
 impl Loadout {
     /// Get the primary weapon
-    pub fn primary(&self) -> &Weapon {
+    #[must_use]
+    pub const fn primary(&self) -> &Weapon {
         &self.0
     }
 
@@ -563,7 +588,8 @@ impl Loadout {
     }
 
     /// Get the secondary weapon (launcher)
-    pub fn secondary(&self) -> &Weapon {
+    #[must_use]
+    pub const fn secondary(&self) -> &Weapon {
         &self.1
     }
 
@@ -578,7 +604,8 @@ impl Loadout {
     }
 
     /// Get the handgun weapon
-    pub fn handgun(&self) -> &Weapon {
+    #[must_use]
+    pub const fn handgun(&self) -> &Weapon {
         &self.2
     }
 
@@ -593,7 +620,8 @@ impl Loadout {
     }
 
     /// Get the uniform
-    pub fn uniform(&self) -> &Container {
+    #[must_use]
+    pub const fn uniform(&self) -> &Container {
         &self.3
     }
 
@@ -608,7 +636,8 @@ impl Loadout {
     }
 
     /// Get the vest
-    pub fn vest(&self) -> &Container {
+    #[must_use]
+    pub const fn vest(&self) -> &Container {
         &self.4
     }
 
@@ -623,7 +652,8 @@ impl Loadout {
     }
 
     /// Get the backpack
-    pub fn backpack(&self) -> &Container {
+    #[must_use]
+    pub const fn backpack(&self) -> &Container {
         &self.5
     }
 
@@ -638,6 +668,7 @@ impl Loadout {
     }
 
     /// The class name of the current headgear
+    #[must_use]
     pub fn headgear(&self) -> &str {
         &self.6
     }
@@ -648,6 +679,7 @@ impl Loadout {
     }
 
     /// The class name of the current goggles / facewear
+    #[must_use]
     pub fn goggles(&self) -> &str {
         &self.7
     }
@@ -658,7 +690,8 @@ impl Loadout {
     }
 
     /// Get the binocular
-    pub fn binoculars(&self) -> &Weapon {
+    #[must_use]
+    pub const fn binoculars(&self) -> &Weapon {
         &self.8
     }
 
@@ -673,7 +706,8 @@ impl Loadout {
     }
 
     /// Get the assigned items
-    pub fn assigned_items(&self) -> &AssignedItems {
+    #[must_use]
+    pub const fn assigned_items(&self) -> &AssignedItems {
         &self.9
     }
 
@@ -714,7 +748,7 @@ impl FromArma for Loadout {
                 binoculars,
                 linked_items,
             )| {
-                Loadout(
+                Self(
                     primary,
                     secondary,
                     handgun,
