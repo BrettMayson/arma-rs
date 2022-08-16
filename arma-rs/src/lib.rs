@@ -2,63 +2,62 @@
 
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 use std::sync::Arc;
 
 pub use arma_rs_proc::arma;
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 use crossbeam_queue::SegQueue;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use libc;
 
 #[cfg(all(target_os = "windows", target_arch = "x86"))]
 pub use link_args;
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 #[macro_use]
 extern crate log;
 
 mod value;
 pub use value::{loadout, FromArma, IntoArma, Value};
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 mod ext_result;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 mod command;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use command::*;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 mod context;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use context::Context;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 mod group;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use group::Group;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 mod testing;
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub use testing::Result;
 
-
-#[cfg(all(windows, feature="extension"))]
+#[cfg(all(windows, feature = "extension"))]
 /// Used by generated code to call back into Arma
 pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
     *const libc::c_char,
     *const libc::c_char,
 ) -> libc::c_int;
-#[cfg(all(not(windows), feature="extension"))]
+#[cfg(all(not(windows), feature = "extension"))]
 /// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub struct Extension {
     version: String,
     group: Group,
@@ -67,7 +66,7 @@ pub struct Extension {
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 impl Extension {
     #[must_use]
     /// Creates a new extension.
@@ -189,14 +188,14 @@ impl Extension {
 }
 
 /// Used to build an extension.
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
     allow_no_args: bool,
 }
 
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 impl ExtensionBuilder {
     #[inline]
     #[must_use]
@@ -260,14 +259,14 @@ impl ExtensionBuilder {
 ///
 /// # Note
 /// This function assumes `buf_size` includes space for a single terminating zero byte at the end.
-#[cfg(feature="extension")]
+#[cfg(feature = "extension")]
 pub unsafe fn write_cstr(
     string: String,
     ptr: *mut libc::c_char,
     buf_size: libc::size_t,
 ) -> Option<libc::size_t> {
     if string.is_empty() {
-        return Some(0)
+        return Some(0);
     }
 
     let cstr = std::ffi::CString::new(string).ok()?;
@@ -281,7 +280,7 @@ pub unsafe fn write_cstr(
     Some(len_to_copy)
 }
 
-#[cfg(all(test, feature="extension"))]
+#[cfg(all(test, feature = "extension"))]
 mod tests {
     use super::*;
 
