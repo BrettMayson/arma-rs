@@ -66,7 +66,7 @@ mod tests {
     }
 
     #[test]
-    fn ext_result_err() {
+    fn result_ok() {
         assert_eq!(
             Ok(Value::Number(42.0)),
             Ok(Value::Number(42.0)).to_ext_result()
@@ -74,26 +74,10 @@ mod tests {
     }
 
     #[test]
-    fn ext_result_ok() {
-        assert_eq!(
-            Err(Value::String("Hello".into())),
-            Err(Value::String("Hello".into())).to_ext_result()
-        );
-    }
-
-    #[test]
-    fn result_ok() {
-        assert_eq!(
-            Ok(Value::Number(42.0)),
-            Ok::<f64, &str>(42.0).to_ext_result()
-        );
-    }
-
-    #[test]
     fn result_err() {
         assert_eq!(
             Err(Value::String("Hello".into())),
-            Err::<f64, &str>("Hello").to_ext_result()
+            Err(Value::String("Hello".into())).to_ext_result()
         );
     }
 }
