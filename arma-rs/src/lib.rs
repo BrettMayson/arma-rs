@@ -285,12 +285,33 @@ mod tests {
     use super::*;
 
     #[test]
+    fn write_size_zero() {
+        const BUF_SIZE: libc::size_t = 0;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, None);
+        assert_eq!(buf, [0; BUF_SIZE]);
+    }
+
+    #[test]
     fn write_size_zero_empty() {
         const BUF_SIZE: libc::size_t = 0;
         let mut buf = [0; BUF_SIZE];
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(0));
+        assert_eq!(buf, [0; BUF_SIZE]);
+    }
+
+    #[test]
+    fn write_size_one() {
+        const BUF_SIZE: libc::size_t = 1;
+        let mut buf = [0; BUF_SIZE];
+        let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+
+        assert_eq!(result, None);
+        assert_eq!(buf, [0; BUF_SIZE]);
     }
 
     #[test]
@@ -300,7 +321,7 @@ mod tests {
         let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(0));
-        assert_eq!(buf, (b"\0").map(|c| c as i8));
+        assert_eq!(buf, [0; BUF_SIZE]);
     }
 
     #[test]
