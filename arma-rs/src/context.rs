@@ -34,14 +34,34 @@ impl Context {
         }
     }
 
-    /// Sends a callback into Arma
+    /// Sends a callback with data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
+    #[deprecated(
+        since = "1.8.0",
+        note = "Use `callback_data` instead. This function may be removed in future versions."
+    )]
     pub fn callback<V>(&self, name: &str, func: &str, data: Option<V>)
     where
         V: IntoArma,
     {
         self.queue
-            .push((name.to_string(), func.to_string(), Some(data.into())));
+            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+    }
+
+    /// Sends a callback with data into Arma
+    /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
+    pub fn callback_data<V>(&self, name: &str, func: &str, data: V)
+    where
+        V: IntoArma,
+    {
+        self.queue
+            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+    }
+
+    /// Sends a callback without data into Arma
+    /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
+    pub fn callback_null(&self, name: &str, func: &str) {
+        self.queue.push((name.to_string(), func.to_string(), None));
     }
 }
 
