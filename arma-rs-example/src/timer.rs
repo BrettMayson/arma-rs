@@ -5,7 +5,7 @@ use arma_rs::{Context, Group};
 pub fn sleep(ctx: Context, duration: u64, id: String) {
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(duration));
-        ctx.callback("timer:sleep", "done", Some(id));
+        ctx.callback_data("timer:sleep", "done", Some(id));
     });
 }
 
