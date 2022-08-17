@@ -86,10 +86,7 @@ fn c_interface_full() {
             None,
         );
         let cstring = std::ffi::CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(
-            cstring,
-            Ok("Hello")
-        );
+        assert_eq!(cstring, Ok("Hello"));
     }
     unsafe {
         let mut output = [0i8; 1024];
@@ -101,11 +98,11 @@ fn c_interface_full() {
             Some(1),
         );
         let cstring = std::ffi::CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(
-            cstring,
-            Ok("Welcome John")
-        );
+        assert_eq!(cstring, Ok("Welcome John"));
     }
     std::thread::sleep(std::time::Duration::from_millis(50));
-    assert_eq!(stack.read().unwrap().get("c_interface_full").unwrap().len(), 1);
+    assert_eq!(
+        stack.read().unwrap().get("c_interface_full").unwrap().len(),
+        1
+    );
 }
