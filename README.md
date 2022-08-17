@@ -109,7 +109,7 @@ use arma_rs::Context;
 pub fn sleep(ctx: Context, duration: u64, id: String) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(duration));
-        ctx.callback("example_timer", "done", Some(id));
+        ctx.callback_data("example_timer", "done", Some(id));
     });
 }
 

@@ -96,7 +96,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -145,7 +144,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -196,7 +194,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -254,7 +251,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {

@@ -249,3 +249,205 @@ fn c_interface_invalid_calls() {
         2
     );
 }
+
+#[test]
+fn c_interface_errors() {
+    let extension = Extension::build()
+        .command("add_no_context", |a: i32, b: i32| {
+            let _ = a + b;
+        })
+        .command("add_no_context_return", |a: i32, b: i32| a + b)
+        .command("add_context", |_ctx: Context, a: i32, b: i32| {
+            let _ = a + b;
+        })
+        .command("add_context_return", |_ctx: Context, a: i32, b: i32| a + b)
+        .command("overflow", |ctx: Context| "X".repeat(ctx.buffer_len() + 1))
+        .command("result", |error: bool| -> Result<String, String> {
+            if error {
+                Err(String::from("told to error"))
+            } else {
+                Ok(String::from("told to succeed"))
+            }
+        })
+        .finish();
+
+    // Valid
+    unsafe {
+        for (func, result) in [
+            ("add_no_context", ""),
+            ("add_no_context_return", "3"),
+            ("add_context", ""),
+            ("add_context_return", "3"),
+        ] {
+            let mut output = [0i8; 1024];
+            let code = extension.handle(
+                CString::new(func).unwrap().into_raw(),
+                output.as_mut_ptr(),
+                1024,
+                Some(
+                    vec![
+                        CString::new("1").unwrap().into_raw(),
+                        CString::new("2").unwrap().into_raw(),
+                    ]
+                    .as_mut_ptr(),
+                ),
+                Some(2),
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok(result));
+            assert_eq!(code, 0);
+        }
+    }
+
+    // Invalid too many arguments
+    unsafe {
+        for func in [
+            "add_no_context",
+            "add_no_context_return",
+            "add_context",
+            "add_context_return",
+        ] {
+            let mut output = [0i8; 1024];
+            let code = extension.handle(
+                CString::new(func).unwrap().into_raw(),
+                output.as_mut_ptr(),
+                1024,
+                Some(
+                    vec![
+                        CString::new("1").unwrap().into_raw(),
+                        CString::new("2").unwrap().into_raw(),
+                        CString::new("3").unwrap().into_raw(),
+                    ]
+                    .as_mut_ptr(),
+                ),
+                Some(3),
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok(""));
+            assert_eq!(code, 23);
+        }
+    }
+
+    // Invalid too few arguments
+    unsafe {
+        for func in [
+            "add_no_context",
+            "add_no_context_return",
+            "add_context",
+            "add_context_return",
+        ] {
+            let mut output = [0i8; 1024];
+            let code = extension.handle(
+                CString::new(func).unwrap().into_raw(),
+                output.as_mut_ptr(),
+                1024,
+                Some(vec![CString::new("1").unwrap().into_raw()].as_mut_ptr()),
+                Some(1),
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok(""));
+            assert_eq!(code, 21);
+        }
+    }
+
+    // Valid type conversion
+    unsafe {
+        for (func, result) in [
+            ("add_no_context", ""),
+            ("add_no_context_return", "3"),
+            ("add_context", ""),
+            ("add_context_return", "3"),
+        ] {
+            let mut output = [0i8; 1024];
+            let code = extension.handle(
+                CString::new(func).unwrap().into_raw(),
+                output.as_mut_ptr(),
+                1024,
+                Some(
+                    vec![
+                        CString::new("1").unwrap().into_raw(),
+                        CString::new("\"2\"").unwrap().into_raw(),
+                    ]
+                    .as_mut_ptr(),
+                ),
+                Some(2),
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok(result));
+            assert_eq!(code, 0);
+        }
+    }
+
+    // Invalid type
+    unsafe {
+        for func in [
+            "add_no_context",
+            "add_no_context_return",
+            "add_context",
+            "add_context_return",
+        ] {
+            let mut output = [0i8; 1024];
+            let code = extension.handle(
+                CString::new(func).unwrap().into_raw(),
+                output.as_mut_ptr(),
+                1024,
+                Some(
+                    vec![
+                        CString::new("1").unwrap().into_raw(),
+                        CString::new("\"two\"").unwrap().into_raw(),
+                    ]
+                    .as_mut_ptr(),
+                ),
+                Some(2),
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok(""));
+            assert_eq!(code, 31);
+        }
+    }
+
+    // Overflow
+    unsafe {
+        let mut output = [0i8; 1024];
+        let code = extension.handle(
+            CString::new("overflow").unwrap().into_raw(),
+            output.as_mut_ptr(),
+            1024,
+            None,
+            None,
+        );
+        let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+        assert_eq!(cstring, Ok(""));
+        assert_eq!(code, 4);
+    }
+
+    // Result - true
+    unsafe {
+        let mut output = [0i8; 1024];
+        let code = extension.handle(
+            CString::new("result").unwrap().into_raw(),
+            output.as_mut_ptr(),
+            1024,
+            Some(vec![CString::new("true").unwrap().into_raw()].as_mut_ptr()),
+            Some(1),
+        );
+        let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+        assert_eq!(cstring, Ok("told to error"));
+        assert_eq!(code, 9);
+    }
+
+    // Result - false
+    unsafe {
+        let mut output = [0i8; 1024];
+        let code = extension.handle(
+            CString::new("result").unwrap().into_raw(),
+            output.as_mut_ptr(),
+            1024,
+            Some(vec![CString::new("false").unwrap().into_raw()].as_mut_ptr()),
+            Some(1),
+        );
+        let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+        assert_eq!(cstring, Ok("told to succeed"));
+        assert_eq!(code, 0);
+    }
+}
