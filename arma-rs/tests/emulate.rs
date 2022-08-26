@@ -173,7 +173,7 @@ fn c_interface_invalid_calls() {
             None,
         );
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(cstring, Ok(""));
+        assert_eq!(cstring, Ok("null"));
         assert_eq!(code, 0);
     }
 
@@ -188,7 +188,7 @@ fn c_interface_invalid_calls() {
             None,
         );
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(cstring, Ok(""));
+        assert_eq!(cstring, Ok("null"));
         assert_eq!(code, 0);
     }
 
@@ -203,7 +203,7 @@ fn c_interface_invalid_calls() {
             None,
         );
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(cstring, Ok(""));
+        assert_eq!(cstring, Ok("null"));
         assert_eq!(code, 0);
     }
 
@@ -218,7 +218,7 @@ fn c_interface_invalid_calls() {
             None,
         );
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(cstring, Ok(""));
+        assert_eq!(cstring, Ok("null"));
         assert_eq!(code, 0);
     }
 
@@ -233,7 +233,7 @@ fn c_interface_invalid_calls() {
             None,
         );
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-        assert_eq!(cstring, Ok(""));
+        assert_eq!(cstring, Ok("null"));
         assert_eq!(code, 0);
     }
 
@@ -274,9 +274,9 @@ fn c_interface_errors() {
     // Valid
     unsafe {
         for (func, result) in [
-            ("add_no_context", ""),
+            ("add_no_context", "null"),
             ("add_no_context_return", "3"),
-            ("add_context", ""),
+            ("add_context", "null"),
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
@@ -353,9 +353,9 @@ fn c_interface_errors() {
     // Valid type conversion
     unsafe {
         for (func, result) in [
-            ("add_no_context", ""),
+            ("add_no_context", "null"),
             ("add_no_context_return", "3"),
-            ("add_context", ""),
+            ("add_context", "null"),
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
