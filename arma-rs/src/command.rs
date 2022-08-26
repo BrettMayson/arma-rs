@@ -86,7 +86,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // No context both return and no return (commands automatically return Value::Null)
+    // No context
     impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -143,7 +143,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // Context both return and no return (commands automatically return Value::Null)
+    // Context
     impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -247,3 +247,17 @@ factory_tuple! { 9, A B C D E F G H I }
 factory_tuple! { 10, A B C D E F G H I J }
 factory_tuple! { 11, A B C D E F G H I J K }
 factory_tuple! { 12, A B C D E F G H I J K L }
+factory_tuple! { 13, A B C D E F G H I J K L M }
+factory_tuple! { 14, A B C D E F G H I J K L M N }
+factory_tuple! { 15, A B C D E F G H I J K L M N O }
+factory_tuple! { 16, A B C D E F G H I J K L M N O P }
+factory_tuple! { 17, A B C D E F G H I J K L M N O P Q }
+factory_tuple! { 18, A B C D E F G H I J K L M N O P Q R }
+factory_tuple! { 19, A B C D E F G H I J K L M N O P Q R S }
+factory_tuple! { 20, A B C D E F G H I J K L M N O P Q R S T }
+factory_tuple! { 21, A B C D E F G H I J K L M N O P Q R S T U }
+factory_tuple! { 22, A B C D E F G H I J K L M N O P Q R S T U V }
+factory_tuple! { 23, A B C D E F G H I J K L M N O P Q R S T U V W }
+factory_tuple! { 24, A B C D E F G H I J K L M N O P Q R S T U V W X }
+factory_tuple! { 25, A B C D E F G H I J K L M N O P Q R S T U V W X Y }
+factory_tuple! { 26, A B C D E F G H I J K L M N O P Q R S T U V W X Y Z }
