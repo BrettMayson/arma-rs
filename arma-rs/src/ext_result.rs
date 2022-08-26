@@ -40,39 +40,6 @@ where
     }
 }
 
-impl<E> IntoExtResult for Result<(), E>
-where
-    E: IntoArma,
-{
-    fn to_ext_result(&self) -> Result<Value, Value> {
-        match self {
-            Ok(_) => Ok(Value::String("".into())),
-            Err(e) => Err(e.to_arma()),
-        }
-    }
-}
-
-impl<T> IntoExtResult for Result<T, ()>
-where
-    T: IntoArma,
-{
-    fn to_ext_result(&self) -> Result<Value, Value> {
-        match self {
-            Ok(v) => Ok(v.to_arma()),
-            Err(_) => Err(Value::String("".into())),
-        }
-    }
-}
-
-impl IntoExtResult for Result<(), ()> {
-    fn to_ext_result(&self) -> Result<Value, Value> {
-        match self {
-            Ok(_) => Ok(Value::String("".into())),
-            Err(_) => Err(Value::String("".into())),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -116,25 +83,16 @@ mod tests {
 
     #[test]
     fn result_unit_ok() {
-        assert_eq!(
-            Ok(Value::String("".into())),
-            Ok::<(), String>(()).to_ext_result()
-        );
+        assert_eq!(Ok(Value::Null), Ok::<(), String>(()).to_ext_result());
     }
 
     #[test]
     fn result_unit_err() {
-        assert_eq!(
-            Err(Value::String("".into())),
-            Err::<String, ()>(()).to_ext_result()
-        );
+        assert_eq!(Err(Value::Null), Err::<String, ()>(()).to_ext_result());
     }
 
     #[test]
     fn result_unit_both() {
-        assert_eq!(
-            Ok(Value::String("".into())),
-            Ok::<(), ()>(()).to_ext_result()
-        );
+        assert_eq!(Ok(Value::Null), Ok::<(), ()>(()).to_ext_result());
     }
 }

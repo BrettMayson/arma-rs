@@ -27,7 +27,7 @@ fn root_command_no_return() {
     let extension = Extension::build().command("nop", || {}).finish().testing();
     let (result, code) = unsafe { extension.call("nop", None) };
     assert_eq!(code, 0);
-    assert_eq!(result, "");
+    assert_eq!(result, "null");
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn root_command_with_args_no_return() {
         .testing();
     let (result, code) = unsafe { extension.call("nop", Some(vec![String::from("4")])) };
     assert_eq!(code, 0);
-    assert_eq!(result, "");
+    assert_eq!(result, "null");
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn result_unit_ok() {
         .testing();
     let (result, code) = unsafe { extension.call("result", None) };
     assert_eq!(code, 0);
-    assert_eq!(result, "");
+    assert_eq!(result, "null");
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn result_unit_err() {
         .testing();
     let (result, code) = unsafe { extension.call("result", None) };
     assert_eq!(code, 9);
-    assert_eq!(result, "");
+    assert_eq!(result, "null");
 }
 
 #[test]
@@ -156,14 +156,15 @@ fn result_unit_both() {
         .testing();
     let (result, code) = unsafe { extension.call("result", None) };
     assert_eq!(code, 0);
-    assert_eq!(result, "");
+    assert_eq!(result, "null");
 }
 
 #[test]
 fn not_found() {
     let extension = Extension::build().finish().testing();
-    let (_, code) = unsafe { extension.call("hello", None) };
+    let (result, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 1);
+    assert_eq!(result, "");
 }
 
 #[test]
@@ -172,8 +173,9 @@ fn invalid_arg_count() {
         .command("hello", || -> &'static str { "Hello" })
         .finish()
         .testing();
-    let (_, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
+    let (result, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
     assert_eq!(code, 21);
+    assert_eq!(result, "");
 }
 
 #[test]
@@ -182,8 +184,9 @@ fn invalid_arg_type() {
         .command("hello", |_: i32| -> &'static str { "Hello" })
         .finish()
         .testing();
-    let (_, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
+    let (result, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
     assert_eq!(code, 30);
+    assert_eq!(result, "");
 }
 
 #[test]
@@ -192,13 +195,14 @@ fn invalid_arg_type_position() {
         .command("hello", |_: String, _: i32| -> &'static str { "Hello" })
         .finish()
         .testing();
-    let (_, code) = unsafe {
+    let (result, code) = unsafe {
         extension.call(
             "hello",
             Some(vec![String::from("John"), String::from("John")]),
         )
     };
     assert_eq!(code, 31);
+    assert_eq!(result, "");
 }
 
 #[test]
