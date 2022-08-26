@@ -86,7 +86,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // No context both return and no return (commands automatically return Value::String(""))
+    // No context both return and no return (commands automatically return Value::Null
     impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -144,7 +144,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // Context both return and no return (commands automatically return Value::String(""))
+    // Context both return and no return (commands automatically return Value::Null
     impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
