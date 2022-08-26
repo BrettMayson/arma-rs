@@ -175,9 +175,9 @@ pub fn overflow(ctx: Context) -> String {
 
 pub fn should_error(error: bool) -> Result<String, String> {
   if error {
-    Err(String::from("told to error")
+    Err(String::from("told to error"))
   } else {
-    Ok(String::from("told to succeed")
+    Ok(String::from("told to succeed"))
   }
 }
 ```

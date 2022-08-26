@@ -3,12 +3,12 @@ use crate::value::{IntoArma, Value};
 /// Convert a type to a successful or failed extension result
 pub trait IntoExtResult {
     /// Convert a type to a successful or failed extension result
-    fn to_ext_result(self) -> Result<Value, Value>;
+    fn to_ext_result(&self) -> Result<Value, Value>;
 }
 
 impl IntoExtResult for Value {
-    fn to_ext_result(self) -> Result<Value, Value> {
-        Ok(self)
+    fn to_ext_result(&self) -> Result<Value, Value> {
+        Ok(self.to_owned())
     }
 }
 
@@ -16,14 +16,14 @@ impl<T> IntoExtResult for T
 where
     T: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         self.to_arma().to_ext_result()
     }
 }
 
 impl IntoExtResult for Result<Value, Value> {
-    fn to_ext_result(self) -> Result<Value, Value> {
-        self
+    fn to_ext_result(&self) -> Result<Value, Value> {
+        self.to_owned()
     }
 }
 
@@ -32,7 +32,7 @@ where
     T: IntoArma,
     E: IntoArma,
 {
-    fn to_ext_result(self) -> Result<Value, Value> {
+    fn to_ext_result(&self) -> Result<Value, Value> {
         match self {
             Ok(v) => Ok(v.to_arma()),
             Err(e) => Err(e.to_arma()),
@@ -66,7 +66,7 @@ mod tests {
     }
 
     #[test]
-    fn ext_result_err() {
+    fn result_ok() {
         assert_eq!(
             Ok(Value::Number(42.0)),
             Ok(Value::Number(42.0)).to_ext_result()
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn ext_result_ok() {
+    fn result_err() {
         assert_eq!(
             Err(Value::String("Hello".into())),
             Err(Value::String("Hello".into())).to_ext_result()
@@ -82,18 +82,17 @@ mod tests {
     }
 
     #[test]
-    fn result_ok() {
-        assert_eq!(
-            Ok(Value::Number(42.0)),
-            Ok::<f64, &str>(42.0).to_ext_result()
-        );
+    fn result_unit_ok() {
+        assert_eq!(Ok(Value::Null), Ok::<(), String>(()).to_ext_result());
     }
 
     #[test]
-    fn result_err() {
-        assert_eq!(
-            Err(Value::String("Hello".into())),
-            Err::<f64, &str>("Hello").to_ext_result()
-        );
+    fn result_unit_err() {
+        assert_eq!(Err(Value::Null), Err::<String, ()>(()).to_ext_result());
+    }
+
+    #[test]
+    fn result_unit_both() {
+        assert_eq!(Ok(Value::Null), Ok::<(), ()>(()).to_ext_result());
     }
 }

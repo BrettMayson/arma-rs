@@ -86,104 +86,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // No context without return
-    impl<Func, $($param,)*> Factory<($($param,)*), ()> for Func
-    where
-        Func: Fn($($param),*),
-        $($param: FromArma,)*
-    {
-        #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
-            let count = count.unwrap_or_else(|| 0);
-            if count != $c {
-                return format!("2{}", count).parse::<libc::c_int>().unwrap();
-            }
-            if $c == 0 {
-                (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                0
-            } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                    let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
-                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                let mut c = 0;
-                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-                (self)($(
-                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                        c += 1;
-                        val
-                    } else {
-                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                    },
-                )*);
-                0
-            }
-        }
-    }
-
-    // Context without return
-    impl<Func, $($param,)*> Factory<(Context, $($param,)*), ()> for Func
-    where
-        Func: Fn(Context, $($param),*),
-        $($param: FromArma,)*
-    {
-        #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
-            let count = count.unwrap_or_else(|| 0);
-            if count != $c {
-                return format!("2{}", count).parse::<libc::c_int>().unwrap();
-            }
-            if $c == 0 {
-                (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
-                0
-            } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                    let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
-                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                let mut c = 0;
-                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-                (self)(context,
-                $(
-                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                        c += 1;
-                        val
-                    } else {
-                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                    },
-                )*);
-                0
-            }
-        }
-    }
-
-    // No context with input and return
+    // No context both return and no return (commands automatically return Value::Null)
     impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -240,7 +143,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // Context with input and return
+    // Context both return and no return (commands automatically return Value::Null)
     impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
