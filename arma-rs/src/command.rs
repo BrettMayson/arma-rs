@@ -69,9 +69,9 @@ pub trait Factory<A, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* O> Executor for dyn Factory<($($param,)*), O>
+    impl<$($param,)* LF> Executor for dyn Factory<($($param,)*), LF>
     where
-        O: 'static,
+        LF: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
@@ -87,10 +87,10 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context
-    impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
+    impl<Func, $($param,)* ER> Factory<($($param,)*), ER> for Func
     where
-        R: IntoExtResult + 'static,
-        Func: Fn($($param),*) -> R,
+        ER: IntoExtResult + 'static,
+        Func: Fn($($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
@@ -144,10 +144,10 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context
-    impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
+    impl<Func, $($param,)* ER> Factory<(Context, $($param,)*), ER> for Func
     where
-        R: IntoExtResult + 'static,
-        Func: Fn(Context, $($param),*) -> R,
+        ER: IntoExtResult + 'static,
+        Func: Fn(Context, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
