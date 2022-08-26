@@ -206,6 +206,7 @@ impl ExtensionBuilder {
     }
 
     #[inline]
+    #[must_use]
     /// Add a group to the extension.
     pub fn group<S>(mut self, name: S, group: Group) -> Self
     where
@@ -228,6 +229,7 @@ impl ExtensionBuilder {
     }
 
     #[inline]
+    #[must_use]
     /// Add a command to the extension.
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where

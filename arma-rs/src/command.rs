@@ -86,7 +86,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // No context both return and no return (commands automatically return Value::Null
+    // No context both return and no return (commands automatically return Value::Null)
     impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -97,7 +97,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -125,7 +124,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)($(
@@ -144,7 +143,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // Context both return and no return (commands automatically return Value::Null
+    // Context both return and no return (commands automatically return Value::Null)
     impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
     where
         R: IntoExtResult + 'static,
@@ -155,7 +154,6 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -183,7 +181,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)(context, $(
