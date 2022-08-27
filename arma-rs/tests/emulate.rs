@@ -128,6 +128,11 @@ fn c_interface_invalid_calls() {
             ctx.callback_data("callback", "fired", "data");
         })
         .finish();
+    #[cfg(windows)]
+    extern "stdcall" fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
+        callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
+    }
+    #[cfg(not(windows))]
     extern "C" fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
         callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
     }
