@@ -24,7 +24,7 @@ pub enum Result<T, E> {
     Timeout,
 }
 
-impl Result<(), ()> {
+impl Result<T, E> {
     /// Returns true if the result is an ok result
     pub fn is_ok(&self) -> bool {
         matches!(self, Self::Ok(_))
