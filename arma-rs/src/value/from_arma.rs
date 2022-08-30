@@ -75,7 +75,6 @@ macro_rules! impl_from_arma_tuple {
     };
 }
 
-// impl_from_arma_tuple!(A);
 impl_from_arma_tuple!(A, B);
 impl_from_arma_tuple!(A, B, C);
 impl_from_arma_tuple!(A, B, C, D);
@@ -85,6 +84,22 @@ impl_from_arma_tuple!(A, B, C, D, E, F, G);
 impl_from_arma_tuple!(A, B, C, D, E, F, G, H);
 impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I);
 impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y);
+impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z);
 
 impl<T> FromArma for Vec<T>
 where
