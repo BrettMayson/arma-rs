@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.7.7"
+arma-rs = "1.8.0"
 ```
 
 ### Hello World
@@ -276,7 +276,7 @@ arma-rs supports some common Rust libraries.
 You can enable their support by adding their name to the features of arma-rs.
 
 ```toml
-arma-rs = { version = "1.7.0", features = ["chrono"] }
+arma-rs = { version = "1.8.0", features = ["chrono"] }
 ```
 
 Please create an issue first if you would like to add support for a new library.
