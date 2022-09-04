@@ -10,6 +10,10 @@ The best way to make Arma 3 Extensions.
 ```toml
 [dependencies]
 arma-rs = "1.8.0"
+
+[lib]
+name = "my_extension"
+crate-type = ["cdylib"]
 ```
 
 ### Hello World
