@@ -381,7 +381,7 @@ impl Value {
     pub fn is_empty(&self) -> bool {
         match self {
             Self::Null => true,
-            Self::Number(n) => (*n as f64) == 0.0,
+            Self::Number(n) => *n == 0.0,
             Self::Array(a) => a.is_empty(),
             Self::Boolean(b) => !*b,
             Self::String(s) => s.is_empty(),

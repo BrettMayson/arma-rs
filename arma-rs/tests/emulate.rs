@@ -29,7 +29,7 @@ fn callback_handler(scope: String, name: *const i8, func: *const i8, data: *cons
         let mut stack = stack.write().unwrap();
         stack
             .entry(scope)
-            .or_insert(Vec::new())
+            .or_default()
             .push((name, func, data));
     }
     2

@@ -1,13 +1,8 @@
-use std::{sync::Arc, time::Duration};
-
-use crossbeam_queue::SegQueue;
+use std::time::Duration;
 
 use crate::{Context, Value};
 
-pub struct Extension {
-    pub ext: crate::Extension,
-    callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-}
+pub struct Extension(crate::Extension);
 
 const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
 
@@ -47,18 +42,14 @@ impl<T, E> Result<T, E> {
 }
 
 impl Extension {
-    #[must_use]
     pub fn new(ext: crate::Extension) -> Self {
-        Self {
-            ext,
-            callback_queue: Arc::new(SegQueue::new()),
-        }
+        Self(ext)
     }
 
     #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
+        Context::new(self.0.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
     }
 
     #[must_use]
@@ -74,7 +65,7 @@ impl Extension {
                 .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
                 .collect::<Vec<*mut i8>>()
         });
-        let res = self.ext.group.handle(
+        let res = self.0.group.handle(
             self.context(),
             function,
             output.as_mut_ptr(),
@@ -103,7 +94,7 @@ impl Extension {
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
-        let queue = self.callback_queue.clone();
+        let queue = self.0.callback_queue.clone();
         let start = std::time::Instant::now();
         loop {
             if let Some((name, func, data)) = queue.pop() {
