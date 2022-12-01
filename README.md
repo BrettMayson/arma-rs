@@ -314,6 +314,13 @@ The timezone will always be converted to UTC.
 
 Any variant of [`serde_json::Value`](https://docs.serde.rs/serde_json/enum.Value.html) will be converted to the appropriate Arma type.
 
+## Building for x86 (32 Bit)
+
+```sh
+rustup toolchain install stable-i686-pc-windows-msvc
+cargo +stable-i686-pc-windows-msvc build
+```
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
