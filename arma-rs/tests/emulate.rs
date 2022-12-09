@@ -27,10 +27,7 @@ fn callback_handler(scope: String, name: *const i8, func: *const i8, data: *cons
         let func = CStr::from_ptr(func).to_str().unwrap().to_string();
         let data = CStr::from_ptr(data).to_str().unwrap().to_string();
         let mut stack = stack.write().unwrap();
-        stack
-            .entry(scope)
-            .or_default()
-            .push((name, func, data));
+        stack.entry(scope).or_default().push((name, func, data));
     }
     2
 }

@@ -45,7 +45,32 @@ macro_rules! impl_from_arma {
         )*
     };
 }
-impl_from_arma!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char);
+impl_from_arma!(f32, f64, bool, char);
+
+macro_rules! impl_from_arma_number {
+    ($($t:ty),*) => {
+        $(
+            impl FromArma for $t {
+                fn from_arma(s: String) -> Result<Self, String> {
+                    if s.contains("e") {
+                        // parse exponential notation
+                        let mut parts = s.split('e');
+                        let Some(base) = parts.next().map(|s| s.parse::<f64>().map_err(|e| e.to_string())).transpose()? else {
+                            return Err(String::from("missing base in exponential notation"));
+                        };
+                        let Some(exp) = parts.next().map(|s| s.parse::<i32>().map_err(|e| e.to_string())).transpose()? else {
+                            return Err(String::from("missing exponent in exponential notation"));
+                        };
+                        return Ok((base * 10.0_f64.powi(exp)) as $t);
+                    }
+                    s.parse::<Self>().map_err(|e| e.to_string())
+                }
+            }
+        )*
+    };
+}
+
+impl_from_arma_number!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 
 macro_rules! impl_from_arma_tuple {
     ($($t:ident),*) => {
@@ -286,5 +311,14 @@ mod tests {
             )
             .unwrap()
         );
+    }
+
+    #[test]
+    fn parse_exponential() {
+        assert_eq!(1.0e-10, <f64>::from_arma(r#"1.0e-10"#.to_string()).unwrap());
+        assert_eq!(
+            1_227_700,
+            <u32>::from_arma(r#"1.2277e+006"#.to_string()).unwrap()
+        )
     }
 }
