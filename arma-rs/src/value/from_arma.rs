@@ -90,8 +90,10 @@ macro_rules! impl_from_arma_tuple {
                 Ok((
                     $(
                         {
-                            let n = parts_iter.next().unwrap().to_string();
-                            $t::from_arma(n.trim().to_string())?
+                            let Some(n) = parts_iter.next() else {
+                                return Err(String::from("missing value in tuple"));
+                            };
+                            $t::from_arma(n.to_string().trim().to_string())?
                         }
                     ),*
                 ))

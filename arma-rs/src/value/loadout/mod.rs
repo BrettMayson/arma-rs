@@ -390,6 +390,13 @@ mod tests {
     }
 
     #[test]
+    fn extended_crash_1_9_0() {
+        let loadout = r#"[[[],[],[],["synixe_contractors_Uniform_Contractor_Shirt",[]],[],[],"","",[],["","","","","",""]],[]]"#;
+        let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
+        assert!(loadout.cba_extended().is_empty());
+    }
+
+    #[test]
     fn extended_items() {
         let loadout = r#"[[["CUP_arifle_M4A1_SOMMOD_Grip_tan","","","CUP_optic_Eotech553_Black",["tacgt_30Rnd_556x45_EPR_PMAG_Tan",30],[],""],[],["ACE_VMM3","","","",[],[],""],["casual_plaid_gray_khaki_uniform",[["ACE_packingBandage",10],["ACE_elasticBandage",10],["ACE_CableTie",2],["kat_guedel",1],["ACE_tourniquet",2],["ACE_splint",1],["synixe_painkillers",2]]],["milgp_v_mmac_assaulter_belt_AOR2",[["ACRE_PRC152",1],["SmokeShell",2,1],["HandGrenade",2,1],["tacgt_30Rnd_556x45_EPR_PMAG_Tan",10,30]]],["B_MU_TacticalPack_cbr",[["ACE_bodyBag",1],["ToolKit",1],["ACE_SpraypaintGreen",1],["synixe_axe",1],["ACE_wirecutter",1],["ACE_EntrenchingTool",1],["ACE_rope3",2],["DemoCharge_Remote_Mag",2,1]]],"synixe_contractors_Cap_Headphones_GreenLogo","CUP_G_Tan_Scarf_Shades",["Binocular","","","",[],[],""],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]],[["grad_slingHelmet","CUP_H_OpsCore_Grey"]]]"#;
         let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
