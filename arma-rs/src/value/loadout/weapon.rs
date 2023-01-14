@@ -174,6 +174,33 @@ impl Weapon {
             false
         }
     }
+
+    /// Get all classes used on the weapon, including the weapon itself
+    pub fn classes(&self) -> Vec<&str> {
+        let mut classes = Vec::new();
+        if let Some(weapon) = self.0.as_ref() {
+            classes.push(weapon.0.as_str());
+            if !weapon.1.is_empty() {
+                classes.push(weapon.1.as_str());
+            }
+            if !weapon.2.is_empty() {
+                classes.push(weapon.2.as_str());
+            }
+            if !weapon.3.is_empty() {
+                classes.push(weapon.3.as_str());
+            }
+            if let Some(class) = weapon.4.class() {
+                classes.push(class);
+            }
+            if let Some(class) = weapon.5.class() {
+                classes.push(class);
+            }
+            if !weapon.6.is_empty() {
+                classes.push(weapon.6.as_str());
+            }
+        }
+        classes
+    }
 }
 impl FromArma for Weapon {
     fn from_arma(s: String) -> Result<Self, String> {
@@ -335,6 +362,26 @@ mod tests {
                 Value::Array(vec![]),
                 Value::String("".to_owned()),
             ])
+        );
+    }
+
+    #[test]
+    fn classes() {
+        let weapon = Weapon::from_arma("[]".to_owned()).unwrap();
+        assert_eq!(weapon, Weapon::default());
+        let weapon = Weapon::from_arma(
+            "[\"arifle_Mk20_GL_F\",\"fake_optic\",\"\",\"\",[\"30Rnd_556x45_Stanag\",30],[\"1Rnd_HE_Grenade_shell\",1],\"fake_bipod\"]".to_owned(),
+        )
+        .unwrap();
+        assert_eq!(
+            weapon.classes(),
+            vec![
+                "arifle_Mk20_GL_F",
+                "fake_optic",
+                "30Rnd_556x45_Stanag",
+                "1Rnd_HE_Grenade_shell",
+                "fake_bipod"
+            ]
         );
     }
 }

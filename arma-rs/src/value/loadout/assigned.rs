@@ -72,7 +72,7 @@ impl AssignedItems {
 
     /// Get all items
     #[must_use]
-    pub fn items(&self) -> [&str; 6] {
+    pub fn classes(&self) -> [&str; 6] {
         [
             self.map(),
             self.terminal(),
@@ -81,6 +81,13 @@ impl AssignedItems {
             self.watch(),
             self.nvg(),
         ]
+    }
+
+    #[deprecated(note = "Use `classes` instead")]
+    #[must_use]
+    /// Get all items
+    pub fn items(&self) -> [&str; 6] {
+        self.classes()
     }
 }
 impl FromArma for AssignedItems {

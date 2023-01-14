@@ -49,3 +49,55 @@ impl Display for Value {
         }
     }
 }
+
+impl FromArma for Value {
+    fn from_arma(s: String) -> Result<Self, String> {
+        match s.chars().next().unwrap() {
+            'n' => Ok(Self::Null),
+            't' | 'f' => Ok(Value::Boolean(<bool>::from_arma(s)?)),
+            '0'..='9' | '-' => Ok(Value::Number(<f64>::from_arma(s)?)),
+            '[' => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
+            '"' => Ok(Value::String(<String>::from_arma(s)?)),
+            _ => Err(format!("Invalid value: {}", s)),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_value_display() {
+        assert_eq!(Value::Null.to_string(), "null");
+        assert_eq!(Value::Number(1.0).to_string(), "1");
+        assert_eq!(Value::Number(1.5).to_string(), "1.5");
+        assert_eq!(Value::Number(-1.5).to_string(), "-1.5");
+        assert_eq!(Value::Boolean(true).to_string(), "true");
+        assert_eq!(Value::Boolean(false).to_string(), "false");
+        assert_eq!(Value::String("".to_string()).to_string(), "\"\"");
+        assert_eq!(Value::String(" ".to_string()).to_string(), "\" \"");
+        assert_eq!(Value::String("Hello".to_string()).to_string(), "\"Hello\"");
+        assert_eq!(
+            Value::String("Hello \"World\"".to_string()).to_string(),
+            "\"Hello \"\"World\"\"\""
+        );
+        assert_eq!(
+            Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(3.0)
+            ])
+            .to_string(),
+            "[1,2,3]"
+        );
+        assert_eq!(
+            Value::Array(vec![
+                Value::String("Hello".to_string()),
+                Value::String("World".to_string())
+            ])
+            .to_string(),
+            "[\"Hello\",\"World\"]"
+        );
+    }
+}

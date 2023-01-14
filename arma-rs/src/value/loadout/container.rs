@@ -43,6 +43,19 @@ impl Container {
     pub fn items_mut(&mut self) -> Option<&mut Vec<InventoryItem>> {
         self.0.as_mut().map(|(_, items)| items)
     }
+
+    /// Get all classes and their quantities, including the container itself
+    #[must_use]
+    pub fn classes(&self) -> Vec<(String, u32)> {
+        let mut classes = vec![];
+        if let Some((class, items)) = &self.0 {
+            classes.push((class.clone(), 1));
+            for item in items {
+                classes.push((item.class().to_string(), item.count()));
+            }
+        }
+        classes
+    }
 }
 impl FromArma for Container {
     fn from_arma(s: String) -> Result<Self, String> {
@@ -148,6 +161,23 @@ mod tests {
                     Value::Array(vec![Value::String("item2".to_string()), Value::Number(2.0),]),
                 ]),
             ])
+        );
+    }
+
+    #[test]
+    fn classes() {
+        let container = Container::from_arma("[]".to_string()).unwrap();
+        assert!(!container.exists());
+        let container =
+            Container::from_arma("[\"container\",[[\"item1\",1],[\"item2\",2]]]".to_string())
+                .unwrap();
+        assert_eq!(
+            container.classes(),
+            vec![
+                ("container".to_string(), 1),
+                ("item1".to_string(), 1),
+                ("item2".to_string(), 2)
+            ]
         );
     }
 }

@@ -4,17 +4,19 @@ use crate::{FromArma, IntoArma, Value};
 
 mod assigned;
 mod container;
+mod extended;
 mod inventory_item;
 mod magazine;
 mod weapon;
 
 pub use assigned::AssignedItems;
 pub use container::Container;
+pub use extended::CBAExtended;
 pub use inventory_item::InventoryItem;
 pub use magazine::Magazine;
 pub use weapon::Weapon;
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq)]
 /// Arma Unit Loadout Array
 pub struct Loadout(
     Weapon,
@@ -27,7 +29,9 @@ pub struct Loadout(
     String,
     Weapon,
     AssignedItems,
+    CBAExtended,
 );
+
 impl Loadout {
     /// Get the primary weapon
     #[must_use]
@@ -178,10 +182,49 @@ impl Loadout {
     pub fn set_assigned_items(&mut self, assigned_items: AssignedItems) {
         self.9 = assigned_items;
     }
+
+    /// Get the CBA Extended Loadout Array
+    pub fn cba_extended(&self) -> &CBAExtended {
+        &self.10
+    }
+
+    /// Get a map of all items in the loadout and their quantities
+    pub fn classes(&self) -> std::collections::HashMap<String, u32> {
+        let mut items = std::collections::HashMap::new();
+        self.0.classes().iter().for_each(|c| {
+            *items.entry(c.to_string()).or_insert(0) += 1;
+        });
+        self.1.classes().iter().for_each(|c| {
+            *items.entry(c.to_string()).or_insert(0) += 1;
+        });
+        self.2.classes().iter().for_each(|c| {
+            *items.entry(c.to_string()).or_insert(0) += 1;
+        });
+        self.3.classes().iter().for_each(|(c, q)| {
+            *items.entry(c.clone()).or_insert(0) += q;
+        });
+        self.4.classes().iter().for_each(|(c, q)| {
+            *items.entry(c.clone()).or_insert(0) += q;
+        });
+        self.5.classes().iter().for_each(|(c, q)| {
+            *items.entry(c.clone()).or_insert(0) += q;
+        });
+        *items.entry(self.6.clone()).or_insert(0) += 1;
+        *items.entry(self.7.clone()).or_insert(0) += 1;
+        self.8.classes().iter().for_each(|c| {
+            *items.entry(c.to_string()).or_insert(0) += 1;
+        });
+        self.9.classes().iter().for_each(|c| {
+            *items.entry(c.to_string()).or_insert(0) += 1;
+        });
+        items.remove("");
+        items
+    }
 }
+
 impl FromArma for Loadout {
     fn from_arma(s: String) -> Result<Self, String> {
-        <(
+        let vanilla = <(
             Weapon,
             Weapon,
             Weapon,
@@ -192,7 +235,7 @@ impl FromArma for Loadout {
             String,
             Weapon,
             AssignedItems,
-        )>::from_arma(s)
+        )>::from_arma(s.clone())
         .map(
             |(
                 primary,
@@ -217,9 +260,59 @@ impl FromArma for Loadout {
                     goggles,
                     binoculars,
                     linked_items,
+                    CBAExtended::default(),
                 )
             },
-        )
+        );
+        if vanilla.is_err() {
+            return <(
+                (
+                    Weapon,
+                    Weapon,
+                    Weapon,
+                    Container,
+                    Container,
+                    Container,
+                    String,
+                    String,
+                    Weapon,
+                    AssignedItems,
+                ),
+                CBAExtended,
+            )>::from_arma(s)
+            .map(
+                |(
+                    (
+                        primary,
+                        secondary,
+                        handgun,
+                        uniform,
+                        vest,
+                        backpack,
+                        headgear,
+                        goggles,
+                        binoculars,
+                        linked_items,
+                    ),
+                    extended,
+                )| {
+                    Self(
+                        primary,
+                        secondary,
+                        handgun,
+                        uniform,
+                        vest,
+                        backpack,
+                        headgear,
+                        goggles,
+                        binoculars,
+                        linked_items,
+                        extended,
+                    )
+                },
+            );
+        }
+        vanilla
     }
 }
 impl IntoArma for Loadout {
@@ -287,5 +380,69 @@ mod tests {
             5,
             30,
         ));
+    }
+
+    #[test]
+    fn extended_empty() {
+        let loadout = r#"[[["arifle_XMS_Shot_lxWS","","tacgt_ANPEQ_15_Low_Light_Black","CUP_optic_Elcan_SpecterDR_black_PIP",["tacgt_30Rnd_556x45_Ball_Tracer_PMAG",30],["6Rnd_12Gauge_Pellets",6],""],["CUP_launch_M136_Loaded","","","",[],[],""],[],["tacs_Uniform_Floral_JP_RS_LP_BB",[["kat_guedel",1],["ACE_EntrenchingTool",1],["ACE_EarPlugs",1],["ACE_CableTie",2],["ACE_quikclot",1],["ACE_packingBandage",2],["ACE_elasticBandage",1],["SmokeShell",2,1],["Chemlight_yellow",1,1],["Chemlight_red",3,1],["ACE_Chemlight_IR",2,1],["ACE_Chemlight_HiBlue",1,1]]],["milgp_v_mmac_marksman_belt_CB",[["ACE_tourniquet",4],["ACE_splint",1],["tacgt_30Rnd_556x45_EPR_PMAG",15,30],["tacgt_30Rnd_556x45_AP_PMAG",2,30],["6rnd_Smoke_Mag_lxWS",1,6]]],["milgp_bp_Pointman_cb",[["ACE_SpraypaintGreen",1],["ACE_splint",1],["synixe_painkillers",2],["ACE_microDAGR",1],["ACE_MapTools",1],["ACE_bodyBag",1],["ACE_packingBandage",10],["ACE_elasticBandage",9],["ACE_quikclot",5],["ACE_EarPlugs",2],["ACRE_PRC152",1],["ACRE_PRC152",1],["6Rnd_12Gauge_Pellets",2,6],["6Rnd_12Gauge_Slug",1,6],["tacgt_30Rnd_556x45_Ball_Tracer_PMAG",1,30]]],"synixe_contractors_Hat_Beret_Black","",["ACE_VectorDay","","","",[],[],""],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]],[]]"#;
+        let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
+        assert!(loadout.cba_extended().is_empty());
+    }
+
+    #[test]
+    fn extended_items() {
+        let loadout = r#"[[["CUP_arifle_M4A1_SOMMOD_Grip_tan","","","CUP_optic_Eotech553_Black",["tacgt_30Rnd_556x45_EPR_PMAG_Tan",30],[],""],[],["ACE_VMM3","","","",[],[],""],["casual_plaid_gray_khaki_uniform",[["ACE_packingBandage",10],["ACE_elasticBandage",10],["ACE_CableTie",2],["kat_guedel",1],["ACE_tourniquet",2],["ACE_splint",1],["synixe_painkillers",2]]],["milgp_v_mmac_assaulter_belt_AOR2",[["ACRE_PRC152",1],["SmokeShell",2,1],["HandGrenade",2,1],["tacgt_30Rnd_556x45_EPR_PMAG_Tan",10,30]]],["B_MU_TacticalPack_cbr",[["ACE_bodyBag",1],["ToolKit",1],["ACE_SpraypaintGreen",1],["synixe_axe",1],["ACE_wirecutter",1],["ACE_EntrenchingTool",1],["ACE_rope3",2],["DemoCharge_Remote_Mag",2,1]]],"synixe_contractors_Cap_Headphones_GreenLogo","CUP_G_Tan_Scarf_Shades",["Binocular","","","",[],[],""],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]],[["grad_slingHelmet","CUP_H_OpsCore_Grey"]]]"#;
+        let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
+        assert!(!loadout.cba_extended().is_empty());
+        assert_eq!(
+            loadout.primary().class(),
+            Some("CUP_arifle_M4A1_SOMMOD_Grip_tan")
+        );
+        assert_eq!(
+            loadout.cba_extended().get("grad_slingHelmet"),
+            Some(&Value::String("CUP_H_OpsCore_Grey".to_string()))
+        );
+    }
+
+    #[test]
+    fn classes() {
+        let loadout = r#"[[["CUP_arifle_M4A1_SOMMOD_Grip_tan","","","CUP_optic_Eotech553_Black",["tacgt_30Rnd_556x45_EPR_PMAG_Tan",30],[],""],[],["ACE_VMM3","","","",[],[],""],["casual_plaid_gray_khaki_uniform",[["ACE_packingBandage",10],["ACE_elasticBandage",10],["ACE_CableTie",2],["kat_guedel",1],["ACE_tourniquet",2],["ACE_splint",1],["synixe_painkillers",2]]],["milgp_v_mmac_assaulter_belt_AOR2",[["ACRE_PRC152",1],["SmokeShell",2,1],["HandGrenade",2,1],["tacgt_30Rnd_556x45_EPR_PMAG_Tan",10,30]]],["B_MU_TacticalPack_cbr",[["ACE_bodyBag",1],["ToolKit",1],["ACE_SpraypaintGreen",1],["synixe_axe",1],["ACE_wirecutter",1],["ACE_EntrenchingTool",1],["ACE_rope3",2],["DemoCharge_Remote_Mag",2,1]]],"synixe_contractors_Cap_Headphones_GreenLogo","CUP_G_Tan_Scarf_Shades",["Binocular","","","",[],[],""],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]],[["grad_slingHelmet","CUP_H_OpsCore_Grey"]]]"#;
+        let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
+        assert_eq!(loadout.classes(), {
+            let mut classes = std::collections::HashMap::new();
+            classes.insert("CUP_arifle_M4A1_SOMMOD_Grip_tan".to_string(), 1);
+            classes.insert("CUP_optic_Eotech553_Black".to_string(), 1);
+            classes.insert("tacgt_30Rnd_556x45_EPR_PMAG_Tan".to_string(), 11);
+            classes.insert("ACE_VMM3".to_string(), 1);
+            classes.insert("casual_plaid_gray_khaki_uniform".to_string(), 1);
+            classes.insert("ACE_packingBandage".to_string(), 10);
+            classes.insert("ACE_elasticBandage".to_string(), 10);
+            classes.insert("ACE_CableTie".to_string(), 2);
+            classes.insert("kat_guedel".to_string(), 1);
+            classes.insert("ACE_tourniquet".to_string(), 2);
+            classes.insert("ACE_splint".to_string(), 1);
+            classes.insert("synixe_painkillers".to_string(), 2);
+            classes.insert("milgp_v_mmac_assaulter_belt_AOR2".to_string(), 1);
+            classes.insert("ACRE_PRC152".to_string(), 1);
+            classes.insert("SmokeShell".to_string(), 2);
+            classes.insert("HandGrenade".to_string(), 2);
+            classes.insert("B_MU_TacticalPack_cbr".to_string(), 1);
+            classes.insert("ACE_bodyBag".to_string(), 1);
+            classes.insert("ToolKit".to_string(), 1);
+            classes.insert("ACE_SpraypaintGreen".to_string(), 1);
+            classes.insert("synixe_axe".to_string(), 1);
+            classes.insert("ACE_wirecutter".to_string(), 1);
+            classes.insert("ACE_EntrenchingTool".to_string(), 1);
+            classes.insert("ACE_rope3".to_string(), 2);
+            classes.insert("DemoCharge_Remote_Mag".to_string(), 2);
+            classes.insert("synixe_contractors_Cap_Headphones_GreenLogo".to_string(), 1);
+            classes.insert("CUP_G_Tan_Scarf_Shades".to_string(), 1);
+            classes.insert("Binocular".to_string(), 1);
+            classes.insert("ItemMap".to_string(), 1);
+            classes.insert("ItemGPS".to_string(), 1);
+            classes.insert("ItemCompass".to_string(), 1);
+            classes.insert("ItemWatch".to_string(), 1);
+            classes
+        });
     }
 }
