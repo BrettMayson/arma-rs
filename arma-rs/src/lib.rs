@@ -58,26 +58,31 @@ pub type Callback =
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
-pub struct Extension {
+pub struct Extension<P> {
     version: String,
     group: Group,
+    persist: P,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
 #[cfg(feature = "extension")]
-impl Extension {
+impl Extension<()> {
     #[must_use]
     /// Creates a new extension.
-    pub fn build() -> ExtensionBuilder {
+    pub fn build() -> ExtensionBuilder<()> {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
             allow_no_args: false,
+            persist: (),
         }
     }
+}
 
+#[cfg(feature = "extension")]
+impl<P> Extension<P> {
     #[must_use]
     /// Returns the version of the extension.
     pub fn version(&self) -> &str {
@@ -133,7 +138,7 @@ impl Extension {
 
     #[must_use]
     /// Create a version of the extension that can be used in tests.
-    pub fn testing(self) -> testing::Extension {
+    pub fn testing(self) -> testing::Extension<P> {
         testing::Extension::new(self)
     }
 
@@ -189,14 +194,15 @@ impl Extension {
 
 /// Used to build an extension.
 #[cfg(feature = "extension")]
-pub struct ExtensionBuilder {
+pub struct ExtensionBuilder<P> {
     version: String,
     group: Group,
+    persist: P,
     allow_no_args: bool,
 }
 
 #[cfg(feature = "extension")]
-impl ExtensionBuilder {
+impl<P> ExtensionBuilder<P> {
     #[inline]
     #[must_use]
     /// Sets the version of the extension.
@@ -218,11 +224,22 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
+    pub fn persist<T>(self, persist: T) -> ExtensionBuilder<T> {
+        ExtensionBuilder {
+            version: self.version,
+            group: self.group,
+            persist,
+            allow_no_args: self.allow_no_args,
+        }
+    }
+
+    #[inline]
+    #[must_use]
     /// Allows the extension to be called without any arguments.
     /// Example:
     /// ```sqf
     /// "my_ext" callExtension "my_func"
-    /// ``
+    /// ```
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
@@ -243,10 +260,11 @@ impl ExtensionBuilder {
     #[inline]
     #[must_use]
     /// Builds the extension.
-    pub fn finish(self) -> Extension {
+    pub fn finish(self) -> Extension<P> {
         Extension {
             version: self.version,
             group: self.group,
+            persist: self.persist,
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),

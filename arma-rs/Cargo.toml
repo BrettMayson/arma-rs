@@ -10,7 +10,7 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = "1.7.2"
+arma-rs-proc = { path = "../arma-rs-proc" }
 crossbeam-queue = { version = "0.3.8", optional = true }
 libc = { version = "0.2.139", optional = true }
 log = "0.4.17"

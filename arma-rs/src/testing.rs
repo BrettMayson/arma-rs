@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{Context, Value};
 
-pub struct Extension(crate::Extension);
+pub struct Extension<P>(crate::Extension<P>);
 
 const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
 
@@ -41,8 +41,8 @@ impl<T, E> Result<T, E> {
     }
 }
 
-impl Extension {
-    pub fn new(ext: crate::Extension) -> Self {
+impl<P> Extension<P> {
+    pub fn new(ext: crate::Extension<P>) -> Self {
         Self(ext)
     }
 

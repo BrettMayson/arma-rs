@@ -8,6 +8,13 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();
 
+    let syn::ReturnType::Type(_, return_type) = ast.sig.output.clone() else {
+        todo!("add error message");
+    };
+    let syn::Type::Path(extension_type) = return_type.as_ref() else {
+        todo!("add error message");
+    };
+
     let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
 
     let ext_init = quote! {
@@ -34,7 +41,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         use arma_rs::libc as arma_rs_libc;
 
-        static mut RV_EXTENSION: Option<Extension> = None;
+        static mut RV_EXTENSION: Option<#extension_type> = None;
 
         #[cfg(all(target_os="windows", target_arch="x86"))]
         arma_rs::link_args::windows::raw! {

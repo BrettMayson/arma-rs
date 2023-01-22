@@ -4,7 +4,7 @@ mod system_info;
 mod timer;
 
 #[arma]
-fn init() -> Extension {
+fn init() -> Extension<()> {
     Extension::build()
         .group(
             "hello",
