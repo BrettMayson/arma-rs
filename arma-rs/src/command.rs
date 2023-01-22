@@ -2,9 +2,9 @@ use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
 use crate::{Context, State};
 
-type HandlerFunc<P> = Box<
+type HandlerFunc<S> = Box<
     dyn Fn(
-        &mut State<P>,
+        &mut State<S>,
         Context,
         *mut libc::c_char,
         libc::size_t,
@@ -14,19 +14,19 @@ type HandlerFunc<P> = Box<
 >;
 
 /// A wrapper for `HandlerFunc`
-pub struct Handler<P> {
+pub struct Handler<S> {
     /// The function to call
-    pub handler: HandlerFunc<P>,
+    pub handler: HandlerFunc<S>,
 }
 
 /// Create a new handler from a Factory
-pub fn fn_handler<C, I, P, R>(command: C) -> Handler<P>
+pub fn fn_handler<C, I, S, R>(command: C) -> Handler<S>
 where
-    C: Factory<I, P, R> + 'static,
+    C: Factory<I, S, R> + 'static,
 {
     Handler {
         handler: Box::new(
-            move |state: &mut State<P>,
+            move |state: &mut State<S>,
                   context: Context,
                   output: *mut libc::c_char,
                   size: libc::size_t,
@@ -40,12 +40,12 @@ where
 }
 
 /// Execute a command
-pub trait Executor<P>: 'static {
+pub trait Executor<S>: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        state: &mut State<P>,
+        state: &mut State<S>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -58,12 +58,12 @@ pub trait Executor<P>: 'static {
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`
 /// The return value must implement `IntoExtResult`
-pub trait Factory<A, P, R> {
+pub trait Factory<A, S, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        state: &mut State<P>,
+        state: &mut State<S>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -73,15 +73,15 @@ pub trait Factory<A, P, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* EP, ER> Executor<EP> for dyn Factory<($($param,)*), EP, ER>
+    impl<$($param,)* ES, ER> Executor<ES> for dyn Factory<($($param,)*), ES, ER>
     where
-        EP: 'static,
+        ES: 'static,
         ER: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
             &self,
-            state: &mut State<EP>,
+            state: &mut State<ES>,
             context: Context,
             output: *mut libc::c_char,
             size: libc::size_t,
@@ -93,14 +93,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context with State
-    impl<Func, $($param,)* EP, ER> Factory<(&mut State<EP>, $($param,)*), EP, ER> for Func
+    impl<Func, $($param,)* ES, ER> Factory<(&mut State<ES>, $($param,)*), ES, ER> for Func
     where
         ER: IntoExtResult + 'static,
-        Func: Fn(&mut State<EP>, $($param),*) -> ER,
+        Func: Fn(&mut State<ES>, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, state: &mut State<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, state: &mut State<ES>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -150,14 +150,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context
-    impl<Func, $($param,)* EP, ER> Factory<($($param,)*), EP, ER> for Func
+    impl<Func, $($param,)* ES, ER> Factory<($($param,)*), ES, ER> for Func
     where
         ER: IntoExtResult + 'static,
         Func: Fn($($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &mut State<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &mut State<ES>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -207,14 +207,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context
-    impl<Func, $($param,)* EP, ER> Factory<(Context, $($param,)*), EP, ER> for Func
+    impl<Func, $($param,)* ES, ER> Factory<(Context, $($param,)*), ES, ER> for Func
     where
         ER: IntoExtResult + 'static,
         Func: Fn(Context, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &mut State<EP>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &mut State<ES>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();

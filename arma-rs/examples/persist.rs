@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use arma_rs::{arma, Extension, State};
 
 #[arma]

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::{Context, State, Value};
 
-pub struct Extension<P>(crate::Extension<P>);
+pub struct Extension<S>(crate::Extension<S>);
 
 const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
 
@@ -41,13 +41,13 @@ impl<T, E> Result<T, E> {
     }
 }
 
-impl<P> Extension<P> {
-    pub fn new(ext: crate::Extension<P>) -> Self {
+impl<S> Extension<S> {
+    pub fn new(ext: crate::Extension<S>) -> Self {
         Self(ext)
     }
 
     #[must_use]
-    pub fn state(&mut self) -> &mut State<P> {
+    pub fn state(&mut self) -> &mut State<S> {
         self.0.state()
     }
 

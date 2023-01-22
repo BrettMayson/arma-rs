@@ -58,8 +58,6 @@ pub type Callback = extern "stdcall" fn(
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
-// #[cfg(feature = "extension")]
-// pub struct NoState;
 #[cfg(feature = "extension")]
 pub struct State<T>(T);
 
@@ -81,10 +79,10 @@ impl<T> DerefMut for State<T> {
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
-pub struct Extension<P> {
+pub struct Extension<S> {
     version: String,
-    group: Group<P>,
-    state: State<P>,
+    group: Group<S>,
+    state: State<S>,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
@@ -100,10 +98,10 @@ impl Extension<()> {
 }
 
 #[cfg(feature = "extension")]
-impl<P> Extension<P> {
+impl<S> Extension<S> {
     #[must_use]
     /// Creates a new extension with a stateent variable.
-    pub fn build_with_state(state: P) -> ExtensionBuilder<P> {
+    pub fn build_with_state(state: S) -> ExtensionBuilder<S> {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
@@ -120,7 +118,7 @@ impl<P> Extension<P> {
 
     #[must_use]
     /// Returns a reference to the stateent variable
-    pub fn state(&mut self) -> &mut State<P> {
+    pub fn state(&mut self) -> &mut State<S> {
         &mut self.state
     }
 
@@ -175,7 +173,7 @@ impl<P> Extension<P> {
 
     #[must_use]
     /// Create a version of the extension that can be used in tests.
-    pub fn testing(self) -> testing::Extension<P> {
+    pub fn testing(self) -> testing::Extension<S> {
         testing::Extension::new(self)
     }
 
@@ -231,15 +229,15 @@ impl<P> Extension<P> {
 
 /// Used to build an extension.
 #[cfg(feature = "extension")]
-pub struct ExtensionBuilder<P> {
+pub struct ExtensionBuilder<S> {
     version: String,
-    group: Group<P>,
-    state: P,
+    group: Group<S>,
+    state: S,
     allow_no_args: bool,
 }
 
 #[cfg(feature = "extension")]
-impl<P> ExtensionBuilder<P> {
+impl<S> ExtensionBuilder<S> {
     #[inline]
     #[must_use]
     /// Sets the version of the extension.
@@ -251,10 +249,7 @@ impl<P> ExtensionBuilder<P> {
     #[inline]
     #[must_use]
     /// Add a group to the extension.
-    pub fn group<S>(mut self, name: S, group: Group<P>) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn group(mut self, name: impl Into<String>, group: Group<S>) -> Self {
         self.group = self.group.group(name.into(), group);
         self
     }
@@ -274,10 +269,9 @@ impl<P> ExtensionBuilder<P> {
     #[inline]
     #[must_use]
     /// Add a command to the extension.
-    pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
+    pub fn command<F, I, R>(mut self, name: impl Into<String>, handler: F) -> Self
     where
-        S: Into<String>,
-        F: Factory<I, P, R> + 'static,
+        F: Factory<I, S, R> + 'static,
     {
         self.group = self.group.command(name, handler);
         self
@@ -286,7 +280,7 @@ impl<P> ExtensionBuilder<P> {
     #[inline]
     #[must_use]
     /// Builds the extension.
-    pub fn finish(self) -> Extension<P> {
+    pub fn finish(self) -> Extension<S> {
         Extension {
             version: self.version,
             group: self.group,

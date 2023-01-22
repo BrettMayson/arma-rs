@@ -8,12 +8,12 @@ use crate::{
 #[derive(Default)]
 /// A group of commands.
 /// Called from Arma using `[group]:[command]`.
-pub struct Group<P> {
-    commands: HashMap<String, Box<Handler<P>>>,
+pub struct Group<S> {
+    commands: HashMap<String, Box<Handler<S>>>,
     children: HashMap<String, Self>,
 }
 
-impl<P> Group<P> {
+impl<S> Group<S> {
     #[must_use]
     /// Creates a new group
     pub fn new() -> Self {
@@ -26,10 +26,9 @@ impl<P> Group<P> {
     #[inline]
     #[must_use]
     /// Add a command to the group
-    pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
+    pub fn command<F, I, R>(mut self, name: impl Into<String>, handler: F) -> Self
     where
-        S: Into<String>,
-        F: Factory<I, P, R> + 'static,
+        F: Factory<I, S, R> + 'static,
     {
         self.commands
             .insert(name.into(), Box::new(fn_handler(handler)));
@@ -39,17 +38,14 @@ impl<P> Group<P> {
     #[inline]
     #[must_use]
     /// Add a group to the group
-    pub fn group<S>(mut self, name: S, child: Self) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn group(mut self, name: impl Into<String>, child: Self) -> Self {
         self.children.insert(name.into(), child);
         self
     }
 
     pub(crate) fn handle(
         &self,
-        state: &mut State<P>,
+        state: &mut State<S>,
         context: Context,
         function: &str,
         output: *mut libc::c_char,
