@@ -82,15 +82,13 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let mut state = ();
-        let ctx = Context::new(Arc::new(RwLock::new(&mut state)), Arc::new(SegQueue::new()));
+        let ctx = Context::new(Arc::new(RwLock::new(())), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let mut state = ();
-        let ctx = Context::new(Arc::new(RwLock::new(&mut state)), Arc::new(SegQueue::new()))
+        let ctx = Context::new(Arc::new(RwLock::new(())), Arc::new(SegQueue::new()))
             .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }

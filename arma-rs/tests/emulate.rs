@@ -254,7 +254,7 @@ fn c_interface_invalid_calls() {
 
 #[test]
 fn c_interface_errors() {
-    let mut extension = Extension::build()
+    let extension = Extension::build()
         .command("add_no_context", |a: i32, b: i32| {
             let _ = a + b;
         })

@@ -112,7 +112,7 @@ impl<S> Extension<S> {
 
     #[must_use]
     /// Get a context for interacting with Arma
-    pub fn context(&mut self) -> Context<S> {
+    pub fn context(&self) -> Context<S> {
         Context::new(self.state.clone(), self.callback_queue.clone())
     }
 
@@ -120,7 +120,7 @@ impl<S> Extension<S> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle(
-        &mut self,
+        &self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
         size: libc::size_t,

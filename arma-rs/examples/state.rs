@@ -19,7 +19,7 @@ mod tests {
 
     #[test]
     fn count() {
-        let mut extension = init().testing();
+        let extension = init().testing();
         let (result, _) = unsafe { extension.call("count", None) };
         assert_eq!(result, "1");
         let (result, _) = unsafe { extension.call("count", None) };

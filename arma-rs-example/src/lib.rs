@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn hello() {
-        let mut extension = init().testing();
+        let extension = init().testing();
         let (output, _) = unsafe { extension.call("hello:english", None) };
         assert_eq!(output, "hello");
         let (output, _) = unsafe { extension.call("hello:french", None) };
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn welcome() {
-        let mut extension = init().testing();
+        let extension = init().testing();
         let (output, _) =
             unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
         assert_eq!(output, "Welcome John");

@@ -48,7 +48,7 @@ impl<S> Extension<S> {
 
     #[must_use]
     /// Returns a context for simulating interactions with Arma
-    pub fn context(&mut self) -> Context<S> {
+    pub fn context(&self) -> Context<S> {
         self.0.context().with_buffer_size(BUFFER_SIZE)
     }
 
@@ -57,11 +57,7 @@ impl<S> Extension<S> {
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn call(
-        &mut self,
-        function: &str,
-        args: Option<Vec<String>>,
-    ) -> (String, libc::c_int) {
+    pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
         let mut output = [0; BUFFER_SIZE];
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
@@ -69,9 +65,8 @@ impl<S> Extension<S> {
                 .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
                 .collect::<Vec<*mut i8>>()
         });
-        let context = self.context();
         let res = self.0.group.handle(
-            context,
+            self.context(),
             function,
             output.as_mut_ptr(),
             BUFFER_SIZE,
