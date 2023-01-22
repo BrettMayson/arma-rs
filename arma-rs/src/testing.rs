@@ -47,12 +47,6 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
-    pub fn with_state(&mut self, state: S) -> &Self {
-        *self.0.state = state;
-        self
-    }
-
-    #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
         Context::new(self.0.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)

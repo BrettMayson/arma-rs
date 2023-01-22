@@ -1,4 +1,4 @@
-use arma_rs::{Context, Extension, Group, State};
+use arma_rs::{Context, Extension, Group};
 
 #[test]
 fn root_command() {
@@ -271,22 +271,4 @@ fn application_error_err() {
         .testing();
     let (_, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 9);
-}
-
-#[test]
-fn state() {
-    let mut extension = Extension::build_with_state(String::new())
-        .command("get", |state: &mut State<String>| -> String {
-            state.clone()
-        })
-        .command("set", |state: &mut State<String>, new: String| {
-            **state = new
-        })
-        .finish()
-        .testing();
-    let (res, _) = unsafe { extension.call("get", None) };
-    assert_eq!(res, "");
-    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
-    let (res, _) = unsafe { extension.call("get", None) };
-    assert_eq!(res, "foobar");
 }
