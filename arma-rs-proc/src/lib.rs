@@ -3,16 +3,31 @@ use proc_macro2::{Ident, Span};
 use quote::quote;
 use syn::{Error, ItemFn, ReturnType, Type};
 
+fn extension_type(ast: &ItemFn) -> Result<Type, Error> {
+    let ReturnType::Type(_, ty) = ast.sig.output.clone() else {
+        return Err(Error::new(Span::call_site(), "expected function to return `Extension<...>`"));
+    };
+    let Type::Path(ty_path) = ty.as_ref() else {
+        return Err(Error::new(Span::call_site(), "expected function to return `Extension<...>`"));
+    };
+
+    match ty_path.path.segments.last() {
+        Some(x) if x.ident == "Extension" => Ok(*ty),
+        _ => Err(Error::new(
+            Span::call_site(),
+            "expected function to return `Extension<...>`",
+        )),
+    }
+}
+
 #[proc_macro_attribute]
 pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();
 
-    let ReturnType::Type(_, return_type) = ast.sig.output.clone() else {
-        return Error::new(Span::call_site(), "expected function to return `Extension<...>`").to_compile_error().into();
-    };
-    let Type::Path(extension_type) = return_type.as_ref() else {
-        return Error::new(Span::call_site(), "expected function to return `Extension<...>`").to_compile_error().into();
+    let extension_type = match extension_type(&ast) {
+        Err(err) => return err.to_compile_error().into(),
+        Ok(ty) => ty,
     };
 
     let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
