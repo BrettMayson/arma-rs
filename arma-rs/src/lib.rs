@@ -91,7 +91,7 @@ pub struct Extension<S> {
 #[cfg(feature = "extension")]
 impl Extension<()> {
     #[must_use]
-    /// Creates a new extension with no stateent variable.
+    /// Creates a new extension with no state variable.
     pub fn build() -> ExtensionBuilder<()> {
         Self::build_with_state(())
     }
@@ -100,7 +100,7 @@ impl Extension<()> {
 #[cfg(feature = "extension")]
 impl<S> Extension<S> {
     #[must_use]
-    /// Creates a new extension with a stateent variable.
+    /// Creates a new extension with a persistent state variable.
     pub fn build_with_state(state: S) -> ExtensionBuilder<S> {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
@@ -117,7 +117,7 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
-    /// Returns a reference to the stateent variable
+    /// Returns a reference to the persistent state variable
     pub fn state(&mut self) -> &mut State<S> {
         &mut self.state
     }
