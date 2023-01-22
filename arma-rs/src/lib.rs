@@ -3,6 +3,8 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
+use std::cell::RefCell;
+#[cfg(feature = "extension")]
 use std::sync::Arc;
 
 pub use arma_rs_proc::arma;
@@ -60,8 +62,8 @@ pub type Callback =
 #[cfg(feature = "extension")]
 pub struct Extension<P> {
     version: String,
-    group: Group,
-    persist: P,
+    group: Group<P>,
+    persist: RefCell<P>,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
@@ -70,23 +72,35 @@ pub struct Extension<P> {
 #[cfg(feature = "extension")]
 impl Extension<()> {
     #[must_use]
-    /// Creates a new extension.
+    /// Creates a new extension with no persistent variable.
     pub fn build() -> ExtensionBuilder<()> {
-        ExtensionBuilder {
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            group: Group::new(),
-            allow_no_args: false,
-            persist: (),
-        }
+        Self::build_with_persist(())
     }
 }
 
 #[cfg(feature = "extension")]
 impl<P> Extension<P> {
     #[must_use]
+    /// Creates a new extension with a persistent variable.
+    pub fn build_with_persist(persist: P) -> ExtensionBuilder<P> {
+        ExtensionBuilder {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            group: Group::new(),
+            allow_no_args: false,
+            persist,
+        }
+    }
+
+    #[must_use]
     /// Returns the version of the extension.
     pub fn version(&self) -> &str {
         &self.version
+    }
+
+    #[must_use]
+    /// Returns a reference to the persistent variable
+    pub fn persist(&self) -> &RefCell<P> {
+        &self.persist
     }
 
     #[must_use]
@@ -127,6 +141,7 @@ impl<P> Extension<P> {
             return 1;
         };
         self.group.handle(
+            self.persist(),
             self.context().with_buffer_size(size),
             &function,
             output,
@@ -196,7 +211,7 @@ impl<P> Extension<P> {
 #[cfg(feature = "extension")]
 pub struct ExtensionBuilder<P> {
     version: String,
-    group: Group,
+    group: Group<P>,
     persist: P,
     allow_no_args: bool,
 }
@@ -214,23 +229,12 @@ impl<P> ExtensionBuilder<P> {
     #[inline]
     #[must_use]
     /// Add a group to the extension.
-    pub fn group<S>(mut self, name: S, group: Group) -> Self
+    pub fn group<S>(mut self, name: S, group: Group<P>) -> Self
     where
         S: Into<String>,
     {
         self.group = self.group.group(name.into(), group);
         self
-    }
-
-    #[inline]
-    #[must_use]
-    pub fn persist<T>(self, persist: T) -> ExtensionBuilder<T> {
-        ExtensionBuilder {
-            version: self.version,
-            group: self.group,
-            persist,
-            allow_no_args: self.allow_no_args,
-        }
     }
 
     #[inline]
@@ -251,7 +255,7 @@ impl<P> ExtensionBuilder<P> {
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
         S: Into<String>,
-        F: Factory<I, R> + 'static,
+        F: Factory<I, P, R> + 'static,
     {
         self.group = self.group.command(name, handler);
         self
@@ -264,7 +268,7 @@ impl<P> ExtensionBuilder<P> {
         Extension {
             version: self.version,
             group: self.group,
-            persist: self.persist,
+            persist: RefCell::new(self.persist),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),

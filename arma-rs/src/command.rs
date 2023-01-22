@@ -1,9 +1,12 @@
+use std::cell::RefCell;
+
 use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
 use crate::Context;
 
-type HandlerFunc = Box<
+type HandlerFunc<P> = Box<
     dyn Fn(
+        &RefCell<P>,
         Context,
         *mut libc::c_char,
         libc::size_t,
@@ -13,36 +16,38 @@ type HandlerFunc = Box<
 >;
 
 /// A wrapper for `HandlerFunc`
-pub struct Handler {
+pub struct Handler<P> {
     /// The function to call
-    pub handler: HandlerFunc,
+    pub handler: HandlerFunc<P>,
 }
 
 /// Create a new handler from a Factory
-pub fn fn_handler<C, I, R>(command: C) -> Handler
+pub fn fn_handler<C, I, P, R>(command: C) -> Handler<P>
 where
-    C: Factory<I, R> + 'static,
+    C: Factory<I, P, R> + 'static,
 {
     Handler {
         handler: Box::new(
-            move |context: Context,
+            move |persist: &RefCell<P>,
+                  context: Context,
                   output: *mut libc::c_char,
                   size: libc::size_t,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
-                unsafe { command.call(context, output, size, args, count) }
+                unsafe { command.call(persist, context, output, size, args, count) }
             },
         ),
     }
 }
 
 /// Execute a command
-pub trait Executor: 'static {
+pub trait Executor<P>: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
+        persist: &RefCell<P>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -55,11 +60,12 @@ pub trait Executor: 'static {
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`
 /// The return value must implement `IntoExtResult`
-pub trait Factory<A, R> {
+pub trait Factory<A, P, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
+        persist: &RefCell<P>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -69,32 +75,91 @@ pub trait Factory<A, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* LF> Executor for dyn Factory<($($param,)*), LF>
+    impl<$($param,)* EP, ER> Executor<EP> for dyn Factory<($($param,)*), EP, ER>
     where
-        LF: 'static,
+        EP: 'static,
+        ER: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
             &self,
+            persist: &RefCell<EP>,
             context: Context,
             output: *mut libc::c_char,
             size: libc::size_t,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
-            self.call(context, output, size, args, count);
+            self.call(persist, context, output, size, args, count);
         }
     }
 
+// No context with State
+impl<Func, $($param,)* EP, ER> Factory<(&RefCell<EP>, $($param,)*), EP, ER> for Func
+where
+    ER: IntoExtResult + 'static,
+    Func: Fn(&RefCell<EP>, $($param),*) -> ER,
+    $($param: FromArma,)*
+{
+    #[allow(non_snake_case)]
+    unsafe fn call(&self, persist: &RefCell<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        let count = count.unwrap_or_else(|| 0);
+        if count != $c {
+            return format!("2{}", count).parse::<libc::c_int>().unwrap();
+        }
+        if $c == 0 {
+            handle_output_and_return(
+                (self)(persist, $($param::from_arma("".to_string()).unwrap(),)*),
+                output,
+                size
+            )
+        } else {
+            #[allow(unused_variables, unused_mut)]
+            let mut argv: Vec<String> = {
+                let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                let mut argv = argv
+                .to_vec()
+                .into_iter()
+                .map(|s|
+                    std::ffi::CStr::from_ptr(s)
+                    .to_string_lossy()
+                    .trim_matches('\"')
+                    .to_owned()
+                )
+                .collect::<Vec<String>>();
+                argv.reverse();
+                argv
+            };
+            #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+            let mut c = 0;
+            #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
+            handle_output_and_return(
+                {
+                    (self)(persist, $(
+                        if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                            c += 1;
+                            val
+                        } else {
+                            return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                        },
+                    )*)
+                },
+                output,
+                size
+            )
+        }
+    }
+}
+
     // No context
-    impl<Func, $($param,)* ER> Factory<($($param,)*), ER> for Func
+    impl<Func, $($param,)* EP, ER> Factory<($($param,)*), EP, ER> for Func
     where
         ER: IntoExtResult + 'static,
         Func: Fn($($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &RefCell<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -144,14 +209,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context
-    impl<Func, $($param,)* ER> Factory<(Context, $($param,)*), ER> for Func
+    impl<Func, $($param,)* EP, ER> Factory<(Context, $($param,)*), EP, ER> for Func
     where
         ER: IntoExtResult + 'static,
         Func: Fn(Context, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &RefCell<EP>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();

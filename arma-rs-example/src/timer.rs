@@ -9,7 +9,7 @@ pub fn sleep(ctx: Context, duration: u64, id: String) {
     });
 }
 
-pub fn group() -> Group {
+pub fn group() -> Group<()> {
     Group::new().command("sleep", sleep)
 }
 

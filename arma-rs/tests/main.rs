@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use arma_rs::{Context, Extension, Group};
 
 #[test]
@@ -271,4 +273,22 @@ fn application_error_err() {
         .testing();
     let (_, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 9);
+}
+
+#[test]
+fn persist() {
+    let extension = Extension::build_with_persist(String::new())
+        .command("get", |state: &RefCell<String>| -> String {
+            state.borrow().to_string()
+        })
+        .command("set", |state: &RefCell<String>, new: String| {
+            state.replace(new.to_string())
+        })
+        .finish()
+        .testing();
+    let (res, _) = unsafe { extension.call("get", None) };
+    assert_eq!(res, "");
+    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
+    let (res, _) = unsafe { extension.call("get", None) };
+    assert_eq!(res, "foobar");
 }

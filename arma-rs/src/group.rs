@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
     command::{fn_handler, Factory, Handler},
@@ -8,12 +8,12 @@ use crate::{
 #[derive(Default)]
 /// A group of commands.
 /// Called from Arma using `[group]:[command]`.
-pub struct Group {
-    commands: HashMap<String, Box<Handler>>,
+pub struct Group<P> {
+    commands: HashMap<String, Box<Handler<P>>>,
     children: HashMap<String, Self>,
 }
 
-impl Group {
+impl<P> Group<P> {
     #[must_use]
     /// Creates a new group
     pub fn new() -> Self {
@@ -29,7 +29,7 @@ impl Group {
     pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
         S: Into<String>,
-        F: Factory<I, R> + 'static,
+        F: Factory<I, P, R> + 'static,
     {
         self.commands
             .insert(name.into(), Box::new(fn_handler(handler)));
@@ -49,6 +49,7 @@ impl Group {
 
     pub(crate) fn handle(
         &self,
+        persist: &RefCell<P>,
         context: Context,
         function: &str,
         output: *mut libc::c_char,
@@ -58,10 +59,10 @@ impl Group {
     ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
             self.children.get(group).map_or(1, |group| {
-                group.handle(context, function, output, size, args, count)
+                group.handle(persist, context, function, output, size, args, count)
             })
         } else if let Some(handler) = self.commands.get(function) {
-            (handler.handler)(context, output, size, args, count)
+            (handler.handler)(persist, context, output, size, args, count)
         } else {
             1
         }

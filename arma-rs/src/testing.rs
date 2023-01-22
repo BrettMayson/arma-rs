@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cell::RefCell, time::Duration};
 
 use crate::{Context, Value};
 
@@ -47,6 +47,11 @@ impl<P> Extension<P> {
     }
 
     #[must_use]
+    pub fn persist(&self) -> &RefCell<P> {
+        self.0.persist()
+    }
+
+    #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
         Context::new(self.0.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
@@ -66,6 +71,7 @@ impl<P> Extension<P> {
                 .collect::<Vec<*mut i8>>()
         });
         let res = self.0.group.handle(
+            self.persist(),
             self.context(),
             function,
             output.as_mut_ptr(),
