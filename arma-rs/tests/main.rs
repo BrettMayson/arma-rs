@@ -282,7 +282,10 @@ fn state() {
         })
         .finish()
         .testing();
-    assert_eq!(*extension.state().read().unwrap(), String::new());
+    assert_eq!(*extension.context().state().read().unwrap(), String::new());
     unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
-    assert_eq!(*extension.state().read().unwrap(), String::from("foobar"));
+    assert_eq!(
+        *extension.context().state().read().unwrap(),
+        String::from("foobar")
+    );
 }
