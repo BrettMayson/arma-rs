@@ -1,11 +1,10 @@
 use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
-use crate::{Context, State};
+use crate::Context;
 
 type HandlerFunc<S> = Box<
     dyn Fn(
-        &mut State<S>,
-        Context,
+        Context<S>,
         *mut libc::c_char,
         libc::size_t,
         Option<*mut *mut i8>,
@@ -26,14 +25,13 @@ where
 {
     Handler {
         handler: Box::new(
-            move |state: &mut State<S>,
-                  context: Context,
+            move |context: Context<S>,
                   output: *mut libc::c_char,
                   size: libc::size_t,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
-                unsafe { command.call(state, context, output, size, args, count) }
+                unsafe { command.call(context, output, size, args, count) }
             },
         ),
     }
@@ -45,8 +43,7 @@ pub trait Executor<S>: 'static {
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        state: &mut State<S>,
-        context: Context,
+        context: Context<S>,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -63,8 +60,7 @@ pub trait Factory<A, S, R> {
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        state: &mut State<S>,
-        context: Context,
+        context: Context<S>,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -81,71 +77,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         unsafe fn call(
             &self,
-            state: &mut State<ES>,
-            context: Context,
+            context: Context<ES>,
             output: *mut libc::c_char,
             size: libc::size_t,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
-            self.call(state, context, output, size, args, count);
-        }
-    }
-
-    // No context with State
-    impl<Func, $($param,)* ES, ER> Factory<(&mut State<ES>, $($param,)*), ES, ER> for Func
-    where
-        ER: IntoExtResult + 'static,
-        Func: Fn(&mut State<ES>, $($param),*) -> ER,
-        $($param: FromArma,)*
-    {
-        #[allow(non_snake_case)]
-        unsafe fn call(&self, state: &mut State<ES>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-            let count = count.unwrap_or_else(|| 0);
-            if count != $c {
-                return format!("2{}", count).parse::<libc::c_int>().unwrap();
-            }
-            if $c == 0 {
-                handle_output_and_return(
-                    (self)(state, $($param::from_arma("".to_string()).unwrap(),)*),
-                    output,
-                    size
-                )
-            } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                    let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
-                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                let mut c = 0;
-                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-                handle_output_and_return(
-                    {
-                        (self)(state, $(
-                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                                c += 1;
-                                val
-                            } else {
-                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                            },
-                        )*)
-                    },
-                    output,
-                    size
-                )
-            }
+            self.call(context, output, size, args, count);
         }
     }
 
@@ -157,7 +95,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &mut State<ES>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: Context<ES>, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -207,14 +145,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context
-    impl<Func, $($param,)* ES, ER> Factory<(Context, $($param,)*), ES, ER> for Func
+    impl<Func, $($param,)* ES, ER> Factory<(Context<ES>, $($param,)*), ES, ER> for Func
     where
         ER: IntoExtResult + 'static,
-        Func: Fn(Context, $($param),*) -> ER,
+        Func: Fn(Context<ES>, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &mut State<ES>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, context: Context<ES>, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();

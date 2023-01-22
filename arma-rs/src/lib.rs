@@ -3,10 +3,7 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::sync::{Arc, RwLock};
 
 pub use arma_rs_proc::arma;
 
@@ -58,31 +55,13 @@ pub type Callback = extern "stdcall" fn(
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
-#[cfg(feature = "extension")]
-pub struct State<T>(T);
-
-#[cfg(feature = "extension")]
-impl<T> Deref for State<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[cfg(feature = "extension")]
-impl<T> DerefMut for State<T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
 pub struct Extension<S> {
     version: String,
     group: Group<S>,
-    state: State<S>,
+    state: Arc<RwLock<S>>,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
@@ -117,12 +96,6 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
-    /// Returns a reference to the persistent state variable
-    pub fn state(&mut self) -> &mut State<S> {
-        &mut self.state
-    }
-
-    #[must_use]
     /// Returns if the extension can be called without any arguments.
     /// Example:
     /// ```sqf
@@ -139,8 +112,8 @@ impl<S> Extension<S> {
 
     #[must_use]
     /// Get a context for interacting with Arma
-    pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+    pub fn context(&mut self) -> Context<S> {
+        Context::new(self.state.clone(), self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -160,15 +133,8 @@ impl<S> Extension<S> {
             return 1;
         };
         let context = self.context().with_buffer_size(size);
-        self.group.handle(
-            &mut self.state,
-            context,
-            &function,
-            output,
-            size,
-            args,
-            count,
-        )
+        self.group
+            .handle(context, &function, output, size, args, count)
     }
 
     #[must_use]
@@ -284,7 +250,7 @@ impl<S> ExtensionBuilder<S> {
         Extension {
             version: self.version,
             group: self.group,
-            state: State(self.state),
+            state: Arc::new(RwLock::new(self.state)),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),

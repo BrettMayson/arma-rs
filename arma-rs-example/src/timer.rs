@@ -2,7 +2,7 @@ use std::{thread, time::Duration};
 
 use arma_rs::{Context, Group};
 
-pub fn sleep(ctx: Context, duration: u64, id: String) {
+pub fn sleep(ctx: Context<()>, duration: u64, id: String) {
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(duration));
         ctx.callback_data("timer:sleep", "done", Some(id));

@@ -1,4 +1,4 @@
-use arma_rs::{arma, Extension, State};
+use arma_rs::{arma, Context, Extension};
 
 #[arma]
 fn init() -> Extension<u32> {
@@ -7,9 +7,10 @@ fn init() -> Extension<u32> {
         .finish()
 }
 
-pub fn count(state: &mut State<u32>) -> u32 {
-    **state += 1;
-    **state
+pub fn count(ctx: Context<u32>) -> u32 {
+    let mut state = ctx.state().write().unwrap();
+    *state += 1;
+    *state
 }
 
 #[cfg(test)]

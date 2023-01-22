@@ -208,7 +208,7 @@ fn invalid_arg_type_position() {
 #[test]
 fn filled_output() {
     let mut extension = Extension::build()
-        .command("hello", |ctx: Context| -> String {
+        .command("hello", |ctx: Context<_>| -> String {
             "X".repeat(ctx.buffer_len())
         })
         .finish()
@@ -220,7 +220,7 @@ fn filled_output() {
 #[test]
 fn filled_output_with_args() {
     let mut extension = Extension::build()
-        .command("hello", |ctx: Context, item: String| -> String {
+        .command("hello", |ctx: Context<_>, item: String| -> String {
             item.repeat(ctx.buffer_len())
         })
         .finish()
@@ -232,7 +232,7 @@ fn filled_output_with_args() {
 #[test]
 fn output_overflow() {
     let mut extension = Extension::build()
-        .command("hello", |ctx: Context| -> String {
+        .command("hello", |ctx: Context<_>| -> String {
             "X".repeat(ctx.buffer_len() + 1)
         })
         .finish()
@@ -244,7 +244,7 @@ fn output_overflow() {
 #[test]
 fn output_overflow_with_args() {
     let mut extension = Extension::build()
-        .command("hello", |ctx: Context, item: String| -> String {
+        .command("hello", |ctx: Context<_>, item: String| -> String {
             item.repeat(ctx.buffer_len() + 1)
         })
         .finish()

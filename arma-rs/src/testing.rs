@@ -48,8 +48,8 @@ impl<S> Extension<S> {
 
     #[must_use]
     /// Returns a context for simulating interactions with Arma
-    pub fn context(&self) -> Context {
-        Context::new(self.0.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
+    pub fn context(&mut self) -> Context<S> {
+        self.0.context().with_buffer_size(BUFFER_SIZE)
     }
 
     #[must_use]
@@ -71,7 +71,6 @@ impl<S> Extension<S> {
         });
         let context = self.context();
         let res = self.0.group.handle(
-            &mut self.0.state,
             context,
             function,
             output.as_mut_ptr(),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     command::{fn_handler, Factory, Handler},
-    Context, State,
+    Context,
 };
 
 #[derive(Default)]
@@ -45,8 +45,7 @@ impl<S> Group<S> {
 
     pub(crate) fn handle(
         &self,
-        state: &mut State<S>,
-        context: Context,
+        context: Context<S>,
         function: &str,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -55,10 +54,10 @@ impl<S> Group<S> {
     ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
             self.children.get(group).map_or(1, |group| {
-                group.handle(state, context, function, output, size, args, count)
+                group.handle(context, function, output, size, args, count)
             })
         } else if let Some(handler) = self.commands.get(function) {
-            (handler.handler)(state, context, output, size, args, count)
+            (handler.handler)(context, output, size, args, count)
         } else {
             1
         }
