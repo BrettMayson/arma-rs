@@ -1,10 +1,8 @@
-use std::cell::RefCell;
-
-use arma_rs::{Context, Extension, Group};
+use arma_rs::{Context, Extension, Group, State};
 
 #[test]
 fn root_command() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", || -> &'static str { "Hello" })
         .finish()
         .testing();
@@ -14,7 +12,7 @@ fn root_command() {
 
 #[test]
 fn root_command_with_args() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |name: String| -> String {
             format!("Hello {}", name)
         })
@@ -26,7 +24,7 @@ fn root_command_with_args() {
 
 #[test]
 fn root_command_no_return() {
-    let extension = Extension::build().command("nop", || {}).finish().testing();
+    let mut extension = Extension::build().command("nop", || {}).finish().testing();
     let (result, code) = unsafe { extension.call("nop", None) };
     assert_eq!(code, 0);
     assert_eq!(result, "null");
@@ -34,7 +32,7 @@ fn root_command_no_return() {
 
 #[test]
 fn root_command_with_args_no_return() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("nop", |_: i8| {})
         .finish()
         .testing();
@@ -45,7 +43,7 @@ fn root_command_with_args_no_return() {
 
 #[test]
 fn group_command() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .group(
             "english",
             Group::new().command("hello", || -> &'static str { "Hello" }),
@@ -58,7 +56,7 @@ fn group_command() {
 
 #[test]
 fn group_command_with_args() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .group(
             "english",
             Group::new().command("hello", |name: String| -> String {
@@ -73,7 +71,7 @@ fn group_command_with_args() {
 
 #[test]
 fn sub_group_command() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .group(
             "greeting",
             Group::new().group(
@@ -89,7 +87,7 @@ fn sub_group_command() {
 
 #[test]
 fn sub_group_command_with_args() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .group(
             "greeting",
             Group::new().group(
@@ -108,7 +106,7 @@ fn sub_group_command_with_args() {
 
 #[test]
 fn result_ok() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("result", || -> Result<&str, &str> { Ok("Ok") })
         .finish()
         .testing();
@@ -119,7 +117,7 @@ fn result_ok() {
 
 #[test]
 fn result_err() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("result", || -> Result<&str, &str> { Err("Err") })
         .finish()
         .testing();
@@ -130,7 +128,7 @@ fn result_err() {
 
 #[test]
 fn result_unit_ok() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("result", || -> Result<(), &str> { Ok(()) })
         .finish()
         .testing();
@@ -141,7 +139,7 @@ fn result_unit_ok() {
 
 #[test]
 fn result_unit_err() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("result", || -> Result<&str, ()> { Err(()) })
         .finish()
         .testing();
@@ -152,7 +150,7 @@ fn result_unit_err() {
 
 #[test]
 fn result_unit_both() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("result", || -> Result<(), ()> { Ok(()) })
         .finish()
         .testing();
@@ -163,7 +161,7 @@ fn result_unit_both() {
 
 #[test]
 fn not_found() {
-    let extension = Extension::build().finish().testing();
+    let mut extension = Extension::build().finish().testing();
     let (result, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 1);
     assert_eq!(result, "");
@@ -171,7 +169,7 @@ fn not_found() {
 
 #[test]
 fn invalid_arg_count() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", || -> &'static str { "Hello" })
         .finish()
         .testing();
@@ -182,7 +180,7 @@ fn invalid_arg_count() {
 
 #[test]
 fn invalid_arg_type() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |_: i32| -> &'static str { "Hello" })
         .finish()
         .testing();
@@ -193,7 +191,7 @@ fn invalid_arg_type() {
 
 #[test]
 fn invalid_arg_type_position() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |_: String, _: i32| -> &'static str { "Hello" })
         .finish()
         .testing();
@@ -209,7 +207,7 @@ fn invalid_arg_type_position() {
 
 #[test]
 fn filled_output() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |ctx: Context| -> String {
             "X".repeat(ctx.buffer_len())
         })
@@ -221,7 +219,7 @@ fn filled_output() {
 
 #[test]
 fn filled_output_with_args() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |ctx: Context, item: String| -> String {
             item.repeat(ctx.buffer_len())
         })
@@ -233,7 +231,7 @@ fn filled_output_with_args() {
 
 #[test]
 fn output_overflow() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |ctx: Context| -> String {
             "X".repeat(ctx.buffer_len() + 1)
         })
@@ -245,7 +243,7 @@ fn output_overflow() {
 
 #[test]
 fn output_overflow_with_args() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", |ctx: Context, item: String| -> String {
             item.repeat(ctx.buffer_len() + 1)
         })
@@ -257,7 +255,7 @@ fn output_overflow_with_args() {
 
 #[test]
 fn application_error_ok() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", || -> Result<&str, &str> { Ok("Ok") })
         .finish()
         .testing();
@@ -267,7 +265,7 @@ fn application_error_ok() {
 
 #[test]
 fn application_error_err() {
-    let extension = Extension::build()
+    let mut extension = Extension::build()
         .command("hello", || -> Result<&str, &str> { Err("Error") })
         .finish()
         .testing();
@@ -276,13 +274,13 @@ fn application_error_err() {
 }
 
 #[test]
-fn persist() {
-    let extension = Extension::build_with_persist(String::new())
-        .command("get", |state: &RefCell<String>| -> String {
-            state.borrow().to_string()
+fn state() {
+    let mut extension = Extension::build_with_state(String::new())
+        .command("get", |state: &mut State<String>| -> String {
+            state.clone()
         })
-        .command("set", |state: &RefCell<String>, new: String| {
-            state.replace(new.to_string())
+        .command("set", |state: &mut State<String>, new: String| {
+            **state = new
         })
         .finish()
         .testing();

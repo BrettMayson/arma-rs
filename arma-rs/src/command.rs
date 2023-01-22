@@ -1,12 +1,10 @@
-use std::cell::RefCell;
-
 use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
-use crate::Context;
+use crate::{Context, State};
 
 type HandlerFunc<P> = Box<
     dyn Fn(
-        &RefCell<P>,
+        &mut State<P>,
         Context,
         *mut libc::c_char,
         libc::size_t,
@@ -28,14 +26,14 @@ where
 {
     Handler {
         handler: Box::new(
-            move |persist: &RefCell<P>,
+            move |state: &mut State<P>,
                   context: Context,
                   output: *mut libc::c_char,
                   size: libc::size_t,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
-                unsafe { command.call(persist, context, output, size, args, count) }
+                unsafe { command.call(state, context, output, size, args, count) }
             },
         ),
     }
@@ -47,7 +45,7 @@ pub trait Executor<P>: 'static {
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        persist: &RefCell<P>,
+        state: &mut State<P>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -65,7 +63,7 @@ pub trait Factory<A, P, R> {
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        persist: &RefCell<P>,
+        state: &mut State<P>,
         context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -83,73 +81,73 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         unsafe fn call(
             &self,
-            persist: &RefCell<EP>,
+            state: &mut State<EP>,
             context: Context,
             output: *mut libc::c_char,
             size: libc::size_t,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
-            self.call(persist, context, output, size, args, count);
+            self.call(state, context, output, size, args, count);
         }
     }
 
-// No context with State
-impl<Func, $($param,)* EP, ER> Factory<(&RefCell<EP>, $($param,)*), EP, ER> for Func
-where
-    ER: IntoExtResult + 'static,
-    Func: Fn(&RefCell<EP>, $($param),*) -> ER,
-    $($param: FromArma,)*
-{
-    #[allow(non_snake_case)]
-    unsafe fn call(&self, persist: &RefCell<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-        let count = count.unwrap_or_else(|| 0);
-        if count != $c {
-            return format!("2{}", count).parse::<libc::c_int>().unwrap();
-        }
-        if $c == 0 {
-            handle_output_and_return(
-                (self)(persist, $($param::from_arma("".to_string()).unwrap(),)*),
-                output,
-                size
-            )
-        } else {
-            #[allow(unused_variables, unused_mut)]
-            let mut argv: Vec<String> = {
-                let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                let mut argv = argv
-                .to_vec()
-                .into_iter()
-                .map(|s|
-                    std::ffi::CStr::from_ptr(s)
-                    .to_string_lossy()
-                    .trim_matches('\"')
-                    .to_owned()
+    // No context with State
+    impl<Func, $($param,)* EP, ER> Factory<(&mut State<EP>, $($param,)*), EP, ER> for Func
+    where
+        ER: IntoExtResult + 'static,
+        Func: Fn(&mut State<EP>, $($param),*) -> ER,
+        $($param: FromArma,)*
+    {
+        #[allow(non_snake_case)]
+        unsafe fn call(&self, state: &mut State<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+            let count = count.unwrap_or_else(|| 0);
+            if count != $c {
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
+            }
+            if $c == 0 {
+                handle_output_and_return(
+                    (self)(state, $($param::from_arma("".to_string()).unwrap(),)*),
+                    output,
+                    size
                 )
-                .collect::<Vec<String>>();
-                argv.reverse();
-                argv
-            };
-            #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-            let mut c = 0;
-            #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-            handle_output_and_return(
-                {
-                    (self)(persist, $(
-                        if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                            c += 1;
-                            val
-                        } else {
-                            return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                        },
-                    )*)
-                },
-                output,
-                size
-            )
+            } else {
+                #[allow(unused_variables, unused_mut)]
+                let mut argv: Vec<String> = {
+                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let mut argv = argv
+                    .to_vec()
+                    .into_iter()
+                    .map(|s|
+                        std::ffi::CStr::from_ptr(s)
+                        .to_string_lossy()
+                        .trim_matches('\"')
+                        .to_owned()
+                    )
+                    .collect::<Vec<String>>();
+                    argv.reverse();
+                    argv
+                };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
+                handle_output_and_return(
+                    {
+                        (self)(state, $(
+                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                                c += 1;
+                                val
+                            } else {
+                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                            },
+                        )*)
+                    },
+                    output,
+                    size
+                )
+            }
         }
     }
-}
 
     // No context
     impl<Func, $($param,)* EP, ER> Factory<($($param,)*), EP, ER> for Func
@@ -159,7 +157,7 @@ where
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &RefCell<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &mut State<EP>, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -216,7 +214,7 @@ where
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: &RefCell<EP>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: &mut State<EP>, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();

@@ -1,8 +1,8 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::collections::HashMap;
 
 use crate::{
     command::{fn_handler, Factory, Handler},
-    Context,
+    Context, State,
 };
 
 #[derive(Default)]
@@ -49,7 +49,7 @@ impl<P> Group<P> {
 
     pub(crate) fn handle(
         &self,
-        persist: &RefCell<P>,
+        state: &mut State<P>,
         context: Context,
         function: &str,
         output: *mut libc::c_char,
@@ -59,10 +59,10 @@ impl<P> Group<P> {
     ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
             self.children.get(group).map_or(1, |group| {
-                group.handle(persist, context, function, output, size, args, count)
+                group.handle(state, context, function, output, size, args, count)
             })
         } else if let Some(handler) = self.commands.get(function) {
-            (handler.handler)(persist, context, output, size, args, count)
+            (handler.handler)(state, context, output, size, args, count)
         } else {
             1
         }

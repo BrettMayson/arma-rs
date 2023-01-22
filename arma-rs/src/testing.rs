@@ -1,6 +1,6 @@
-use std::{cell::RefCell, time::Duration};
+use std::time::Duration;
 
-use crate::{Context, Value};
+use crate::{Context, State, Value};
 
 pub struct Extension<P>(crate::Extension<P>);
 
@@ -47,8 +47,8 @@ impl<P> Extension<P> {
     }
 
     #[must_use]
-    pub fn persist(&self) -> &RefCell<P> {
-        self.0.persist()
+    pub fn state(&mut self) -> &mut State<P> {
+        self.0.state()
     }
 
     #[must_use]
@@ -62,7 +62,11 @@ impl<P> Extension<P> {
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
+    pub unsafe fn call(
+        &mut self,
+        function: &str,
+        args: Option<Vec<String>>,
+    ) -> (String, libc::c_int) {
         let mut output = [0; BUFFER_SIZE];
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
@@ -70,9 +74,10 @@ impl<P> Extension<P> {
                 .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
                 .collect::<Vec<*mut i8>>()
         });
+        let context = self.context();
         let res = self.0.group.handle(
-            self.persist(),
-            self.context(),
+            &mut self.0.state,
+            context,
             function,
             output.as_mut_ptr(),
             BUFFER_SIZE,

@@ -39,7 +39,7 @@ mod tests {
     use arma_rs::Extension;
     #[test]
     fn test_memory() {
-        let extension = Extension::build()
+        let mut extension = Extension::build()
             .group("system", super::group())
             .finish()
             .testing();

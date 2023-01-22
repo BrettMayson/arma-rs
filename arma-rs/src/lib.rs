@@ -3,9 +3,10 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::cell::RefCell;
-#[cfg(feature = "extension")]
-use std::sync::Arc;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
 pub use arma_rs_proc::arma;
 
@@ -57,13 +58,33 @@ pub type Callback = extern "stdcall" fn(
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
+// #[cfg(feature = "extension")]
+// pub struct NoState;
+#[cfg(feature = "extension")]
+pub struct State<T>(T);
+
+#[cfg(feature = "extension")]
+impl<T> Deref for State<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[cfg(feature = "extension")]
+impl<T> DerefMut for State<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
 pub struct Extension<P> {
     version: String,
     group: Group<P>,
-    persist: RefCell<P>,
+    state: State<P>,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
@@ -72,22 +93,22 @@ pub struct Extension<P> {
 #[cfg(feature = "extension")]
 impl Extension<()> {
     #[must_use]
-    /// Creates a new extension with no persistent variable.
+    /// Creates a new extension with no stateent variable.
     pub fn build() -> ExtensionBuilder<()> {
-        Self::build_with_persist(())
+        Self::build_with_state(())
     }
 }
 
 #[cfg(feature = "extension")]
 impl<P> Extension<P> {
     #[must_use]
-    /// Creates a new extension with a persistent variable.
-    pub fn build_with_persist(persist: P) -> ExtensionBuilder<P> {
+    /// Creates a new extension with a stateent variable.
+    pub fn build_with_state(state: P) -> ExtensionBuilder<P> {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
             allow_no_args: false,
-            persist,
+            state,
         }
     }
 
@@ -98,9 +119,9 @@ impl<P> Extension<P> {
     }
 
     #[must_use]
-    /// Returns a reference to the persistent variable
-    pub fn persist(&self) -> &RefCell<P> {
-        &self.persist
+    /// Returns a reference to the stateent variable
+    pub fn state(&mut self) -> &mut State<P> {
+        &mut self.state
     }
 
     #[must_use]
@@ -128,7 +149,7 @@ impl<P> Extension<P> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle(
-        &self,
+        &mut self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
         size: libc::size_t,
@@ -140,9 +161,10 @@ impl<P> Extension<P> {
         } else {
             return 1;
         };
+        let context = self.context().with_buffer_size(size);
         self.group.handle(
-            self.persist(),
-            self.context().with_buffer_size(size),
+            &mut self.state,
+            context,
             &function,
             output,
             size,
@@ -212,7 +234,7 @@ impl<P> Extension<P> {
 pub struct ExtensionBuilder<P> {
     version: String,
     group: Group<P>,
-    persist: P,
+    state: P,
     allow_no_args: bool,
 }
 
@@ -268,7 +290,7 @@ impl<P> ExtensionBuilder<P> {
         Extension {
             version: self.version,
             group: self.group,
-            persist: RefCell::new(self.persist),
+            state: State(self.state),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),

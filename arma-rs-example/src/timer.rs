@@ -19,7 +19,7 @@ mod tests {
     use std::time::Duration;
     #[test]
     fn sleep_1sec() {
-        let extension = Extension::build()
+        let mut extension = Extension::build()
             .group("timer", super::group())
             .finish()
             .testing();
@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn failed_callback() {
-        let extension = Extension::build()
+        let mut extension = Extension::build()
             .group("timer", super::group())
             .finish()
             .testing();
