@@ -60,8 +60,8 @@ pub type Callback =
 #[cfg(feature = "extension")]
 pub struct Extension<S> {
     version: String,
-    group: Group<S>,
     state: Arc<RwLock<S>>,
+    group: Group<S>,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
@@ -71,24 +71,18 @@ pub struct Extension<S> {
 impl Extension<()> {
     #[must_use]
     /// Creates a new extension with no state.
-    pub fn build() -> ExtensionBuilder<()> {
-        Self::build_with_state(())
+    pub fn build() -> ExtensionBuilder<(), NoGroup> {
+        ExtensionBuilder {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            state: (),
+            group: NoGroup,
+            allow_no_args: false,
+        }
     }
 }
 
 #[cfg(feature = "extension")]
 impl<S> Extension<S> {
-    #[must_use]
-    /// Creates a new extension with a persistent state.
-    pub fn build_with_state(state: S) -> ExtensionBuilder<S> {
-        ExtensionBuilder {
-            version: env!("CARGO_PKG_VERSION").to_string(),
-            group: Group::new(),
-            allow_no_args: false,
-            state,
-        }
-    }
-
     #[must_use]
     /// Returns the version of the extension.
     pub fn version(&self) -> &str {
@@ -111,7 +105,7 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
-    /// Get a RwLock for editing the extensions persistent state field
+    /// Get a RwLock for editing the persistent state field.
     pub fn state(&self) -> &RwLock<S> {
         self.state.as_ref()
     }
@@ -199,45 +193,76 @@ impl<S> Extension<S> {
     }
 }
 
+/// Used to control ExtensionBuilder's method availability.
+pub struct NoGroup;
+
 /// Used to build an extension.
 #[cfg(feature = "extension")]
-pub struct ExtensionBuilder<S> {
+pub struct ExtensionBuilder<S, G> {
     version: String,
-    group: Group<S>,
     state: S,
+    group: G,
     allow_no_args: bool,
 }
 
 #[cfg(feature = "extension")]
-impl<S> ExtensionBuilder<S> {
+impl ExtensionBuilder<(), NoGroup> {
     #[inline]
     #[must_use]
-    /// Sets the version of the extension.
-    pub fn version(mut self, version: String) -> Self {
-        self.version = version;
-        self
+    /// Set the extension's persistent state field.
+    /// Note: only available if the extension doesn't have a state yet.
+    pub fn state<S>(self, state: S) -> ExtensionBuilder<S, NoGroup> {
+        ExtensionBuilder {
+            version: self.version,
+            state,
+            group: self.group,
+            allow_no_args: self.allow_no_args,
+        }
+    }
+}
+
+#[cfg(feature = "extension")]
+impl<S> ExtensionBuilder<S, NoGroup> {
+    fn with_empty_group(self) -> ExtensionBuilder<S, Group<S>> {
+        ExtensionBuilder {
+            version: self.version,
+            state: self.state,
+            group: Group::new(),
+            allow_no_args: self.allow_no_args,
+        }
+    }
+
+    #[inline]
+    #[must_use]
+    /// Add a command to the extension.
+    pub fn command<F, I, R>(
+        self,
+        name: impl Into<String>,
+        handler: F,
+    ) -> ExtensionBuilder<S, Group<S>>
+    where
+        F: Factory<I, S, R> + 'static,
+    {
+        self.with_empty_group().command(name, handler)
     }
 
     #[inline]
     #[must_use]
     /// Add a group to the extension.
-    pub fn group(mut self, name: impl Into<String>, group: Group<S>) -> Self {
-        self.group = self.group.group(name.into(), group);
-        self
+    pub fn group(self, name: impl Into<String>, group: Group<S>) -> ExtensionBuilder<S, Group<S>> {
+        self.with_empty_group().group(name.into(), group)
     }
 
     #[inline]
     #[must_use]
-    /// Allows the extension to be called without any arguments.
-    /// Example:
-    /// ```sqf
-    /// "my_ext" callExtension "my_func"
-    /// ```
-    pub const fn allow_no_args(mut self) -> Self {
-        self.allow_no_args = true;
-        self
+    /// Builds the extension.
+    pub fn finish(self) -> Extension<S> {
+        self.with_empty_group().finish()
     }
+}
 
+#[cfg(feature = "extension")]
+impl<S> ExtensionBuilder<S, Group<S>> {
     #[inline]
     #[must_use]
     /// Add a command to the extension.
@@ -251,16 +276,47 @@ impl<S> ExtensionBuilder<S> {
 
     #[inline]
     #[must_use]
+    /// Add a group to the extension.
+    pub fn group(mut self, name: impl Into<String>, group: Group<S>) -> Self {
+        self.group = self.group.group(name.into(), group);
+        self
+    }
+
+    #[inline]
+    #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension<S> {
         Extension {
             version: self.version,
-            group: self.group,
             state: Arc::new(RwLock::new(self.state)),
+            group: self.group,
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
         }
+    }
+}
+
+#[cfg(feature = "extension")]
+impl<S, G> ExtensionBuilder<S, G> {
+    #[inline]
+    #[must_use]
+    /// Sets the version of the extension.
+    pub fn version(mut self, version: String) -> Self {
+        self.version = version;
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    /// Allows the extension to be called without any arguments.
+    /// Example:
+    /// ```sqf
+    /// "my_ext" callExtension "my_func"
+    /// ```
+    pub const fn allow_no_args(mut self) -> Self {
+        self.allow_no_args = true;
+        self
     }
 }
 

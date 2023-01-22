@@ -275,7 +275,8 @@ fn application_error_err() {
 
 #[test]
 fn state() {
-    let extension = Extension::build_with_state(String::new())
+    let extension = Extension::build()
+        .state(String::new())
         .command("set", |ctx: Context<String>, new: String| {
             *ctx.state().write().unwrap() = new;
         })
