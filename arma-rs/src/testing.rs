@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{sync::RwLock, time::Duration};
 
 use crate::{Context, Value};
 
@@ -44,6 +44,12 @@ impl<T, E> Result<T, E> {
 impl<S> Extension<S> {
     pub fn new(ext: crate::Extension<S>) -> Self {
         Self(ext)
+    }
+
+    #[must_use]
+    /// Get a RwLock for editing the extensions persistent state field
+    pub fn state(&self) -> &RwLock<S> {
+        self.0.state()
     }
 
     #[must_use]

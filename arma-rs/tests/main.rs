@@ -272,3 +272,16 @@ fn application_error_err() {
     let (_, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 9);
 }
+
+#[test]
+fn state() {
+    let extension = Extension::build_with_state(String::new())
+        .command("set", |ctx: Context<String>, new: String| {
+            *ctx.state().write().unwrap() = new;
+        })
+        .finish()
+        .testing();
+    assert_eq!(*extension.state().read().unwrap(), String::new());
+    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
+    assert_eq!(*extension.state().read().unwrap(), String::from("foobar"));
+}

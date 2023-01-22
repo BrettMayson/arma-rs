@@ -111,6 +111,12 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
+    /// Get a RwLock for editing the extensions persistent state field
+    pub fn state(&self) -> &RwLock<S> {
+        self.state.as_ref()
+    }
+
+    #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context<S> {
         Context::new(self.state.clone(), self.callback_queue.clone())

@@ -40,7 +40,7 @@ impl<S> Context<S> {
     }
 
     #[must_use]
-    /// Returns a reference to the persistent state variable
+    /// Get a RwLock for editing the extensions persistent state field
     pub fn state(&self) -> &RwLock<S> {
         self.state.as_ref()
     }
