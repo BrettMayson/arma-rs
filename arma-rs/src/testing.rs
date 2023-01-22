@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Context, State, Value};
+use crate::{Context, Value};
 
 pub struct Extension<S>(crate::Extension<S>);
 
@@ -47,8 +47,9 @@ impl<S> Extension<S> {
     }
 
     #[must_use]
-    pub fn state(&mut self) -> &mut State<S> {
-        self.0.state()
+    pub fn with_state(&mut self, state: S) -> &Self {
+        *self.0.state = state;
+        self
     }
 
     #[must_use]
