@@ -1,18 +1,18 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::ItemFn;
+use syn::{Error, ItemFn, ReturnType, Type};
 
 #[proc_macro_attribute]
 pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();
 
-    let syn::ReturnType::Type(_, return_type) = ast.sig.output.clone() else {
-        todo!("add error message");
+    let ReturnType::Type(_, return_type) = ast.sig.output.clone() else {
+        return Error::new(Span::call_site(), "expected function to return `Extension<...>`").to_compile_error().into();
     };
-    let syn::Type::Path(extension_type) = return_type.as_ref() else {
-        todo!("add error message");
+    let Type::Path(extension_type) = return_type.as_ref() else {
+        return Error::new(Span::call_site(), "expected function to return `Extension<...>`").to_compile_error().into();
     };
 
     let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
