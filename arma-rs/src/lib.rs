@@ -23,6 +23,10 @@ mod value;
 pub use value::{loadout, FromArma, IntoArma, Value};
 
 #[cfg(feature = "extension")]
+mod arma_info;
+#[cfg(feature = "extension")]
+pub use arma_info::ArmaInfo;
+#[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
@@ -64,6 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    arma_info: Option<ArmaInfo>,
 }
 
 #[cfg(feature = "extension")]
@@ -97,6 +102,28 @@ impl Extension {
     /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
+    }
+
+    /// Called by generated code, do not call directly.
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn set_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+        const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
+        if count < CONTEXT_COUNT as i32 {
+            error!("invalid amount of args passed to `set_arma_context`");
+            panic!("invalid amount of args passed to `set_arma_context`");
+        }
+
+        let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
+            .iter()
+            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
+            .collect();
+        self.arma_info = Some(ArmaInfo {
+            steam_id: argv[0].to_string(),
+            file_source: argv[1].to_string(),
+            mission_name: argv[2].to_string(),
+            server_name: argv[3].to_string(),
+        })
     }
 
     #[must_use]
@@ -250,6 +277,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
+            arma_info: None,
         }
     }
 }

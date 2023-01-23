@@ -22,13 +22,13 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
     let prefix = "";
 
-    let versionfn = Ident::new(&format!("{}RVExtensionVersion", prefix), Span::call_site());
-    let noargfn = Ident::new(&format!("{}RVExtension", prefix), Span::call_site());
-    let argfn = Ident::new(&format!("{}RVExtensionArgs", prefix), Span::call_site());
-    let callbackfn = Ident::new(
-        &format!("{}RVExtensionRegisterCallback", prefix),
-        Span::call_site(),
-    );
+    let fn_ident = |name: &str| Ident::new(&format!("{}{}", prefix, name), Span::call_site());
+
+    let versionfn = fn_ident("RVExtensionVersion");
+    let noargfn = fn_ident("RVExtension");
+    let argfn = fn_ident("RVExtensionArgs");
+    let callbackfn = fn_ident("RVExtensionRegisterCallback");
+    let contextfn = fn_ident("RVExtensionContext");
 
     TokenStream::from(quote! {
 
@@ -51,6 +51,10 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[cfg(all(target_os="windows", target_arch="x86"))]
         arma_rs::link_args::windows::raw! {
             unsafe "/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4"
+        }
+        #[cfg(all(target_os="windows", target_arch="x86"))]
+        arma_rs::link_args::windows::raw! {
+            unsafe "/EXPORT:_RVExtensionContext@8=_safe32_RVExtensionContext@8"
         }
 
         #[no_mangle]
@@ -88,6 +92,14 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
             if let Some(ext) = &mut RV_EXTENSION {
                 ext.register_callback(callback);
                 ext.run_callbacks();
+            }
+        }
+
+        #[no_mangle]
+        pub unsafe extern #extern_type fn #contextfn(args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) {
+            #ext_init
+            if let Some(ext) = &mut RV_EXTENSION {
+                ext.set_arma_context(args, arg_count);
             }
         }
 
