@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.9.1"
+arma-rs = "1.9.2"
 
 [lib]
 name = "my_extension"
@@ -18,7 +18,7 @@ crate-type = ["cdylib"]
 
 ### Hello World
 
-```rust
+```rust,skt-call-init
 use arma_rs::{arma, Extension};
 
 #[arma]
@@ -47,11 +47,8 @@ pub fn welcome(name: String) -> String {
 
 Commands can be grouped together, making your large projects much easier to manage.
 
-```rust
+```rust,skt-call-init
 use arma_rs::{arma, Extension, Group};
-
-mod system_info;
-mod timer;
 
 #[arma]
 fn init() -> Extension {
@@ -107,7 +104,7 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
-```rust
+```rust,skt-group
 use arma_rs::Context;
 
 pub fn sleep(ctx: Context, duration: u64, id: String) {
@@ -126,7 +123,7 @@ pub fn group() -> arma_rs::Group {
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
 
-```rust
+```rust,skt-empty
 #[derive(Default)]
 pub struct MemoryReport {
     total: u64,
@@ -135,8 +132,8 @@ pub struct MemoryReport {
 }
 
 impl IntoArma for MemoryReport {
-    fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(
+    fn to_arma(&self) -> Value {
+        Value::Array(
             vec![self.total, self.free, self.avail]
                 .into_iter()
                 .map(|v| v.to_string().to_arma())
@@ -168,7 +165,7 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 
 ### Error Examples
 
-```rust
+```rust,no_run,skt-empty
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -200,8 +197,7 @@ pub fn should_error(error: bool) -> Result<String, String> {
 
 Tests can be created utilizing the `extension.call()` method.
 
-```rust
-#[cfg(test)]
+```rust,skt-test
 mod tests {
     use super::init;
 
@@ -254,7 +250,7 @@ mod tests {
 
 arma-rs includes a [loadout module](https://docs.rs/arma-rs/latest/arma_rs/loadout/index.html) to assist with the handling of [Arma's Unit Loadout Array](https://community.bistudio.com/wiki/Unit_Loadout_Array).
 
-```rust
+```rust,skt-main
 let l = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
 let mut loadout = Loadout::from_arma(l.to_string()).unwrap();
 loadout.set_secondary({

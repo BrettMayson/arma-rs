@@ -41,15 +41,15 @@ mod hello {
 
 mod welcome {
     pub fn english(name: String) -> String {
-        format!("Welcome {}", name)
+        format!("Welcome {name}")
     }
 
     pub fn french(name: String) -> String {
-        format!("Bienvenue {}", name)
+        format!("Bienvenue {name}")
     }
 
     pub fn spanish(name: String) -> String {
-        format!("Bienvenido {}", name)
+        format!("Bienvenido {name}")
     }
 }
 
