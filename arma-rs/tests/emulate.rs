@@ -40,7 +40,7 @@ fn c_interface_full() {
         .command("welcome", |name: String| -> String {
             format!("Welcome {}", name)
         })
-        .command("callback", |ctx: Context, id: String| {
+        .command("callback", |ctx: Context<_>, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
         .finish();
