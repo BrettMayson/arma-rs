@@ -14,7 +14,7 @@ pub fn hello() -> &'static str {
 }
 
 pub fn welcome(name: String) -> String {
-    format!("Welcome {}", name)
+    format!("Welcome {name}")
 }
 
 #[cfg(test)]

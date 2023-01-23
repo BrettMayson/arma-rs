@@ -35,7 +35,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Null => write!(f, "null"),
-            Self::Number(n) => write!(f, "{}", n),
+            Self::Number(n) => write!(f, "{n}"),
             Self::Array(a) => write!(
                 f,
                 "[{}]",
@@ -44,7 +44,7 @@ impl Display for Value {
                     .collect::<Vec<String>>()
                     .join(",")
             ),
-            Self::Boolean(b) => write!(f, "{}", b),
+            Self::Boolean(b) => write!(f, "{b}"),
             Self::String(s) => write!(f, "\"{}\"", s.replace('\"', "\"\"")),
         }
     }
@@ -58,7 +58,7 @@ impl FromArma for Value {
             '0'..='9' | '-' => Ok(Value::Number(<f64>::from_arma(s)?)),
             '[' => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
             '"' => Ok(Value::String(<String>::from_arma(s)?)),
-            _ => Err(format!("Invalid value: {}", s)),
+            _ => Err(format!("Invalid value: {s}")),
         }
     }
 }

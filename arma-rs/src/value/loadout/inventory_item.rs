@@ -85,7 +85,7 @@ impl FromArma for InventoryItem {
             1 => <(String, u32)>::from_arma(s).map(|(name, count)| Self::Item(name, count)),
             2 => <(String, u32, u32)>::from_arma(s)
                 .map(|(name, count, ammo)| Self::Magazine(name, count, ammo)),
-            _ => Err(format!("Invalid inventory item: {}", s)),
+            _ => Err(format!("Invalid inventory item: {s}")),
         }
     }
 }
