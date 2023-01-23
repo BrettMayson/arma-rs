@@ -10,7 +10,7 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = "1.7.2"
+arma-rs-proc = "1.9.3"
 log = "0.4.17"
 seq-macro = "0.3.2"
 
