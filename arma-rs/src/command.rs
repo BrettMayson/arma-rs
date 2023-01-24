@@ -2,9 +2,9 @@ use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
 use crate::Context;
 
-type HandlerFunc<S> = Box<
+type HandlerFunc = Box<
     dyn Fn(
-        Context<S>,
+        Context,
         *mut libc::c_char,
         libc::size_t,
         Option<*mut *mut i8>,
@@ -13,19 +13,19 @@ type HandlerFunc<S> = Box<
 >;
 
 /// A wrapper for `HandlerFunc`
-pub struct Handler<S> {
+pub struct Handler {
     /// The function to call
-    pub handler: HandlerFunc<S>,
+    pub handler: HandlerFunc,
 }
 
 /// Create a new handler from a Factory
-pub fn fn_handler<C, I, S, R>(command: C) -> Handler<S>
+pub fn fn_handler<C, I, R>(command: C) -> Handler
 where
-    C: Factory<I, S, R> + 'static,
+    C: Factory<I, R> + 'static,
 {
     Handler {
         handler: Box::new(
-            move |context: Context<S>,
+            move |context: Context,
                   output: *mut libc::c_char,
                   size: libc::size_t,
                   args: Option<*mut *mut i8>,
@@ -38,12 +38,12 @@ where
 }
 
 /// Execute a command
-pub trait Executor<S>: 'static {
+pub trait Executor: 'static {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        context: Context<S>,
+        context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -55,12 +55,12 @@ pub trait Executor<S>: 'static {
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`
 /// The return value must implement `IntoExtResult`
-pub trait Factory<A, S, R> {
+pub trait Factory<A, R> {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     unsafe fn call(
         &self,
-        context: Context<S>,
+        context: Context,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -69,15 +69,14 @@ pub trait Factory<A, S, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* ES, ER> Executor<ES> for dyn Factory<($($param,)*), ES, ER>
+    impl<$($param,)* ER> Executor for dyn Factory<($($param,)*), ER>
     where
-        ES: 'static,
         ER: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
             &self,
-            context: Context<ES>,
+            context: Context,
             output: *mut libc::c_char,
             size: libc::size_t,
             args: Option<*mut *mut i8>,
@@ -88,14 +87,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // No context
-    impl<Func, $($param,)* ES, ER> Factory<($($param,)*), ES, ER> for Func
+    impl<Func, $($param,)* ER> Factory<($($param,)*), ER> for Func
     where
         ER: IntoExtResult + 'static,
         Func: Fn($($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context<ES>, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -145,14 +144,14 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     }
 
     // Context
-    impl<Func, $($param,)* ES, ER> Factory<(Context<ES>, $($param,)*), ES, ER> for Func
+    impl<Func, $($param,)* ER> Factory<(Context, $($param,)*), ER> for Func
     where
         ER: IntoExtResult + 'static,
-        Func: Fn(Context<ES>, $($param),*) -> ER,
+        Func: Fn(Context, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context<ES>, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();

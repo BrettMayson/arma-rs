@@ -208,7 +208,7 @@ fn invalid_arg_type_position() {
 #[test]
 fn filled_output() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context<_>| -> String {
+        .command("hello", |ctx: Context| -> String {
             "X".repeat(ctx.buffer_len())
         })
         .finish()
@@ -220,7 +220,7 @@ fn filled_output() {
 #[test]
 fn filled_output_with_args() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context<_>, item: String| -> String {
+        .command("hello", |ctx: Context, item: String| -> String {
             item.repeat(ctx.buffer_len())
         })
         .finish()
@@ -232,7 +232,7 @@ fn filled_output_with_args() {
 #[test]
 fn output_overflow() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context<_>| -> String {
+        .command("hello", |ctx: Context| -> String {
             "X".repeat(ctx.buffer_len() + 1)
         })
         .finish()
@@ -244,7 +244,7 @@ fn output_overflow() {
 #[test]
 fn output_overflow_with_args() {
     let extension = Extension::build()
-        .command("hello", |ctx: Context<_>, item: String| -> String {
+        .command("hello", |ctx: Context, item: String| -> String {
             item.repeat(ctx.buffer_len() + 1)
         })
         .finish()
@@ -273,19 +273,19 @@ fn application_error_err() {
     assert_eq!(code, 9);
 }
 
-#[test]
-fn state() {
-    let extension = Extension::build()
-        .state(String::new())
-        .command("set", |ctx: Context<String>, new: String| {
-            *ctx.state().write().unwrap() = new;
-        })
-        .finish()
-        .testing();
-    assert_eq!(*extension.context().state().read().unwrap(), String::new());
-    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
-    assert_eq!(
-        *extension.context().state().read().unwrap(),
-        String::from("foobar")
-    );
-}
+// #[test]
+// fn state() {
+//     let extension = Extension::build()
+//         .state(String::new())
+//         .command("set", |ctx: Context<String>, new: String| {
+//             *ctx.state().write().unwrap() = new;
+//         })
+//         .finish()
+//         .testing();
+//     assert_eq!(*extension.context().state().read().unwrap(), String::new());
+//     unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
+//     assert_eq!(
+//         *extension.context().state().read().unwrap(),
+//         String::from("foobar")
+//     );
+// }

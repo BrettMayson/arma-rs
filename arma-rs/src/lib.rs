@@ -3,7 +3,7 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 pub use arma_rs_proc::arma;
 
@@ -58,31 +58,29 @@ pub type Callback =
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
-pub struct Extension<S> {
+pub struct Extension {
     version: String,
-    state: Arc<RwLock<S>>,
-    group: Group<S>,
+    group: Group,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
 }
 
 #[cfg(feature = "extension")]
-impl Extension<()> {
+impl Extension {
     #[must_use]
     /// Creates a new extension with no state.
-    pub fn build() -> ExtensionBuilder<(), NoGroup> {
+    pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
-            state: (),
-            group: NoGroup,
+            group: Group::new(),
             allow_no_args: false,
         }
     }
 }
 
 #[cfg(feature = "extension")]
-impl<S> Extension<S> {
+impl Extension {
     #[must_use]
     /// Returns the version of the extension.
     pub fn version(&self) -> &str {
@@ -106,8 +104,8 @@ impl<S> Extension<S> {
 
     #[must_use]
     /// Get a context for interacting with Arma
-    pub fn context(&self) -> Context<S> {
-        Context::new(self.state.clone(), self.callback_queue.clone())
+    pub fn context(&self) -> Context {
+        Context::new(self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -126,14 +124,19 @@ impl<S> Extension<S> {
         } else {
             return 1;
         };
-        let context = self.context().with_buffer_size(size);
-        self.group
-            .handle(context, &function, output, size, args, count)
+        self.group.handle(
+            self.context().with_buffer_size(size),
+            &function,
+            output,
+            size,
+            args,
+            count,
+        )
     }
 
     #[must_use]
     /// Create a version of the extension that can be used in tests.
-    pub fn testing(self) -> testing::Extension<S> {
+    pub fn testing(self) -> testing::Extension {
         testing::Extension::new(self)
     }
 
@@ -187,82 +190,23 @@ impl<S> Extension<S> {
     }
 }
 
-/// Used to control ExtensionBuilder's method availability.
-pub struct NoGroup;
-
 /// Used to build an extension.
 #[cfg(feature = "extension")]
-pub struct ExtensionBuilder<S, G> {
+pub struct ExtensionBuilder {
     version: String,
-    state: S,
-    group: G,
+    group: Group,
     allow_no_args: bool,
 }
 
 #[cfg(feature = "extension")]
-impl ExtensionBuilder<(), NoGroup> {
-    #[inline]
-    #[must_use]
-    /// Set the extension's persistent state field.
-    /// Note: only available if the extension doesn't have a state yet.
-    pub fn state<S>(self, state: S) -> ExtensionBuilder<S, NoGroup> {
-        ExtensionBuilder {
-            version: self.version,
-            state,
-            group: self.group,
-            allow_no_args: self.allow_no_args,
-        }
-    }
-}
-
-#[cfg(feature = "extension")]
-impl<S> ExtensionBuilder<S, NoGroup> {
-    fn with_empty_group(self) -> ExtensionBuilder<S, Group<S>> {
-        ExtensionBuilder {
-            version: self.version,
-            state: self.state,
-            group: Group::new(),
-            allow_no_args: self.allow_no_args,
-        }
-    }
-
+impl ExtensionBuilder {
     #[inline]
     #[must_use]
     /// Add a command to the extension.
-    pub fn command<F, I, R>(
-        self,
-        name: impl Into<String>,
-        handler: F,
-    ) -> ExtensionBuilder<S, Group<S>>
+    pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
     where
-        F: Factory<I, S, R> + 'static,
-    {
-        self.with_empty_group().command(name, handler)
-    }
-
-    #[inline]
-    #[must_use]
-    /// Add a group to the extension.
-    pub fn group(self, name: impl Into<String>, group: Group<S>) -> ExtensionBuilder<S, Group<S>> {
-        self.with_empty_group().group(name.into(), group)
-    }
-
-    #[inline]
-    #[must_use]
-    /// Builds the extension.
-    pub fn finish(self) -> Extension<S> {
-        self.with_empty_group().finish()
-    }
-}
-
-#[cfg(feature = "extension")]
-impl<S> ExtensionBuilder<S, Group<S>> {
-    #[inline]
-    #[must_use]
-    /// Add a command to the extension.
-    pub fn command<F, I, R>(mut self, name: impl Into<String>, handler: F) -> Self
-    where
-        F: Factory<I, S, R> + 'static,
+        S: Into<String>,
+        F: Factory<I, R> + 'static,
     {
         self.group = self.group.command(name, handler);
         self
@@ -271,28 +215,14 @@ impl<S> ExtensionBuilder<S, Group<S>> {
     #[inline]
     #[must_use]
     /// Add a group to the extension.
-    pub fn group(mut self, name: impl Into<String>, group: Group<S>) -> Self {
+    pub fn group<S>(mut self, name: S, group: Group) -> Self
+    where
+        S: Into<String>,
+    {
         self.group = self.group.group(name.into(), group);
         self
     }
 
-    #[inline]
-    #[must_use]
-    /// Builds the extension.
-    pub fn finish(self) -> Extension<S> {
-        Extension {
-            version: self.version,
-            state: Arc::new(RwLock::new(self.state)),
-            group: self.group,
-            allow_no_args: self.allow_no_args,
-            callback: None,
-            callback_queue: Arc::new(SegQueue::new()),
-        }
-    }
-}
-
-#[cfg(feature = "extension")]
-impl<S, G> ExtensionBuilder<S, G> {
     #[inline]
     #[must_use]
     /// Sets the version of the extension.
@@ -311,6 +241,19 @@ impl<S, G> ExtensionBuilder<S, G> {
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
+    }
+
+    #[inline]
+    #[must_use]
+    /// Builds the extension.
+    pub fn finish(self) -> Extension {
+        Extension {
+            version: self.version,
+            group: self.group,
+            allow_no_args: self.allow_no_args,
+            callback: None,
+            callback_queue: Arc::new(SegQueue::new()),
+        }
     }
 }
 

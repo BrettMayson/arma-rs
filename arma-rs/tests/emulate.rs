@@ -40,7 +40,7 @@ fn c_interface_full() {
         .command("welcome", |name: String| -> String {
             format!("Welcome {}", name)
         })
-        .command("callback", |ctx: Context<_>, id: String| {
+        .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
         .finish();
@@ -109,19 +109,19 @@ fn c_interface_builder() {
 #[test]
 fn c_interface_invalid_calls() {
     let mut extension = Extension::build()
-        .command("callback_invalid_name", |ctx: Context<_>| {
+        .command("callback_invalid_name", |ctx: Context| {
             ctx.callback_null("call\0back", "fired");
         })
-        .command("callback_invalid_func", |ctx: Context<_>| {
+        .command("callback_invalid_func", |ctx: Context| {
             ctx.callback_null("callback", "fir\0ed");
         })
-        .command("callback_invalid_data", |ctx: Context<_>| {
+        .command("callback_invalid_data", |ctx: Context| {
             ctx.callback_data("callback", "fired", "dat\0a");
         })
-        .command("callback_valid_null", |ctx: Context<_>| {
+        .command("callback_valid_null", |ctx: Context| {
             ctx.callback_null("callback", "fired");
         })
-        .command("callback_valid_data", |ctx: Context<_>| {
+        .command("callback_valid_data", |ctx: Context| {
             ctx.callback_data("callback", "fired", "data");
         })
         .finish();
@@ -259,15 +259,11 @@ fn c_interface_errors() {
             let _ = a + b;
         })
         .command("add_no_context_return", |a: i32, b: i32| a + b)
-        .command("add_context", |_ctx: Context<_>, a: i32, b: i32| {
+        .command("add_context", |_ctx: Context, a: i32, b: i32| {
             let _ = a + b;
         })
-        .command("add_context_return", |_ctx: Context<_>, a: i32, b: i32| {
-            a + b
-        })
-        .command("overflow", |ctx: Context<_>| {
-            "X".repeat(ctx.buffer_len() + 1)
-        })
+        .command("add_context_return", |_ctx: Context, a: i32, b: i32| a + b)
+        .command("overflow", |ctx: Context| "X".repeat(ctx.buffer_len() + 1))
         .command("result", |error: bool| -> Result<String, String> {
             if error {
                 Err(String::from("told to error"))

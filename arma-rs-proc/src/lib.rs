@@ -1,34 +1,12 @@
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{Error, ItemFn, ReturnType, Type};
-
-fn extension_type(ast: &ItemFn) -> Result<Type, Error> {
-    let ReturnType::Type(_, ty) = ast.sig.output.clone() else {
-        return Err(Error::new(Span::call_site(), "expected function to return `Extension<...>`"));
-    };
-    let Type::Path(ty_path) = ty.as_ref() else {
-        return Err(Error::new(Span::call_site(), "expected function to return `Extension<...>`"));
-    };
-
-    match ty_path.path.segments.last() {
-        Some(x) if x.ident == "Extension" => Ok(*ty),
-        _ => Err(Error::new(
-            Span::call_site(),
-            "expected function to return `Extension<...>`",
-        )),
-    }
-}
+use syn::ItemFn;
 
 #[proc_macro_attribute]
 pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();
-
-    let extension_type = match extension_type(&ast) {
-        Err(err) => return err.to_compile_error().into(),
-        Ok(ty) => ty,
-    };
 
     let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
 
@@ -56,7 +34,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         use arma_rs::libc as arma_rs_libc;
 
-        static mut RV_EXTENSION: Option<#extension_type> = None;
+        static mut RV_EXTENSION: Option<Extension> = None;
 
         #[cfg(all(target_os="windows", target_arch="x86"))]
         arma_rs::link_args::windows::raw! {

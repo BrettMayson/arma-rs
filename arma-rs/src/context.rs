@@ -1,23 +1,18 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, Value};
 
 /// Contains information about the current execution context
-pub struct Context<S> {
-    state: Arc<RwLock<S>>,
+pub struct Context {
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
-impl<S> Context<S> {
-    pub(crate) fn new(
-        state: Arc<RwLock<S>>,
-        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    ) -> Self {
+impl Context {
+    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<Value>)>>) -> Self {
         Self {
-            state,
             queue,
             buffer_size: 0,
         }
@@ -37,12 +32,6 @@ impl<S> Context<S> {
         } else {
             self.buffer_size - 1
         }
-    }
-
-    #[must_use]
-    /// Get a RwLock for editing the extensions persistent state field
-    pub fn state(&self) -> &RwLock<S> {
-        self.state.as_ref()
     }
 
     /// Sends a callback with data into Arma
@@ -82,14 +71,13 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(Arc::new(RwLock::new(())), Arc::new(SegQueue::new()));
+        let ctx = Context::new(Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(Arc::new(RwLock::new(())), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
+        let ctx = Context::new(Arc::new(SegQueue::new())).with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

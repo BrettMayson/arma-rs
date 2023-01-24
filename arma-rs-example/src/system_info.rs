@@ -30,7 +30,7 @@ pub fn memory() -> MemoryReport {
     }
 }
 
-pub fn group() -> Group<()> {
+pub fn group() -> Group {
     Group::new().command("memory", memory)
 }
 
