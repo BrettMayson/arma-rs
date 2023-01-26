@@ -23,6 +23,10 @@ mod value;
 pub use value::{loadout, FromArma, IntoArma, Value};
 
 #[cfg(feature = "extension")]
+mod state;
+#[cfg(feature = "extension")]
+pub use crate::state::State;
+#[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
@@ -64,16 +68,18 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    state: State,
 }
 
 #[cfg(feature = "extension")]
 impl Extension {
     #[must_use]
-    /// Creates a new extension with no state.
+    /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
+            state: State::default(),
             allow_no_args: false,
         }
     }
@@ -105,7 +111,12 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+        Context::new(self.state.clone(), self.callback_queue.clone())
+    }
+
+    #[must_use]
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
     /// Called by generated code, do not call directly.
@@ -195,6 +206,7 @@ impl Extension {
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
+    state: State,
     allow_no_args: bool,
 }
 
@@ -220,6 +232,16 @@ impl ExtensionBuilder {
         S: Into<String>,
     {
         self.group = self.group.group(name.into(), group);
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn state<T>(self, state: T) -> Self
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        self.state.set(state);
         self
     }
 
@@ -253,6 +275,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
+            state: self.state,
         }
     }
 }

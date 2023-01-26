@@ -1,5 +1,6 @@
 use arma_rs::{arma, Extension, Group};
 
+mod counter;
 mod system_info;
 mod timer;
 
@@ -20,6 +21,7 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
+        .group("counter", counter::group())
         .group("system", system_info::group())
         .group("timer", timer::group())
         .finish()
