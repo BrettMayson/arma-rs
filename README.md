@@ -22,7 +22,7 @@ crate-type = ["cdylib"]
 use arma_rs::{arma, Extension};
 
 #[arma]
-fn init() -> Extension<()> {
+fn init() -> Extension {
     Extension::build()
         .command("hello", hello)
         .command("welcome", welcome)
@@ -51,7 +51,7 @@ Commands can be grouped together, making your large projects much easier to mana
 use arma_rs::{arma, Extension, Group};
 
 #[arma]
-fn init() -> Extension<()> {
+fn init() -> Extension {
     Extension::build()
         .group("hello",
             Group::new()
@@ -100,44 +100,21 @@ Commands groups are called by using the format `group:command`. You can nest gro
 "my_extension" callExtension ["hello:french", []]; // Returns ["Bonjour", 0, 0]
 ```
 
-## Context
+## Callbacks
 
-Commands can optionally accept a context simply by adding a argument with the type `Context` at the start of the handler.
-
-### State
-
-A state value can be provided when building an extension which then stays persistent between extension invocations, which can then be accessed through `Context`.
-
-```rust
-use arma_rs::{arma, Context, Extension};
-
-#[arma]
-fn init() -> Extension<u32> {
-    Extension::build().state(0).command("count", count).finish()
-}
-
-pub fn count(ctx: Context<u32>) -> u32 {
-    let mut state = ctx.state().write().unwrap();
-    *state += 1;
-    *state
-}
-```
-
-### Callbacks
-
-Extension callbacks can be invoked anywhere in the extension through `Context`.
+Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
 ```rust,skt-group
 use arma_rs::Context;
 
-pub fn sleep(ctx: Context<()>, duration: u64, id: String) {
+pub fn sleep(ctx: Context, duration: u64, id: String) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(duration));
         ctx.callback_data("example_timer", "done", Some(id));
     });
 }
 
-pub fn group() -> arma_rs::Group<()> {
+pub fn group() -> arma_rs::Group {
     arma_rs::Group::new().command("sleep", sleep)
 }
 ```
@@ -193,7 +170,7 @@ pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
 
-pub fn overflow(ctx: Context<()>) -> String {
+pub fn overflow(ctx: Context) -> String {
     "X".repeat(ctx.buffer_len() + 1)
 }
 
