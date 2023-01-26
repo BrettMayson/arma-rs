@@ -275,19 +275,14 @@ fn application_error_err() {
     assert_eq!(code, 9);
 }
 
-// #[test]
-// fn state() {
-//     let extension = Extension::build()
-//         .state(String::new())
-//         .command("set", |ctx: Context<String>, new: String| {
-//             *ctx.state().write().unwrap() = new;
-//         })
-//         .finish()
-//         .testing();
-//     assert_eq!(*extension.context().state().read().unwrap(), String::new());
-//     unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
-//     assert_eq!(
-//         *extension.context().state().read().unwrap(),
-//         String::from("foobar")
-//     );
-// }
+#[test]
+fn state() {
+    let extension = Extension::build()
+        .state(String::new())
+        .command("set", |ctx: Context, new: String| ctx.state().set(new))
+        .finish()
+        .testing();
+    assert_eq!(extension.state().get::<String>(), String::new());
+    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
+    assert_eq!(extension.state().get::<String>(), String::from("foobar"));
+}
