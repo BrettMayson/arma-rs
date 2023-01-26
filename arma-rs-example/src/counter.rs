@@ -4,7 +4,7 @@ use arma_rs::{Context, Group};
 struct Counter(usize);
 
 pub fn increment(ctx: Context) {
-    let counter = ctx.state().get::<Counter>();
+    let counter = ctx.state().try_get::<Counter>().unwrap_or(Counter(0));
     ctx.state().set(Counter(counter.0 + 1));
 }
 
@@ -19,7 +19,6 @@ mod tests {
     #[test]
     fn test_counter() {
         let extension = Extension::build()
-            .state(super::Counter(0))
             .group("counter", super::group())
             .finish()
             .testing();
