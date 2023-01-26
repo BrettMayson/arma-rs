@@ -1,5 +1,7 @@
 use arma_rs::{Context, Extension, Group};
 
+include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
+
 #[test]
 fn root_command() {
     let extension = Extension::build()
@@ -14,7 +16,7 @@ fn root_command() {
 fn root_command_with_args() {
     let extension = Extension::build()
         .command("hello", |name: String| -> String {
-            format!("Hello {}", name)
+            format!("Hello {name}")
         })
         .finish()
         .testing();
@@ -60,7 +62,7 @@ fn group_command_with_args() {
         .group(
             "english",
             Group::new().command("hello", |name: String| -> String {
-                format!("Hello {}", name)
+                format!("Hello {name}")
             }),
         )
         .finish()
@@ -93,7 +95,7 @@ fn sub_group_command_with_args() {
             Group::new().group(
                 "english",
                 Group::new().command("hello", |name: String| -> String {
-                    format!("Hello {}", name)
+                    format!("Hello {name}")
                 }),
             ),
         )

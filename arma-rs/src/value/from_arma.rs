@@ -159,7 +159,7 @@ where
         let v: Vec<T> = FromArma::from_arma(s)?;
         let len = v.len();
         v.try_into()
-            .map_err(|_| format!("expected {} elements, got {}", N, len))
+            .map_err(|_| format!("expected {N} elements, got {len}"))
     }
 }
 

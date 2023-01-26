@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 arma-rs = { path = "../arma-rs" }
-sys-info = "0.9"
+sys-info = "0.9.1"

@@ -22,11 +22,11 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
     let prefix = "";
 
-    let versionfn = Ident::new(&format!("{}RVExtensionVersion", prefix), Span::call_site());
-    let noargfn = Ident::new(&format!("{}RVExtension", prefix), Span::call_site());
-    let argfn = Ident::new(&format!("{}RVExtensionArgs", prefix), Span::call_site());
+    let versionfn = Ident::new(&format!("{prefix}RVExtensionVersion"), Span::call_site());
+    let noargfn = Ident::new(&format!("{prefix}RVExtension"), Span::call_site());
+    let argfn = Ident::new(&format!("{prefix}RVExtensionArgs"), Span::call_site());
     let callbackfn = Ident::new(
-        &format!("{}RVExtensionRegisterCallback", prefix),
+        &format!("{prefix}RVExtensionRegisterCallback"),
         Span::call_site(),
     );
 
