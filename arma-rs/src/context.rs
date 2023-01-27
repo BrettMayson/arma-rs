@@ -2,17 +2,22 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, Value};
+use crate::{ArmaInfo, IntoArma, Value};
 
 /// Contains information about the current execution context
 pub struct Context {
-    pub(crate) queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    arma_info: ArmaInfo,
+    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
-    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<Value>)>>) -> Self {
+    pub(crate) fn new(
+        arma_info: ArmaInfo,
+        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    ) -> Self {
         Self {
+            arma_info,
             queue,
             buffer_size: 0,
         }
@@ -32,6 +37,11 @@ impl Context {
         } else {
             self.buffer_size - 1
         }
+    }
+
+    #[must_use]
+    pub const fn arma_info(&self) -> &ArmaInfo {
+        &self.arma_info
     }
 
     /// Sends a callback with data into Arma
@@ -71,13 +81,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(Arc::new(SegQueue::new()));
+        let ctx = Context::new(ArmaInfo::default(), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(Arc::new(SegQueue::new())).with_buffer_size(100);
+        let ctx =
+            Context::new(ArmaInfo::default(), Arc::new(SegQueue::new())).with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

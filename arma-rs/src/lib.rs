@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_info: Option<ArmaInfo>,
+    arma_info: ArmaInfo,
 }
 
 #[cfg(feature = "extension")]
@@ -99,7 +99,7 @@ impl Extension {
         self.allow_no_args
     }
 
-    /// Called by generated code, do not call directly.
+    /// Called by generated code, do not call di rectly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
     }
@@ -109,27 +109,28 @@ impl Extension {
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn set_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
-        if count < CONTEXT_COUNT as i32 {
-            error!("invalid amount of args passed to `set_arma_context`");
-            panic!("invalid amount of args passed to `set_arma_context`");
+        match count.cmp(&(CONTEXT_COUNT as i32)) {
+            std::cmp::Ordering::Less => {
+                error!("invalid amount of args passed to `set_arma_context`");
+                return;
+            }
+            std::cmp::Ordering::Greater => {
+                warn!("unexpected amount of args passed to `set_arma_context`")
+            }
+            _ => (),
         }
 
         let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
             .iter()
-            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
+            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
             .collect();
-        self.arma_info = Some(ArmaInfo {
-            steam_id: argv[0].to_string(),
-            file_source: argv[1].to_string(),
-            mission_name: argv[2].to_string(),
-            server_name: argv[3].to_string(),
-        })
+        self.arma_info = ArmaInfo::new(&argv[0], &argv[1], &argv[2], &argv[3])
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+        Context::new(self.arma_info.clone(), self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -277,7 +278,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_info: None,
+            arma_info: ArmaInfo::default(),
         }
     }
 }
