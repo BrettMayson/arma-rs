@@ -16,7 +16,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    #[cfg(all(target_arch = "x86", target_os = "windows"))]
+    #[cfg(all(target_os = "windows", target_arch = "x86"))]
     let prefix = "safe32_";
 
     #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
@@ -38,24 +38,14 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static mut RV_EXTENSION: Option<Extension> = None;
 
         #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionVersion@8=_safe32_RVExtensionVersion@8"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtension@12=_safe32_RVExtension@12"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionArgs@20=_safe32_RVExtensionArgs@20"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionContext@8=_safe32_RVExtensionContext@8"
+        arma_rs::link_args::windows! {
+            unsafe {
+                raw("/EXPORT:_RVExtensionVersion@8=_safe32_RVExtensionVersion@8");
+                raw("/EXPORT:_RVExtension@12=_safe32_RVExtension@12");
+                raw("/EXPORT:_RVExtensionArgs@20=_safe32_RVExtensionArgs@20");
+                raw("/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4");
+                raw("/EXPORT:_RVExtensionContext@8=_safe32_RVExtensionContext@8");
+            }
         }
 
         #[no_mangle]
