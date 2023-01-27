@@ -6,13 +6,16 @@ use crate::{IntoArma, State, Value};
 
 /// Contains information about the current execution context
 pub struct Context {
-    state: State,
+    state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
-    pub(crate) fn new(state: State, queue: Arc<SegQueue<(String, String, Option<Value>)>>) -> Self {
+    pub(crate) fn new(
+        state: Arc<State>,
+        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    ) -> Self {
         Self {
             state,
             queue,
@@ -77,13 +80,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(State::default(), Arc::new(SegQueue::new()));
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(State::default(), Arc::new(SegQueue::new())).with_buffer_size(100);
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()))
+            .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

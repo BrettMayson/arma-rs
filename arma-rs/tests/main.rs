@@ -276,13 +276,10 @@ fn application_error_err() {
 }
 
 #[test]
-fn state() {
+fn state_build() {
     let extension = Extension::build()
-        .state(String::new())
-        .command("set", |ctx: Context, new: String| ctx.state().set(new))
+        .state(String::from("foobar"))
         .finish()
         .testing();
-    assert_eq!(extension.state().get::<String>(), String::new());
-    unsafe { extension.call("set", Some(vec![String::from("foobar")])) };
-    assert_eq!(extension.state().get::<String>(), String::from("foobar"));
+    assert_eq!(extension.state().get::<String>(), "foobar");
 }

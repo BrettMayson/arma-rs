@@ -23,10 +23,6 @@ mod value;
 pub use value::{loadout, FromArma, IntoArma, Value};
 
 #[cfg(feature = "extension")]
-mod state;
-#[cfg(feature = "extension")]
-pub use crate::state::State;
-#[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
@@ -59,6 +55,9 @@ pub type Callback = extern "stdcall" fn(
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
+#[cfg(feature = "extension")]
+type State = state::Container![Send + Sync];
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
@@ -68,7 +67,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    state: State,
+    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
@@ -112,11 +111,6 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(self.state.clone(), self.callback_queue.clone())
-    }
-
-    #[must_use]
-    pub fn state(&self) -> &State {
-        &self.state
     }
 
     /// Called by generated code, do not call directly.
@@ -239,7 +233,7 @@ impl ExtensionBuilder {
     #[must_use]
     pub fn state<T>(self, state: T) -> Self
     where
-        T: Send + Sync + Clone + 'static,
+        T: Send + Sync + 'static,
     {
         self.state.set(state);
         self
@@ -275,7 +269,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            state: self.state,
+            state: Arc::new(self.state),
         }
     }
 }

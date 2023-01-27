@@ -21,6 +21,7 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
+        .state(counter::Counter(0.into()))
         .group("counter", counter::group())
         .group("system", system_info::group())
         .group("timer", timer::group())

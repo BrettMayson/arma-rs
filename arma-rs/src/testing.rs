@@ -54,7 +54,7 @@ impl Extension {
 
     #[must_use]
     pub fn state(&self) -> &State {
-        self.0.state()
+        &self.0.state
     }
 
     #[must_use]
