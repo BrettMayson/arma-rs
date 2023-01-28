@@ -241,6 +241,13 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
+    pub fn freeze_state(mut self) -> Self {
+        self.state.freeze();
+        self
+    }
+
+    #[inline]
+    #[must_use]
     /// Sets the version of the extension.
     pub fn version(mut self, version: String) -> Self {
         self.version = version;
