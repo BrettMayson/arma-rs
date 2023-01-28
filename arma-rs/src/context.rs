@@ -28,6 +28,7 @@ impl Context {
         self
     }
 
+    /// Get a reference to the extensions state container.
     pub fn state(&self) -> &State {
         &self.state
     }

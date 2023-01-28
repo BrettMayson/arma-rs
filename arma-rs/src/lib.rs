@@ -56,7 +56,8 @@ pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
 #[cfg(feature = "extension")]
-type State = state::Container![Send + Sync];
+/// State container that can hold at most one value per type key.
+pub type State = state::Container![Send + Sync];
 
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
@@ -67,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    state: Arc<State>,
+    state: Arc<state::Container![Send + Sync]>,
 }
 
 #[cfg(feature = "extension")]
@@ -78,7 +79,7 @@ impl Extension {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
-            state: State::default(),
+            state: Default::default(),
             allow_no_args: false,
         }
     }
@@ -231,6 +232,7 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
+    /// Add state value to the extension.
     pub fn state<T>(self, state: T) -> Self
     where
         T: Send + Sync + 'static,
@@ -241,6 +243,7 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
+    /// Freeze the State, disallowing new states to be added.
     pub fn freeze_state(mut self) -> Self {
         self.state.freeze();
         self

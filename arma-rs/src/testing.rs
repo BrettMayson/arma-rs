@@ -53,6 +53,7 @@ impl Extension {
     }
 
     #[must_use]
+    /// Get a reference to the extensions state container
     pub fn state(&self) -> &State {
         &self.0.state
     }
