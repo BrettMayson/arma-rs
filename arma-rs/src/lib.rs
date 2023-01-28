@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    state: Arc<state::Container![Send + Sync]>,
+    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
