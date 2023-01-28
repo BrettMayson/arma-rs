@@ -209,13 +209,9 @@ pub struct ExtensionBuilder {
 impl ExtensionBuilder {
     #[inline]
     #[must_use]
-    /// Add a command to the extension.
-    pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
-    where
-        S: Into<String>,
-        F: Factory<I, R> + 'static,
-    {
-        self.group = self.group.command(name, handler);
+    /// Sets the version of the extension.
+    pub fn version(mut self, version: String) -> Self {
+        self.version = version;
         self
     }
 
@@ -251,14 +247,6 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Sets the version of the extension.
-    pub fn version(mut self, version: String) -> Self {
-        self.version = version;
-        self
-    }
-
-    #[inline]
-    #[must_use]
     /// Allows the extension to be called without any arguments.
     /// Example:
     /// ```sqf
@@ -266,6 +254,18 @@ impl ExtensionBuilder {
     /// ```
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    /// Add a command to the extension.
+    pub fn command<S, F, I, R>(mut self, name: S, handler: F) -> Self
+    where
+        S: Into<String>,
+        F: Factory<I, R> + 'static,
+    {
+        self.group = self.group.command(name, handler);
         self
     }
 
