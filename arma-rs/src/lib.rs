@@ -79,7 +79,7 @@ impl Extension {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
-            state: Default::default(),
+            state: State::default(),
             allow_no_args: false,
         }
     }
@@ -251,7 +251,7 @@ impl ExtensionBuilder {
     /// Example:
     /// ```sqf
     /// "my_ext" callExtension "my_func"
-    /// ```
+    /// ``
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
