@@ -55,6 +55,10 @@ pub type Callback = extern "stdcall" fn(
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
+#[cfg(feature = "extension")]
+/// State container that can hold at most one value per type key.
+pub type State = state::Container![Send + Sync];
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
@@ -64,6 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
@@ -74,10 +79,14 @@ impl Extension {
         ExtensionBuilder {
             version: env!("CARGO_PKG_VERSION").to_string(),
             group: Group::new(),
+            state: State::default(),
             allow_no_args: false,
         }
     }
+}
 
+#[cfg(feature = "extension")]
+impl Extension {
     #[must_use]
     /// Returns the version of the extension.
     pub fn version(&self) -> &str {
@@ -102,7 +111,7 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.callback_queue.clone())
+        Context::new(self.state.clone(), self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -192,6 +201,7 @@ impl Extension {
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
+    state: State,
     allow_no_args: bool,
 }
 
@@ -213,6 +223,25 @@ impl ExtensionBuilder {
         S: Into<String>,
     {
         self.group = self.group.group(name.into(), group);
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    /// Add state value to the extension.
+    pub fn state<T>(self, state: T) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
+        self.state.set(state);
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    /// Freeze the State, disallowing new states to be added.
+    pub fn freeze_state(mut self) -> Self {
+        self.state.freeze();
         self
     }
 
@@ -250,6 +279,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
+            state: Arc::new(self.state),
         }
     }
 }

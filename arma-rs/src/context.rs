@@ -2,17 +2,22 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, Value};
+use crate::{IntoArma, State, Value};
 
 /// Contains information about the current execution context
 pub struct Context {
-    pub(crate) queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    state: Arc<State>,
+    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
-    pub(crate) fn new(queue: Arc<SegQueue<(String, String, Option<Value>)>>) -> Self {
+    pub(crate) fn new(
+        state: Arc<State>,
+        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    ) -> Self {
         Self {
+            state,
             queue,
             buffer_size: 0,
         }
@@ -21,6 +26,11 @@ impl Context {
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
         self.buffer_size = buffer_size;
         self
+    }
+
+    /// Get a reference to the extensions state container.
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
     #[must_use]
@@ -71,13 +81,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(Arc::new(SegQueue::new()));
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(Arc::new(SegQueue::new())).with_buffer_size(100);
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()))
+            .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

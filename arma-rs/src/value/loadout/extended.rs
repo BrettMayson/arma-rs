@@ -5,7 +5,7 @@ use crate::{FromArma, Value};
 #[derive(Debug, Default, Clone, PartialEq)]
 /// CBA Extended Loadout
 ///
-/// https://github.com/CBATeam/CBA_A3/pull/1503
+/// <https://github.com/CBATeam/CBA_A3/pull/1503>
 pub struct CBAExtended(Option<HashMap<String, Value>>);
 
 impl CBAExtended {

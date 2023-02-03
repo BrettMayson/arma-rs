@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Context, Value};
+use crate::{Context, State, Value};
 
 pub struct Extension(crate::Extension);
 
@@ -49,7 +49,13 @@ impl Extension {
     #[must_use]
     /// Returns a context for simulating interactions with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.0.callback_queue.clone()).with_buffer_size(BUFFER_SIZE)
+        self.0.context().with_buffer_size(BUFFER_SIZE)
+    }
+
+    #[must_use]
+    /// Get a reference to the extensions state container
+    pub fn state(&self) -> &State {
+        &self.0.state
     }
 
     #[must_use]

@@ -274,3 +274,61 @@ fn application_error_err() {
     let (_, code) = unsafe { extension.call("hello", None) };
     assert_eq!(code, 9);
 }
+
+#[test]
+fn state_build() {
+    let extension = Extension::build()
+        .state(String::from("foobar"))
+        .finish()
+        .testing();
+    let value = extension.state().try_get::<String>();
+    assert_eq!(value, Some(&String::from("foobar")));
+}
+
+#[test]
+fn state_new() {
+    let extension = Extension::build()
+        .command("new", |ctx: Context, new: String| ctx.state().set(new))
+        .finish()
+        .testing();
+
+    let (_, _) = unsafe { extension.call("new", Some(vec![String::from("foobar")])) };
+    let value = extension.state().try_get::<String>();
+    assert_eq!(value, Some(&String::from("foobar")));
+}
+
+#[test]
+fn state_freeze() {
+    let extension = Extension::build()
+        .command("new", |ctx: Context, new: String| ctx.state().set(new))
+        .freeze_state()
+        .finish()
+        .testing();
+    assert!(extension.state().is_frozen());
+
+    let (_, _) = unsafe { extension.call("new", Some(vec![String::from("foobar")])) };
+    let value = extension.state().try_get::<String>();
+    assert_eq!(value, None);
+}
+
+#[test]
+fn state_change() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let extension = Extension::build()
+        .state(AtomicUsize::new(42))
+        .command("set", |ctx: Context, new: usize| {
+            ctx.state()
+                .get::<AtomicUsize>()
+                .store(new, Ordering::Relaxed)
+        })
+        .finish()
+        .testing();
+
+    let (_, _) = unsafe { extension.call("set", Some(vec![String::from("21")])) };
+    let value = extension
+        .state()
+        .get::<AtomicUsize>()
+        .load(Ordering::Relaxed);
+    assert_eq!(value, 21);
+}
