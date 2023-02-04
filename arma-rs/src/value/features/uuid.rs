@@ -1,4 +1,4 @@
-use crate::{IntoArma, Value};
+use crate::{FromArma, IntoArma, Value};
 
 impl IntoArma for uuid::Uuid {
     fn to_arma(&self) -> Value {
