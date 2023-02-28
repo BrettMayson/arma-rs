@@ -22,14 +22,16 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
     let prefix = "";
 
-    let versionfn = Ident::new(&format!("{prefix}RVExtensionVersion"), Span::call_site());
-    let noargfn = Ident::new(&format!("{prefix}RVExtension"), Span::call_site());
-    let argfn = Ident::new(&format!("{prefix}RVExtensionArgs"), Span::call_site());
-    let callbackfn = Ident::new(
-        &format!("{prefix}RVExtensionRegisterCallback"),
-        Span::call_site(),
-    );
-    let contextfn = Ident::new(&format!("{prefix}RVExtensionContext"), Span::call_site());
+    macro_rules! fn_ident {
+        ( $name:literal ) => {
+            Ident::new(&format!("{prefix}{}", $name), Span::call_site())
+        };
+    }
+    let versionfn = fn_ident!("RVExtensionVersion");
+    let noargfn = fn_ident!("RVExtension");
+    let argfn = fn_ident!("RVExtensionArgs");
+    let callbackfn = fn_ident!("RVExtensionRegisterCallback");
+    let contextfn = fn_ident!("RVExtensionContext");
 
     TokenStream::from(quote! {
 
