@@ -1,23 +1,74 @@
-use std::sync::Arc;
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use crossbeam_queue::SegQueue;
 
-use crate::{ArmaInfo, IntoArma, Value};
+use crate::{IntoArma, Value};
+
+#[derive(Clone, Default)]
+pub(crate) struct ArmaContext {
+    steam_id: Option<String>,
+    file_source: Option<PathBuf>,
+    mission_name: Option<String>,
+    server_name: Option<String>,
+}
+
+impl ArmaContext {
+    pub(crate) fn new(
+        steam_id: &str,
+        file_source: &str,
+        mission_name: &str,
+        server_name: &str,
+    ) -> Self {
+        let steam_id = if !steam_id.is_empty() && steam_id != "0" {
+            Some(steam_id.to_string())
+        } else {
+            None
+        };
+
+        let file_source = if !file_source.is_empty() {
+            Some(PathBuf::from(file_source))
+        } else {
+            None
+        };
+
+        let mission_name = if !mission_name.is_empty() {
+            Some(mission_name.to_string())
+        } else {
+            None
+        };
+
+        let server_name = if !server_name.is_empty() {
+            Some(server_name.to_string())
+        } else {
+            None
+        };
+
+        Self {
+            steam_id,
+            file_source,
+            mission_name,
+            server_name,
+        }
+    }
+}
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma_info: ArmaInfo,
+    arma_ctx: ArmaContext,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        arma_info: ArmaInfo,
+        arma_ctx: ArmaContext,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
         Self {
-            arma_info,
+            arma_ctx,
             queue,
             buffer_size: 0,
         }
@@ -29,6 +80,26 @@ impl Context {
     }
 
     #[must_use]
+    pub fn steam_id(&self) -> Option<&str> {
+        self.arma_ctx.steam_id.as_deref()
+    }
+
+    #[must_use]
+    pub fn file_source(&self) -> Option<&Path> {
+        self.arma_ctx.file_source.as_deref()
+    }
+
+    #[must_use]
+    pub fn mission_name(&self) -> Option<&str> {
+        self.arma_ctx.mission_name.as_deref()
+    }
+
+    #[must_use]
+    pub fn server_name(&self) -> Option<&str> {
+        self.arma_ctx.server_name.as_deref()
+    }
+
+    #[must_use]
     /// Returns the length in bytes of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.
     pub const fn buffer_len(&self) -> usize {
@@ -37,11 +108,6 @@ impl Context {
         } else {
             self.buffer_size - 1
         }
-    }
-
-    #[must_use]
-    pub const fn arma_info(&self) -> &ArmaInfo {
-        &self.arma_info
     }
 
     /// Sends a callback with data into Arma
@@ -81,14 +147,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(ArmaInfo::default(), Arc::new(SegQueue::new()));
+        let ctx = Context::new(ArmaContext::default(), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
         let ctx =
-            Context::new(ArmaInfo::default(), Arc::new(SegQueue::new())).with_buffer_size(100);
+            Context::new(ArmaContext::default(), Arc::new(SegQueue::new())).with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

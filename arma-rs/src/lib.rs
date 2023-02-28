@@ -23,10 +23,6 @@ mod value;
 pub use value::{loadout, FromArma, IntoArma, Value};
 
 #[cfg(feature = "extension")]
-mod arma_info;
-#[cfg(feature = "extension")]
-pub use arma_info::ArmaInfo;
-#[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
@@ -37,7 +33,7 @@ pub use command::*;
 #[cfg(feature = "extension")]
 mod context;
 #[cfg(feature = "extension")]
-pub use context::Context;
+pub use context::*;
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -68,7 +64,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_info: ArmaInfo,
+    arma_ctx: ArmaContext,
 }
 
 #[cfg(feature = "extension")]
@@ -124,13 +120,13 @@ impl Extension {
             .iter()
             .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
             .collect();
-        self.arma_info = ArmaInfo::new(&argv[0], &argv[1], &argv[2], &argv[3])
+        self.arma_ctx = ArmaContext::new(&argv[0], &argv[1], &argv[2], &argv[3])
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.arma_info.clone(), self.callback_queue.clone())
+        Context::new(self.arma_ctx.clone(), self.callback_queue.clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -278,7 +274,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_info: ArmaInfo::default(),
+            arma_ctx: ArmaContext::default(),
         }
     }
 }
