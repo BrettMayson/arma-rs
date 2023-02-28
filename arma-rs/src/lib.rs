@@ -120,7 +120,11 @@ impl Extension {
             .iter()
             .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
             .collect();
-        self.arma_ctx = ArmaContext::new(&argv[0], &argv[1], &argv[2], &argv[3])
+        self.arma_ctx = ArmaContext::new()
+            .with_steam_id(&argv[0])
+            .with_file_source(&argv[1])
+            .with_mission_name(&argv[2])
+            .with_server_name(&argv[3])
     }
 
     #[must_use]
@@ -274,7 +278,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_ctx: ArmaContext::default(),
+            arma_ctx: ArmaContext::new(),
         }
     }
 }

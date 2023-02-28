@@ -7,7 +7,7 @@ use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, Value};
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub(crate) struct ArmaContext {
     steam_id: Option<String>,
     file_source: Option<PathBuf>,
@@ -16,42 +16,49 @@ pub(crate) struct ArmaContext {
 }
 
 impl ArmaContext {
-    pub(crate) fn new(
-        steam_id: &str,
-        file_source: &str,
-        mission_name: &str,
-        server_name: &str,
-    ) -> Self {
-        let steam_id = if !steam_id.is_empty() && steam_id != "0" {
+    pub(crate) fn new() -> Self {
+        Self {
+            steam_id: None,
+            file_source: None,
+            mission_name: None,
+            server_name: None,
+        }
+    }
+
+    pub(crate) fn with_steam_id(mut self, steam_id: &str) -> Self {
+        self.steam_id = if !steam_id.is_empty() && steam_id != "0" {
             Some(steam_id.to_string())
         } else {
             None
         };
+        self
+    }
 
-        let file_source = if !file_source.is_empty() {
+    pub(crate) fn with_file_source(mut self, file_source: &str) -> Self {
+        self.file_source = if !file_source.is_empty() {
             Some(PathBuf::from(file_source))
         } else {
             None
         };
+        self
+    }
 
-        let mission_name = if !mission_name.is_empty() {
+    pub(crate) fn with_mission_name(mut self, mission_name: &str) -> Self {
+        self.mission_name = if !mission_name.is_empty() {
             Some(mission_name.to_string())
         } else {
             None
         };
+        self
+    }
 
-        let server_name = if !server_name.is_empty() {
+    pub(crate) fn with_server_name(mut self, server_name: &str) -> Self {
+        self.server_name = if !server_name.is_empty() {
             Some(server_name.to_string())
         } else {
             None
         };
-
-        Self {
-            steam_id,
-            file_source,
-            mission_name,
-            server_name,
-        }
+        self
     }
 }
 
@@ -147,14 +154,13 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(ArmaContext::default(), Arc::new(SegQueue::new()));
+        let ctx = Context::new(ArmaContext::new(), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx =
-            Context::new(ArmaContext::default(), Arc::new(SegQueue::new())).with_buffer_size(100);
+        let ctx = Context::new(ArmaContext::new(), Arc::new(SegQueue::new())).with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }
