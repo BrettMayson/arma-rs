@@ -69,9 +69,9 @@ pub trait Factory<A, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* LF> Executor for dyn Factory<($($param,)*), LF>
+    impl<$($param,)* ER> Executor for dyn Factory<($($param,)*), ER>
     where
-        LF: 'static,
+        ER: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
