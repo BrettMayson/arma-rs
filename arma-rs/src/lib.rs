@@ -99,7 +99,7 @@ impl Extension {
         self.allow_no_args
     }
 
-    /// Called by generated code, do not call di rectly.
+    /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
     }
