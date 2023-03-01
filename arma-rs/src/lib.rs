@@ -66,9 +66,9 @@ pub struct Extension {
     version: String,
     group: Group,
     allow_no_args: bool,
-    arma_ctx: ArmaContext,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    arma_ctx: Arc<ArmaContext>,
     state: Arc<State>,
 }
 
@@ -129,11 +129,13 @@ impl Extension {
             .iter()
             .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
             .collect();
-        self.arma_ctx = ArmaContext::new()
-            .with_steam_id(&argv[0])
-            .with_file_source(&argv[1])
-            .with_mission_name(&argv[2])
-            .with_server_name(&argv[3])
+        self.arma_ctx = Arc::new(
+            ArmaContext::default()
+                .with_steam_id(&argv[0])
+                .with_file_source(&argv[1])
+                .with_mission_name(&argv[2])
+                .with_server_name(&argv[3]),
+        )
     }
 
     #[must_use]
@@ -309,9 +311,9 @@ impl ExtensionBuilder {
             version: self.version,
             group: self.group,
             allow_no_args: self.allow_no_args,
-            arma_ctx: ArmaContext::new(),
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
+            arma_ctx: Arc::new(ArmaContext::default()),
             state: Arc::new(self.state),
         }
     }

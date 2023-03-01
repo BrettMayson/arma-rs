@@ -7,7 +7,7 @@ use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, State, Value};
 
-#[derive(Clone)]
+#[derive(Default)]
 pub(crate) struct ArmaContext {
     steam_id: Option<String>,
     file_source: Option<PathBuf>,
@@ -16,15 +16,6 @@ pub(crate) struct ArmaContext {
 }
 
 impl ArmaContext {
-    pub(crate) fn new() -> Self {
-        Self {
-            steam_id: None,
-            file_source: None,
-            mission_name: None,
-            server_name: None,
-        }
-    }
-
     pub(crate) fn with_steam_id(mut self, steam_id: &str) -> Self {
         self.steam_id = if !steam_id.is_empty() && steam_id != "0" {
             Some(steam_id.to_string())
@@ -64,7 +55,7 @@ impl ArmaContext {
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma_ctx: ArmaContext,
+    arma_ctx: Arc<ArmaContext>,
     state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -72,7 +63,7 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        arma_ctx: ArmaContext,
+        arma_ctx: Arc<ArmaContext>,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
@@ -163,7 +154,7 @@ mod tests {
     #[test]
     fn context_buffer_len_zero() {
         let ctx = Context::new(
-            ArmaContext::new(),
+            Arc::new(ArmaContext::default()),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         );
@@ -173,7 +164,7 @@ mod tests {
     #[test]
     fn context_buffer_len() {
         let ctx = Context::new(
-            ArmaContext::new(),
+            Arc::new(ArmaContext::default()),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         )
