@@ -112,7 +112,7 @@ impl Extension {
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn set_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+    pub unsafe fn handle_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
         match count.cmp(&(CONTEXT_COUNT as i32)) {
             std::cmp::Ordering::Less => {
@@ -129,13 +129,17 @@ impl Extension {
             .iter()
             .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
             .collect();
-        self.arma_ctx = Arc::new(
+        self.set_arma_context(
             ArmaContext::default()
                 .with_steam_id(&argv[0])
                 .with_file_source(&argv[1])
                 .with_mission_name(&argv[2])
                 .with_server_name(&argv[3]),
         )
+    }
+
+    pub(crate) fn set_arma_context(&mut self, context: ArmaContext) {
+        self.arma_ctx = Arc::new(context)
     }
 
     #[must_use]

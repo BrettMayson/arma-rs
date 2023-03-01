@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{Context, State, Value};
+use crate::{ArmaContext, Context, State, Value};
 
 pub struct Extension(crate::Extension);
 
@@ -56,6 +56,21 @@ impl Extension {
     /// Get a reference to the extensions state container
     pub fn state(&self) -> &State {
         &self.0.state
+    }
+
+    #[must_use]
+    /// Call a function, intended for tests
+    ///
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn call_with_context(
+        &mut self,
+        function: &str,
+        args: Option<Vec<String>>,
+        context: ArmaContext,
+    ) -> (String, libc::c_int) {
+        self.0.set_arma_context(context);
+        self.call(function, args)
     }
 
     #[must_use]
