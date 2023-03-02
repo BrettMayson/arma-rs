@@ -1,61 +1,12 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
 use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, State, Value};
 
-#[derive(Default)]
-pub struct ArmaContext {
-    steam_id: Option<String>,
-    file_source: Option<PathBuf>,
-    mission_name: Option<String>,
-    server_name: Option<String>,
-}
+mod arma;
 
-impl ArmaContext {
-    #[must_use]
-    pub fn with_steam_id(mut self, steam_id: &str) -> Self {
-        self.steam_id = if !steam_id.is_empty() && steam_id != "0" {
-            Some(steam_id.to_string())
-        } else {
-            None
-        };
-        self
-    }
-
-    #[must_use]
-    pub fn with_file_source(mut self, file_source: &str) -> Self {
-        self.file_source = if !file_source.is_empty() {
-            Some(PathBuf::from(file_source))
-        } else {
-            None
-        };
-        self
-    }
-
-    #[must_use]
-    pub fn with_mission_name(mut self, mission_name: &str) -> Self {
-        self.mission_name = if !mission_name.is_empty() {
-            Some(mission_name.to_string())
-        } else {
-            None
-        };
-        self
-    }
-
-    #[must_use]
-    pub fn with_server_name(mut self, server_name: &str) -> Self {
-        self.server_name = if !server_name.is_empty() {
-            Some(server_name.to_string())
-        } else {
-            None
-        };
-        self
-    }
-}
+pub use arma::ArmaContext;
 
 /// Contains information about the current execution context
 pub struct Context {
@@ -91,22 +42,22 @@ impl Context {
 
     #[must_use]
     pub fn steam_id(&self) -> Option<&str> {
-        self.arma_ctx.steam_id.as_deref()
+        self.arma_ctx.steam_id()
     }
 
     #[must_use]
     pub fn file_source(&self) -> Option<&Path> {
-        self.arma_ctx.file_source.as_deref()
+        self.arma_ctx.file_source()
     }
 
     #[must_use]
     pub fn mission_name(&self) -> Option<&str> {
-        self.arma_ctx.mission_name.as_deref()
+        self.arma_ctx.mission_name()
     }
 
     #[must_use]
     pub fn server_name(&self) -> Option<&str> {
-        self.arma_ctx.server_name.as_deref()
+        self.arma_ctx.server_name()
     }
 
     #[must_use]
