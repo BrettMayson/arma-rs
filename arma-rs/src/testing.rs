@@ -86,7 +86,7 @@ impl Extension {
                 .map(|s| std::ffi::CString::new(s).unwrap().into_raw())
                 .collect::<Vec<*mut i8>>()
         });
-        let res = self.0.group.handle(
+        let res = self.0.group.handle_call(
             self.context(),
             function,
             output.as_mut_ptr(),

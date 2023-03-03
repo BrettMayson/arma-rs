@@ -53,7 +53,7 @@ fn c_interface_full() {
     assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -64,7 +64,7 @@ fn c_interface_full() {
     };
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle(
+        extension.handle_call(
             CString::new("hello").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -76,7 +76,7 @@ fn c_interface_full() {
     }
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle(
+        extension.handle_call(
             CString::new("welcome").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -137,7 +137,7 @@ fn c_interface_invalid_calls() {
     extension.run_callbacks();
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("hello").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -152,7 +152,7 @@ fn c_interface_invalid_calls() {
     // Unknown function name
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("invalid").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -167,7 +167,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback name
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_name").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -182,7 +182,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback func
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_func").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -197,7 +197,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback data
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_data").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -212,7 +212,7 @@ fn c_interface_invalid_calls() {
     // Valid null callback
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_valid_null").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -227,7 +227,7 @@ fn c_interface_invalid_calls() {
     // Valid data callback
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_valid_data").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -282,7 +282,7 @@ fn c_interface_errors() {
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -310,7 +310,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -339,7 +339,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -361,7 +361,7 @@ fn c_interface_errors() {
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -389,7 +389,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -411,7 +411,7 @@ fn c_interface_errors() {
     // Overflow
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("overflow").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -426,7 +426,7 @@ fn c_interface_errors() {
     // Result - true
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("result").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -441,7 +441,7 @@ fn c_interface_errors() {
     // Result - false
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("result").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,

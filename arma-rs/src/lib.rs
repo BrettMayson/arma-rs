@@ -155,7 +155,7 @@ impl Extension {
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle(
+    pub unsafe fn handle_call(
         &self,
         function: *mut libc::c_char,
         output: *mut libc::c_char,
@@ -168,7 +168,7 @@ impl Extension {
         } else {
             return 1;
         };
-        self.group.handle(
+        self.group.handle_call(
             self.context().with_buffer_size(size),
             &function,
             output,

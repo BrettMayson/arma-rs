@@ -47,7 +47,7 @@ impl Group {
         self
     }
 
-    pub(crate) fn handle(
+    pub(crate) fn handle_call(
         &self,
         context: Context,
         function: &str,
@@ -58,7 +58,7 @@ impl Group {
     ) -> libc::c_int {
         if let Some((group, function)) = function.split_once(':') {
             self.children.get(group).map_or(1, |group| {
-                group.handle(context, function, output, size, args, count)
+                group.handle_call(context, function, output, size, args, count)
             })
         } else if let Some(handler) = self.commands.get(function) {
             (handler.handler)(context, output, size, args, count)
