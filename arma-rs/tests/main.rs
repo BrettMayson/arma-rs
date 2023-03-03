@@ -1,4 +1,4 @@
-use arma_rs::{Context, Extension, Group};
+use arma_rs::{ArmaContext, Context, Extension, Group};
 
 include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
@@ -331,4 +331,70 @@ fn state_change() {
         .get::<AtomicUsize>()
         .load(Ordering::Relaxed);
     assert_eq!(value, 21);
+}
+
+#[test]
+fn arma_context_default() {
+    let ctx = Extension::build().finish().testing().context();
+    assert_eq!(ctx.steam_id(), None);
+    assert_eq!(ctx.file_source(), None);
+    assert_eq!(ctx.mission_name(), None);
+    assert_eq!(ctx.server_name(), None);
+}
+
+#[test]
+fn arma_context() {
+    let mut extension = Extension::build()
+        .command("steam_id", |ctx: Context| -> Option<String> {
+            ctx.steam_id().map(String::from)
+        })
+        .command("file_source", |ctx: Context| -> Option<String> {
+            ctx.file_source()
+                .map(|p| p.to_str().unwrap())
+                .map(String::from)
+        })
+        .command("mission_name", |ctx: Context| -> Option<String> {
+            ctx.mission_name().map(String::from)
+        })
+        .command("server_name", |ctx: Context| -> Option<String> {
+            ctx.server_name().map(String::from)
+        })
+        .finish()
+        .testing();
+
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "steam_id",
+            None,
+            ArmaContext::default().with_steam_id("steam_id"),
+        )
+    };
+    assert_eq!(result, "steam_id");
+
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "file_source",
+            None,
+            ArmaContext::default().with_file_source("file_source"),
+        )
+    };
+    assert_eq!(result, "file_source");
+
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "mission_name",
+            None,
+            ArmaContext::default().with_mission_name("mission_name"),
+        )
+    };
+    assert_eq!(result, "mission_name");
+
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "server_name",
+            None,
+            ArmaContext::default().with_server_name("server_name"),
+        )
+    };
+    assert_eq!(result, "server_name");
 }
