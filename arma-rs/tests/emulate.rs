@@ -6,6 +6,15 @@ use std::{
 
 use arma_rs::{Context, Extension};
 
+macro_rules! platform_extern {
+    ($($func_body:tt)*) => {
+        #[cfg(windows)]
+        extern "stdcall" $($func_body)*
+        #[cfg(not(windows))]
+        extern "C" $($func_body)*
+    };
+}
+
 type Stack = Arc<RwLock<HashMap<String, Vec<(String, String, String)>>>>;
 
 static mut CALLBACK_STACK: Option<Stack> = None;
@@ -33,20 +42,21 @@ fn callback_handler(scope: String, name: *const i8, func: *const i8, data: *cons
 }
 
 #[test]
-#[cfg(all(not(windows), feature = "extension"))]
 fn c_interface_full() {
     let mut extension = Extension::build()
         .command("hello", || -> &'static str { "Hello" })
         .command("welcome", |name: String| -> String {
-            format!("Welcome {}", name)
+            format!("Welcome {name}")
         })
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
         .finish();
-    extern "C" fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
-        callback_handler("c_interface_full".to_string(), name, func, data)
-    }
+    platform_extern!(
+        fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
+            callback_handler("c_interface_full".to_string(), name, func, data)
+        }
+    );
     extension.register_callback(callback);
     extension.run_callbacks();
     let stack = get_callback_stack();
@@ -125,14 +135,11 @@ fn c_interface_invalid_calls() {
             ctx.callback_data("callback", "fired", "data");
         })
         .finish();
-    #[cfg(windows)]
-    extern "stdcall" fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
-        callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
-    }
-    #[cfg(not(windows))]
-    extern "C" fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
-        callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
-    }
+    platform_extern!(
+        fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
+            callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
+        }
+    );
     extension.register_callback(callback);
     extension.run_callbacks();
     unsafe {
