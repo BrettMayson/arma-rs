@@ -46,7 +46,7 @@ fn c_interface_full() {
     let mut extension = Extension::build()
         .command("hello", || -> &'static str { "Hello" })
         .command("welcome", |name: String| -> String {
-            format!("Welcome {}", name)
+            format!("Welcome {name}")
         })
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
