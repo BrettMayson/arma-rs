@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ArmaContext {
     steam_id: Option<String>,
     file_source: Option<PathBuf>,

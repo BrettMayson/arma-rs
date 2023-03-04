@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_ctx: Arc<ArmaContext>,
+    arma_ctx: ArmaContext,
     state: Arc<State>,
 }
 
@@ -139,7 +139,7 @@ impl Extension {
     }
 
     pub(crate) fn set_arma_context(&mut self, context: ArmaContext) {
-        self.arma_ctx = Arc::new(context)
+        self.arma_ctx = context
     }
 
     #[must_use]
@@ -317,7 +317,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_ctx: Arc::new(ArmaContext::default()),
+            arma_ctx: ArmaContext::default(),
             state: Arc::new(self.state),
         }
     }

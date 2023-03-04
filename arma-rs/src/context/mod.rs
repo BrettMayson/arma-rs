@@ -10,7 +10,7 @@ pub use arma::ArmaContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma_ctx: Arc<ArmaContext>,
+    arma_ctx: ArmaContext,
     state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -18,7 +18,7 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        arma_ctx: Arc<ArmaContext>,
+        arma_ctx: ArmaContext,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn context_buffer_len_zero() {
         let ctx = Context::new(
-            Arc::new(ArmaContext::default()),
+            ArmaContext::default(),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         );
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn context_buffer_len() {
         let ctx = Context::new(
-            Arc::new(ArmaContext::default()),
+            ArmaContext::default(),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         )
