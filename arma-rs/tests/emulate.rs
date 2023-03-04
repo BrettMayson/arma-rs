@@ -51,6 +51,16 @@ fn c_interface_full() {
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
+        .command("arma_context", |ctx: Context| -> Vec<Option<String>> {
+            vec![
+                ctx.steam_id().map(String::from),
+                ctx.file_source()
+                    .map(|p| p.to_str().unwrap())
+                    .map(String::from),
+                ctx.mission_name().map(String::from),
+                ctx.server_name().map(String::from),
+            ]
+        })
         .finish();
     platform_extern!(
         fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
@@ -101,6 +111,31 @@ fn c_interface_full() {
         stack.read().unwrap().get("c_interface_full").unwrap().len(),
         1
     );
+    unsafe {
+        let mut output = [0i8; 1024];
+        extension.handle_arma_context(
+            vec![
+                CString::new("steam_id").unwrap().into_raw(),
+                CString::new("file_source").unwrap().into_raw(),
+                CString::new("mission_name").unwrap().into_raw(),
+                CString::new("server_name").unwrap().into_raw(),
+            ]
+            .as_mut_ptr(),
+            4,
+        );
+        extension.handle_call(
+            CString::new("arma_context").unwrap().into_raw(),
+            output.as_mut_ptr(),
+            1024,
+            None,
+            None,
+        );
+        let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+        assert_eq!(
+            cstring,
+            Ok("[\"steam_id\",\"file_source\",\"mission_name\",\"server_name\"]")
+        );
+    }
 }
 
 #[test]
