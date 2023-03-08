@@ -292,6 +292,48 @@ fn c_interface_invalid_calls() {
             .len(),
         2
     );
+
+    // Valid Arma context
+    // Note: Ordering of these arma context tests matter, used to confirm that the test correctly set arma context
+    unsafe {
+        assert!(extension.context().arma().is_none()); // Confirm expected status
+        extension.handle_arma_context(
+            vec![
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+            ]
+            .as_mut_ptr(),
+            4,
+        );
+        assert!(extension.context().arma().is_some());
+    }
+
+    // Arma context not enough args
+    unsafe {
+        assert!(extension.context().arma().is_some()); // Confirm expected status
+        extension.handle_arma_context(vec![].as_mut_ptr(), 0);
+        assert!(extension.context().arma().is_none());
+    }
+
+    // Arma context too many args
+    unsafe {
+        assert!(extension.context().arma().is_none()); // Confirm expected status
+        extension.handle_arma_context(
+            vec![
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+            ]
+            .as_mut_ptr(),
+            6,
+        );
+        assert!(extension.context().arma().is_some());
+    }
 }
 
 #[test]

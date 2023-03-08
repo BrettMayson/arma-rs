@@ -3,7 +3,7 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, cmp::Ordering, sync::Arc};
 
 pub use arma_rs_proc::arma;
 
@@ -114,27 +114,29 @@ impl Extension {
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
-        match count.cmp(&(CONTEXT_COUNT as i32)) {
-            std::cmp::Ordering::Less => {
+        let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
+            Ordering::Less => {
                 error!("invalid amount of args passed to `set_arma_context`");
-                return;
+                None
             }
-            std::cmp::Ordering::Greater => {
-                warn!("unexpected amount of args passed to `set_arma_context`")
-            }
-            _ => (),
-        }
+            ordering => {
+                if ordering == Ordering::Greater {
+                    warn!("unexpected amount of args passed to `set_arma_context`");
+                }
 
-        let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
-            .iter()
-            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
-            .collect();
-        self.set_arma_context(Some(ArmaContext::new(
-            Caller::from(argv[0].as_ref()),
-            Source::from(argv[1].as_ref()),
-            Mission::from(argv[2].as_ref()),
-            Server::from(argv[3].as_ref()),
-        )))
+                let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
+                    .iter()
+                    .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
+                    .collect();
+                Some(ArmaContext::new(
+                    Caller::from(argv[0].as_ref()),
+                    Source::from(argv[1].as_ref()),
+                    Mission::from(argv[2].as_ref()),
+                    Server::from(argv[3].as_ref()),
+                ))
+            }
+        };
+        self.set_arma_context(ctx)
     }
 
     pub(crate) fn set_arma_context(&self, ctx: Option<ArmaContext>) {
