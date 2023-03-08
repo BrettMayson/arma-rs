@@ -136,10 +136,6 @@ impl Extension {
                 ))
             }
         };
-        self.set_arma_context(ctx)
-    }
-
-    pub(crate) fn set_arma_context(&self, ctx: Option<ArmaContext>) {
         self.arma_ctx.replace(ctx);
     }
 
