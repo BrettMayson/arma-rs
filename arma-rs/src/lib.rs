@@ -165,7 +165,7 @@ impl Extension {
         } else {
             return 1;
         };
-        self.group.handle_call(
+        self.group.handle(
             self.context().with_buffer_size(size),
             &function,
             output,
