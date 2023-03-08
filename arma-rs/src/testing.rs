@@ -69,7 +69,7 @@ impl Extension {
         args: Option<Vec<String>>,
         context: ArmaContext,
     ) -> (String, libc::c_int) {
-        self.0.set_arma_context(context);
+        self.0.set_arma_context(Some(context));
         self.call(function, args)
     }
 

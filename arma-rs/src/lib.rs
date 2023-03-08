@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_ctx: ArmaContext,
+    arma_ctx: Option<ArmaContext>,
     state: Arc<State>,
 }
 
@@ -127,19 +127,18 @@ impl Extension {
 
         let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
             .iter()
-            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy().into_owned())
+            .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
             .collect();
-        self.set_arma_context(
-            ArmaContext::default()
-                .with_steam_id(&argv[0])
-                .with_file_source(&argv[1])
-                .with_mission_name(&argv[2])
-                .with_server_name(&argv[3]),
-        )
+        self.set_arma_context(Some(ArmaContext::new(
+            Caller::from(argv[0].as_ref()),
+            Source::from(argv[1].as_ref()),
+            Mission::from(argv[2].as_ref()),
+            Server::from(argv[3].as_ref()),
+        )))
     }
 
-    pub(crate) fn set_arma_context(&mut self, context: ArmaContext) {
-        self.arma_ctx = context
+    pub(crate) fn set_arma_context(&mut self, ctx: Option<ArmaContext>) {
+        self.arma_ctx = ctx
     }
 
     #[must_use]
@@ -317,7 +316,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_ctx: ArmaContext::default(),
+            arma_ctx: None,
             state: Arc::new(self.state),
         }
     }

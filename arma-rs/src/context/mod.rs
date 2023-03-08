@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
@@ -6,11 +6,11 @@ use crate::{IntoArma, State, Value};
 
 mod arma;
 
-pub use arma::ArmaContext;
+pub use arma::*;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma_ctx: ArmaContext,
+    arma: Option<ArmaContext>,
     state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -18,12 +18,12 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        arma_ctx: ArmaContext,
+        arma: Option<ArmaContext>,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
         Self {
-            arma_ctx,
+            arma,
             state,
             queue,
             buffer_size: 0,
@@ -41,23 +41,8 @@ impl Context {
     }
 
     #[must_use]
-    pub fn steam_id(&self) -> Option<&str> {
-        self.arma_ctx.steam_id()
-    }
-
-    #[must_use]
-    pub fn file_source(&self) -> Option<&Path> {
-        self.arma_ctx.file_source()
-    }
-
-    #[must_use]
-    pub fn mission_name(&self) -> Option<&str> {
-        self.arma_ctx.mission_name()
-    }
-
-    #[must_use]
-    pub fn server_name(&self) -> Option<&str> {
-        self.arma_ctx.server_name()
+    pub fn arma(&self) -> Option<&ArmaContext> {
+        self.arma.as_ref()
     }
 
     #[must_use]
@@ -108,22 +93,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(
-            ArmaContext::default(),
-            Arc::new(State::default()),
-            Arc::new(SegQueue::new()),
-        );
+        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(
-            ArmaContext::default(),
-            Arc::new(State::default()),
-            Arc::new(SegQueue::new()),
-        )
-        .with_buffer_size(100);
+        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()))
+            .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

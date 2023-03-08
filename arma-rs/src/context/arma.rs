@@ -1,68 +1,101 @@
-use std::path::{Path, PathBuf};
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Caller {
+    Steam(u64),
+    Unknown, // Wiki states arma could provide a `0`, its unknown when this happens
+}
 
-#[derive(Default, Clone)]
+impl From<&str> for Caller {
+    fn from(s: &str) -> Self {
+        if s.is_empty() || s == "0" {
+            Self::Unknown
+        } else {
+            s.parse::<u64>().map_or(Self::Unknown, Self::Steam)
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Source {
+    File(String), // Either absolute file system path or path inside PBO
+    Console,
+}
+
+impl From<&str> for Source {
+    fn from(s: &str) -> Self {
+        if s.is_empty() {
+            Self::Console
+        } else {
+            Self::File(s.to_string())
+        }
+    }
+}
+
+// Note: is unknown when not in a mission and could be unknown in missions prior to arma v2.02
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Mission {
+    Mission(String),
+    Unknown,
+}
+
+impl From<&str> for Mission {
+    fn from(s: &str) -> Self {
+        if s.is_empty() {
+            Self::Unknown
+        } else {
+            Self::Mission(s.to_string())
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Server {
+    Multiplayer(String),
+    Singleplayer,
+}
+
+impl From<&str> for Server {
+    fn from(s: &str) -> Self {
+        if s.is_empty() {
+            Self::Singleplayer
+        } else {
+            Self::Multiplayer(s.to_string())
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct ArmaContext {
-    steam_id: Option<String>,
-    file_source: Option<PathBuf>,
-    mission_name: Option<String>,
-    server_name: Option<String>,
+    caller: Caller,
+    source: Source,
+    mission: Mission,
+    server: Server,
 }
 
 impl ArmaContext {
-    pub(crate) fn steam_id(&self) -> Option<&str> {
-        self.steam_id.as_deref()
-    }
-
-    pub(crate) fn file_source(&self) -> Option<&Path> {
-        self.file_source.as_deref()
-    }
-
-    pub(crate) fn mission_name(&self) -> Option<&str> {
-        self.mission_name.as_deref()
-    }
-
-    pub(crate) fn server_name(&self) -> Option<&str> {
-        self.server_name.as_deref()
-    }
-
     #[must_use]
-    pub fn with_steam_id(mut self, steam_id: &str) -> Self {
-        self.steam_id = if !steam_id.is_empty() && steam_id != "0" {
-            Some(steam_id.to_string())
-        } else {
-            None
-        };
-        self
+    pub fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
+        Self {
+            caller,
+            source,
+            mission,
+            server,
+        }
     }
 
-    #[must_use]
-    pub fn with_file_source(mut self, file_source: &str) -> Self {
-        self.file_source = if !file_source.is_empty() {
-            Some(PathBuf::from(file_source))
-        } else {
-            None
-        };
-        self
+    pub fn caller(&self) -> &Caller {
+        &self.caller
     }
 
-    #[must_use]
-    pub fn with_mission_name(mut self, mission_name: &str) -> Self {
-        self.mission_name = if !mission_name.is_empty() {
-            Some(mission_name.to_string())
-        } else {
-            None
-        };
-        self
+    pub fn source(&self) -> &Source {
+        &self.source
     }
 
-    #[must_use]
-    pub fn with_server_name(mut self, server_name: &str) -> Self {
-        self.server_name = if !server_name.is_empty() {
-            Some(server_name.to_string())
-        } else {
-            None
-        };
-        self
+    pub fn mission(&self) -> &Mission {
+        &self.mission
+    }
+
+    pub fn server(&self) -> &Server {
+        &self.server
     }
 }
 
@@ -71,32 +104,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn steam_id_empty() {
-        let ctx = ArmaContext::default().with_steam_id("");
-        assert_eq!(ctx.steam_id(), None);
+    fn caller_empty() {
+        assert_eq!(Caller::from(""), Caller::Unknown);
     }
 
     #[test]
-    fn steam_id_zero() {
-        let ctx = ArmaContext::default().with_steam_id("0");
-        assert_eq!(ctx.steam_id(), None);
+    fn caller_zero() {
+        assert_eq!(Caller::from("0"), Caller::Unknown);
     }
 
     #[test]
-    fn file_source_empty() {
-        let ctx = ArmaContext::default().with_file_source("");
-        assert_eq!(ctx.file_source(), None);
+    fn source_empty() {
+        assert_eq!(Source::from(""), Source::Console);
     }
 
     #[test]
-    fn mission_name_empty() {
-        let ctx = ArmaContext::default().with_mission_name("");
-        assert_eq!(ctx.mission_name(), None);
+    fn source_pbo() {
+        let path = "x\\ctx\\addons\\main\\fn_armaContext.sqf";
+        assert_eq!(Source::from(path), Source::File(path.to_string()));
     }
 
     #[test]
-    fn server_name_empty() {
-        let ctx = ArmaContext::default().with_server_name("");
-        assert_eq!(ctx.server_name(), None);
+    fn source_file() {
+        let path = "C:\\Users\\Context\\Documents\\Arma 3\\missions\\ctx.VR\\fn_armaContext.sqf";
+        assert_eq!(Source::from(path), Source::File(path.to_string()));
+    }
+
+    #[test]
+    fn mission_empty() {
+        assert_eq!(Mission::from(""), Mission::Unknown);
+    }
+
+    #[test]
+    fn server_empty() {
+        assert_eq!(Server::from(""), Server::Singleplayer);
     }
 }

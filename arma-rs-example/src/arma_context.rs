@@ -1,14 +1,14 @@
 use arma_rs::{Context, Group};
 
-pub fn arma(ctx: Context) -> Vec<Option<String>> {
-    vec![
-        ctx.steam_id().map(String::from),
-        ctx.file_source()
-            .map(|p| p.to_str().unwrap())
-            .map(String::from),
-        ctx.mission_name().map(String::from),
-        ctx.server_name().map(String::from),
-    ]
+pub fn arma(ctx: Context) -> String {
+    let arma = ctx.arma().unwrap();
+    format!(
+        "{:?},{:?},{:?},{:?}",
+        arma.caller(),
+        arma.source(),
+        arma.mission(),
+        arma.server()
+    )
 }
 
 pub fn group() -> Group {
@@ -17,7 +17,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{ArmaContext, Extension, IntoArma};
+    use arma_rs::{ArmaContext, Caller, Extension, Mission, Server, Source};
 
     #[test]
     fn test_arma_context() {
@@ -29,19 +29,15 @@ mod tests {
             extension.call_with_context(
                 "context:arma",
                 None,
-                ArmaContext::default()
-                    .with_steam_id("steam_id")
-                    .with_file_source("file_source")
-                    .with_mission_name("mission_name")
-                    .with_server_name("server_name"),
+                ArmaContext::new(
+                    Caller::Unknown,
+                    Source::Console,
+                    Mission::Unknown,
+                    Server::Singleplayer,
+                ),
             )
         };
         assert_eq!(code, 0);
-        assert_eq!(
-            result,
-            vec!["steam_id", "file_source", "mission_name", "server_name"]
-                .to_arma()
-                .to_string()
-        );
+        assert_eq!(result, "Unknown,Console,Unknown,Singleplayer");
     }
 }
