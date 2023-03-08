@@ -64,13 +64,13 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call_with_context(
-        &mut self,
+        &self,
         function: &str,
         args: Option<Vec<String>>,
         context: ArmaContext,
     ) -> (String, libc::c_int) {
         self.0.set_arma_context(Some(context));
-        self.call(function, args)
+        self.handle_call(function, args)
     }
 
     #[must_use]
@@ -79,6 +79,15 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
+        self.0.set_arma_context(None);
+        self.handle_call(function, args)
+    }
+
+    unsafe fn handle_call(
+        &self,
+        function: &str,
+        args: Option<Vec<String>>,
+    ) -> (String, libc::c_int) {
         let mut output = [0; BUFFER_SIZE];
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {

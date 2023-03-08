@@ -335,7 +335,7 @@ fn state_change() {
 
 #[test]
 fn arma_context() {
-    let mut extension = Extension::build()
+    let extension = Extension::build()
         .command("context", |ctx: Context| -> String {
             let arma = ctx.arma().unwrap();
             format!(
@@ -364,4 +364,32 @@ fn arma_context() {
         result,
         "Steam(123),File(\"file\"),Mission(\"mission\"),Multiplayer(\"server\")"
     );
+}
+
+#[test]
+fn arma_context_availability() {
+    let extension = Extension::build()
+        .command("has_arma_context", |ctx: Context| -> bool {
+            ctx.arma().is_some()
+        })
+        .finish()
+        .testing();
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "has_arma_context",
+            None,
+            ArmaContext::new(
+                Caller::Unknown,
+                Source::Console,
+                Mission::Unknown,
+                Server::Singleplayer,
+            ),
+        )
+    };
+    assert_eq!(result, "true");
+    assert!(extension.context().arma().is_some());
+
+    let (result, _) = unsafe { extension.call("has_arma_context", None) };
+    assert_eq!(result, "false");
+    assert!(extension.context().arma().is_none());
 }

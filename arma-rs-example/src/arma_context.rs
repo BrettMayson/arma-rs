@@ -21,7 +21,7 @@ mod tests {
 
     #[test]
     fn test_arma_context() {
-        let mut extension = Extension::build()
+        let extension = Extension::build()
             .group("context", super::group())
             .finish()
             .testing();

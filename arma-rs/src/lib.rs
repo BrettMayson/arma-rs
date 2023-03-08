@@ -3,7 +3,7 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 pub use arma_rs_proc::arma;
 
@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_ctx: Option<ArmaContext>,
+    arma_ctx: RefCell<Option<ArmaContext>>,
     state: Arc<State>,
 }
 
@@ -137,15 +137,15 @@ impl Extension {
         )))
     }
 
-    pub(crate) fn set_arma_context(&mut self, ctx: Option<ArmaContext>) {
-        self.arma_ctx = ctx
+    pub(crate) fn set_arma_context(&self, ctx: Option<ArmaContext>) {
+        self.arma_ctx.replace(ctx);
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            self.arma_ctx.clone(),
+            self.arma_ctx.borrow().clone(),
             self.state.clone(),
             self.callback_queue.clone(),
         )
@@ -316,7 +316,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_ctx: None,
+            arma_ctx: RefCell::new(None),
             state: Arc::new(self.state),
         }
     }
