@@ -354,7 +354,7 @@ fn arma_context() {
             None,
             ArmaContext::new(
                 Caller::Steam(123),
-                Source::File(String::from("file")),
+                Source::Pbo(String::from("pbo")),
                 Mission::Mission(String::from("mission")),
                 Server::Multiplayer(String::from("server")),
             ),
@@ -362,7 +362,7 @@ fn arma_context() {
     };
     assert_eq!(
         result,
-        "Steam(123),File(\"file\"),Mission(\"mission\"),Multiplayer(\"server\")"
+        "Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")"
     );
 }
 

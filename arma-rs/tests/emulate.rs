@@ -116,7 +116,7 @@ fn c_interface_full() {
         extension.handle_arma_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
-                CString::new("file").unwrap().into_raw(),    // file source
+                CString::new("pbo").unwrap().into_raw(),     // file source
                 CString::new("mission").unwrap().into_raw(), // mission name
                 CString::new("server").unwrap().into_raw(),  // server name
             ]
@@ -133,7 +133,7 @@ fn c_interface_full() {
         let cstring = CStr::from_ptr(output.as_ptr()).to_str();
         assert_eq!(
             cstring,
-            Ok("Steam(123),File(\"file\"),Mission(\"mission\"),Multiplayer(\"server\")")
+            Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
         );
     }
 }

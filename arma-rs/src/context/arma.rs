@@ -1,3 +1,5 @@
+use std::path::Path;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Caller {
     Steam(u64),
@@ -16,7 +18,8 @@ impl From<&str> for Caller {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Source {
-    File(String), // Either absolute file system path or path inside PBO
+    File(String),
+    Pbo(String),
     Console,
 }
 
@@ -24,8 +27,10 @@ impl From<&str> for Source {
     fn from(s: &str) -> Self {
         if s.is_empty() {
             Self::Console
-        } else {
+        } else if Path::new(s).is_absolute() {
             Self::File(s.to_string())
+        } else {
+            Self::Pbo(s.to_string())
         }
     }
 }
@@ -121,12 +126,12 @@ mod tests {
     #[test]
     fn source_pbo() {
         let path = "x\\ctx\\addons\\main\\fn_armaContext.sqf";
-        assert_eq!(Source::from(path), Source::File(path.to_string()));
+        assert_eq!(Source::from(path), Source::Pbo(path.to_string()));
     }
 
     #[test]
     fn source_file() {
-        let path = "C:\\Users\\Context\\Documents\\Arma 3\\missions\\ctx.VR\\fn_armaContext.sqf";
+        let path = env!("CARGO_MANIFEST_DIR");
         assert_eq!(Source::from(path), Source::File(path.to_string()));
     }
 
