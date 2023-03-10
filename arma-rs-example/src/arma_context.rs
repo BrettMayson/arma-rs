@@ -38,6 +38,6 @@ mod tests {
             )
         };
         assert_eq!(code, 0);
-        assert_eq!(result, "Unknown,Console,Unknown,Singleplayer");
+        assert_eq!(result, "Unknown,Console,None,Singleplayer");
     }
 }
