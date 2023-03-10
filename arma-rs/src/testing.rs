@@ -1,4 +1,4 @@
-//! For testing your [`crate::Extension`].
+//! For testing your extension.
 
 use std::time::Duration;
 
