@@ -1,9 +1,12 @@
 use std::path::Path;
 
+/// Identification of the player calling your extension.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Caller {
+    /// The player's steamID64.
     Steam(u64),
-    Unknown, // Wiki states arma could provide a `0`, its unknown when this happens
+    /// Unable to determine.
+    Unknown,
 }
 
 impl From<&str> for Caller {
@@ -16,10 +19,16 @@ impl From<&str> for Caller {
     }
 }
 
+/// Source of the extension call.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Source {
+    /// Absolute path of the file on the players system.\
+    /// For example on windows: `C:\Users\user\Documents\Arma 3\missions\test.VR\fn_armaContext.sqf`.
     File(String),
+    /// Path inside of a pbo.\
+    /// For example: `z\test\addons\main\fn_armaContext.sqf`.
     Pbo(String),
+    /// Debug console.
     Console,
 }
 
@@ -35,26 +44,31 @@ impl From<&str> for Source {
     }
 }
 
-// Note: is unknown when not in a mission and could be unknown in missions prior to arma v2.02
+/// Current mission.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Mission {
+    /// Mission name.
     Mission(String),
-    Unknown,
+    /// Not in a mission.
+    None,
 }
 
 impl From<&str> for Mission {
     fn from(s: &str) -> Self {
         if s.is_empty() {
-            Self::Unknown
+            Self::None
         } else {
             Self::Mission(s.to_string())
         }
     }
 }
 
+/// Current server.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Server {
+    /// Server name
     Multiplayer(String),
+    /// Singleplayer or no mission
     Singleplayer,
 }
 
@@ -68,6 +82,7 @@ impl From<&str> for Server {
     }
 }
 
+/// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
 #[derive(Clone)]
 pub struct ArmaContext {
     caller: Caller,
@@ -78,6 +93,7 @@ pub struct ArmaContext {
 
 impl ArmaContext {
     #[must_use]
+    /// Create a new [`ArmaContext`]. Mainly for use with [`crate::testing`].
     pub const fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
         Self {
             caller,
@@ -88,21 +104,29 @@ impl ArmaContext {
     }
 
     #[must_use]
+    /// Player that called the extension. Could be [`Caller::Unknown`] when the player's steamID64 is unavailable
+    /// # Note
+    /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
     pub const fn caller(&self) -> &Caller {
         &self.caller
     }
 
     #[must_use]
+    /// Source from where the extension was called.
     pub const fn source(&self) -> &Source {
         &self.source
     }
 
     #[must_use]
+    /// TCurrent mission's name.
+    /// # Note
+    /// Could result in [`Mission::None`] in missions prior to Arma v2.02.
     pub const fn mission(&self) -> &Mission {
         &self.mission
     }
 
     #[must_use]
+    /// Current server's name
     pub const fn server(&self) -> &Server {
         &self.server
     }
@@ -141,7 +165,7 @@ mod tests {
 
     #[test]
     fn mission_empty() {
-        assert_eq!(Mission::from(""), Mission::Unknown);
+        assert_eq!(Mission::from(""), Mission::None);
     }
 
     #[test]

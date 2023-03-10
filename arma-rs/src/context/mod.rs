@@ -1,3 +1,5 @@
+//! Contextual execution information.
+
 use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
@@ -41,6 +43,7 @@ impl Context {
     }
 
     #[must_use]
+    /// Context automatically provided by Arma. Supported since Arma version 2.11.
     pub const fn arma(&self) -> Option<&ArmaContext> {
         self.arma.as_ref()
     }

@@ -27,6 +27,10 @@ mod ext_result;
 #[cfg(feature = "extension")]
 pub use ext_result::IntoExtResult;
 #[cfg(feature = "extension")]
+mod group;
+#[cfg(feature = "extension")]
+pub use group::Group;
+#[cfg(feature = "extension")]
 mod command;
 #[cfg(feature = "extension")]
 pub use command::*;
@@ -34,10 +38,6 @@ pub use command::*;
 pub mod context;
 #[cfg(feature = "extension")]
 pub use context::Context;
-#[cfg(feature = "extension")]
-mod group;
-#[cfg(feature = "extension")]
-pub use group::Group;
 #[cfg(feature = "extension")]
 pub mod testing;
 #[cfg(feature = "extension")]

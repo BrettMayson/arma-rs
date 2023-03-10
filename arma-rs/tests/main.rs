@@ -381,7 +381,7 @@ fn arma_context_availability() {
             context::ArmaContext::new(
                 context::Caller::Unknown,
                 context::Source::Console,
-                context::Mission::Unknown,
+                context::Mission::None,
                 context::Server::Singleplayer,
             ),
         )

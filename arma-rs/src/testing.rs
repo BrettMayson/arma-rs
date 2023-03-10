@@ -1,7 +1,10 @@
+//! For testing your [`crate::Extension`].
+
 use std::time::Duration;
 
 use crate::{context, Context, State, Value};
 
+/// Wrapper around [`crate::Extension`] used for testing.
 pub struct Extension(crate::Extension);
 
 const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
@@ -42,6 +45,7 @@ impl<T, E> Result<T, E> {
 }
 
 impl Extension {
+    /// Create a new testing Extension
     pub fn new(ext: crate::Extension) -> Self {
         Self(ext)
     }
@@ -59,7 +63,7 @@ impl Extension {
     }
 
     #[must_use]
-    /// Call a function, intended for tests
+    /// Call a function with Arma context.
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -74,7 +78,7 @@ impl Extension {
     }
 
     #[must_use]
-    /// Call a function, intended for tests
+    /// Call a function without Arma context.
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
