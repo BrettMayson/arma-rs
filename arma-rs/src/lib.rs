@@ -39,7 +39,7 @@ mod group;
 #[cfg(feature = "extension")]
 pub use group::Group;
 #[cfg(feature = "extension")]
-mod testing;
+pub mod testing;
 #[cfg(feature = "extension")]
 pub use testing::Result;
 
