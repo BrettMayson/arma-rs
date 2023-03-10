@@ -119,6 +119,32 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
+## Arma Context
+
+Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
+
+```rust,skt-group
+use arma_rs::Context;
+
+pub fn arma_context(ctx: Context) -> String {
+    if let Some(arma_ctx) = ctx.arma() {
+        format!(
+            "{:?},{:?},{:?},{:?}",
+            arma_ctx.caller(),
+            arma_ctx.source(),
+            arma_ctx.mission(),
+            arma_ctx.server()
+        )
+    } else {
+        String::new()
+    }
+}
+
+pub fn group() -> arma_rs::Group {
+    arma_rs::Group::new().command("context", arma_context)
+}
+```
+
 ## Custom Return Types
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
