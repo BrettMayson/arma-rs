@@ -1,14 +1,17 @@
 use arma_rs::{Context, Group};
 
-pub fn arma(ctx: Context) -> String {
-    let arma = ctx.arma().unwrap();
-    format!(
-        "{:?},{:?},{:?},{:?}",
-        arma.caller(),
-        arma.source(),
-        arma.mission(),
-        arma.server()
-    )
+pub fn arma(ctx: Context) -> Result<String, String> {
+    if let Some(arma_ctx) = ctx.arma() {
+        Ok(format!(
+            "{:?},{:?},{:?},{:?}",
+            arma_ctx.caller(),
+            arma_ctx.source(),
+            arma_ctx.mission(),
+            arma_ctx.server()
+        ))
+    } else {
+        Err("Arma version needs to be 2.11 or higher".to_string())
+    }
 }
 
 pub fn group() -> Group {
