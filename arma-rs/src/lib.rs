@@ -31,9 +31,9 @@ mod command;
 #[cfg(feature = "extension")]
 pub use command::*;
 #[cfg(feature = "extension")]
-mod context;
+pub mod context;
 #[cfg(feature = "extension")]
-pub use context::*;
+pub use context::Context;
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_ctx: RefCell<Option<ArmaContext>>,
+    arma_ctx: RefCell<Option<context::ArmaContext>>,
     state: Arc<State>,
 }
 
@@ -128,11 +128,11 @@ impl Extension {
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                Some(ArmaContext::new(
-                    Caller::from(argv[0].as_ref()),
-                    Source::from(argv[1].as_ref()),
-                    Mission::from(argv[2].as_ref()),
-                    Server::from(argv[3].as_ref()),
+                Some(context::ArmaContext::new(
+                    context::Caller::from(argv[0].as_ref()),
+                    context::Source::from(argv[1].as_ref()),
+                    context::Mission::from(argv[2].as_ref()),
+                    context::Server::from(argv[3].as_ref()),
                 ))
             }
         };

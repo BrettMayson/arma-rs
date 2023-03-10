@@ -17,7 +17,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{ArmaContext, Caller, Extension, Mission, Server, Source};
+    use arma_rs::{context, Extension};
 
     #[test]
     fn test_arma_context() {
@@ -29,11 +29,11 @@ mod tests {
             extension.call_with_context(
                 "context:arma",
                 None,
-                ArmaContext::new(
-                    Caller::Unknown,
-                    Source::Console,
-                    Mission::Unknown,
-                    Server::Singleplayer,
+                context::ArmaContext::new(
+                    context::Caller::Unknown,
+                    context::Source::Console,
+                    context::Mission::Unknown,
+                    context::Server::Singleplayer,
                 ),
             )
         };

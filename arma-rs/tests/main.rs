@@ -1,4 +1,4 @@
-use arma_rs::{ArmaContext, Caller, Context, Extension, Group, Mission, Server, Source};
+use arma_rs::{context, Context, Extension, Group};
 
 include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
@@ -352,11 +352,11 @@ fn arma_context() {
         extension.call_with_context(
             "context",
             None,
-            ArmaContext::new(
-                Caller::Steam(123),
-                Source::Pbo(String::from("pbo")),
-                Mission::Mission(String::from("mission")),
-                Server::Multiplayer(String::from("server")),
+            context::ArmaContext::new(
+                context::Caller::Steam(123),
+                context::Source::Pbo(String::from("pbo")),
+                context::Mission::Mission(String::from("mission")),
+                context::Server::Multiplayer(String::from("server")),
             ),
         )
     };
@@ -378,11 +378,11 @@ fn arma_context_availability() {
         extension.call_with_context(
             "has_arma_context",
             None,
-            ArmaContext::new(
-                Caller::Unknown,
-                Source::Console,
-                Mission::Unknown,
-                Server::Singleplayer,
+            context::ArmaContext::new(
+                context::Caller::Unknown,
+                context::Source::Console,
+                context::Mission::Unknown,
+                context::Server::Singleplayer,
             ),
         )
     };

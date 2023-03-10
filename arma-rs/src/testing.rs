@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{ArmaContext, Context, State, Value};
+use crate::{context, Context, State, Value};
 
 pub struct Extension(crate::Extension);
 
@@ -67,9 +67,9 @@ impl Extension {
         &self,
         function: &str,
         args: Option<Vec<String>>,
-        context: ArmaContext,
+        context: context::ArmaContext,
     ) -> (String, libc::c_int) {
-        self.handle_arma_context(Some(context));
+        self.set_arma_context(Some(info));
         self.handle_call(function, args)
     }
 
@@ -79,11 +79,11 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        self.handle_arma_context(None);
+        self.set_arma_context(None);
         self.handle_call(function, args)
     }
 
-    fn handle_arma_context(&self, ctx: Option<ArmaContext>) {
+    fn set_arma_context(&self, ctx: Option<context::ArmaContext>) {
         self.0.arma_ctx.replace(ctx);
     }
 
