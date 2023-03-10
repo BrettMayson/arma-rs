@@ -41,7 +41,7 @@ impl Context {
     }
 
     #[must_use]
-    pub fn arma(&self) -> Option<&ArmaContext> {
+    pub const fn arma(&self) -> Option<&ArmaContext> {
         self.arma.as_ref()
     }
 

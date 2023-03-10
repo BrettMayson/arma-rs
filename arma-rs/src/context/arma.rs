@@ -78,7 +78,7 @@ pub struct ArmaContext {
 
 impl ArmaContext {
     #[must_use]
-    pub fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
+    pub const fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
         Self {
             caller,
             source,
@@ -87,19 +87,23 @@ impl ArmaContext {
         }
     }
 
-    pub fn caller(&self) -> &Caller {
+    #[must_use]
+    pub const fn caller(&self) -> &Caller {
         &self.caller
     }
 
-    pub fn source(&self) -> &Source {
+    #[must_use]
+    pub const fn source(&self) -> &Source {
         &self.source
     }
 
-    pub fn mission(&self) -> &Mission {
+    #[must_use]
+    pub const fn mission(&self) -> &Mission {
         &self.mission
     }
 
-    pub fn server(&self) -> &Server {
+    #[must_use]
+    pub const fn server(&self) -> &Server {
         &self.server
     }
 }
