@@ -22,10 +22,10 @@ impl From<&str> for Caller {
 /// Source of the extension call.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Source {
-    /// Absolute path of the file on the players system.\
+    /// Absolute path of the file on the players system.
     /// For example on windows: `C:\Users\user\Documents\Arma 3\missions\test.VR\fn_armaContext.sqf`.
     File(String),
-    /// Path inside of a pbo.\
+    /// Path inside of a pbo.
     /// For example: `z\test\addons\main\fn_armaContext.sqf`.
     Pbo(String),
     /// Debug console.
@@ -118,7 +118,7 @@ impl ArmaContext {
     }
 
     #[must_use]
-    /// TCurrent mission's name.
+    /// Current mission's name.
     /// # Note
     /// Could result in [`Mission::None`] in missions prior to Arma v2.02.
     pub const fn mission(&self) -> &Mission {
