@@ -2,6 +2,7 @@
 mod extension {
     use arma_rs::{context, Context, ContextState, Extension, Group};
 
+    #[cfg(not(miri))]
     include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
     #[test]
