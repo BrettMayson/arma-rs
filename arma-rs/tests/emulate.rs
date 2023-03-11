@@ -76,15 +76,17 @@ mod extension {
         unsafe {
             let mut output = [0i8; 1024];
             let ptr = CString::new("callback").unwrap().into_raw();
+            let ptr_hello = CString::new("hello").unwrap().into_raw();
             let code = extension.handle_call(
                 ptr,
                 output.as_mut_ptr(),
                 1024,
-                Some(vec![CString::new("hello").unwrap().into_raw()].as_mut_ptr()),
+                Some(vec![ptr_hello].as_mut_ptr()),
                 Some(1),
             );
             assert_eq!(code, 0);
             let _ = CString::from_raw(ptr);
+            let _ = CString::from_raw(ptr_hello);
         };
         unsafe {
             let mut output = [0i8; 1024];
@@ -97,16 +99,18 @@ mod extension {
         unsafe {
             let mut output = [0i8; 1024];
             let ptr = CString::new("welcome").unwrap().into_raw();
+            let ptr_john = CString::new("John").unwrap().into_raw();
             extension.handle_call(
                 ptr,
                 output.as_mut_ptr(),
                 1024,
-                Some(vec![CString::new("John").unwrap().into_raw()].as_mut_ptr()),
+                Some(vec![ptr_john].as_mut_ptr()),
                 Some(1),
             );
             let cstring = CStr::from_ptr(output.as_ptr()).to_str();
             assert_eq!(cstring, Ok("Welcome John"));
             let _ = CString::from_raw(ptr);
+            let _ = CString::from_raw(ptr_john);
         }
         std::thread::sleep(std::time::Duration::from_millis(50));
         assert_eq!(
@@ -129,8 +133,9 @@ mod extension {
                 .as_mut_ptr(),
                 4,
             );
+            let ptr = CString::new("arma_context").unwrap().into_raw();
             extension.handle_call(
-                CString::new("arma_context").unwrap().into_raw(),
+                ptr,
                 output.as_mut_ptr(),
                 1024,
                 None,
@@ -141,6 +146,7 @@ mod extension {
                 cstring,
                 Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
             );
+            let _ = CString::from_raw(ptr);
             let _ = CString::from_raw(ptr1);
             let _ = CString::from_raw(ptr2);
             let _ = CString::from_raw(ptr3);
