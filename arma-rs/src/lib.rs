@@ -187,11 +187,14 @@ impl Extension {
 
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
-    pub fn run_callbacks(&self) {
+    pub fn run_callbacks(&self) -> std::thread::JoinHandle<()> {
         let queue = self.callback_queue.clone();
         let callback = self.callback;
         std::thread::spawn(move || loop {
             if let Some((name, func, data)) = queue.pop() {
+                if name == "test$exit" && func == "test$exit" {
+                    break;
+                }
                 if let Some(c) = callback {
                     let name = if let Ok(cstring) = std::ffi::CString::new(name) {
                         cstring
@@ -232,7 +235,7 @@ impl Extension {
                     }
                 }
             }
-        });
+        })
     }
 }
 

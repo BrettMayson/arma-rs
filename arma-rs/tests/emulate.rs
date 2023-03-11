@@ -70,7 +70,7 @@ mod extension {
             }
         );
         extension.register_callback(callback);
-        extension.run_callbacks();
+        let handle = extension.run_callbacks();
         let stack = get_callback_stack();
         assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
         unsafe {
@@ -138,6 +138,9 @@ mod extension {
                 Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
             );
         }
+
+        extension.context().callback_null("test$exit", "test$exit");
+        handle.join().unwrap();
     }
 
     #[test]
@@ -178,7 +181,7 @@ mod extension {
             }
         );
         extension.register_callback(callback);
-        extension.run_callbacks();
+        let handle = extension.run_callbacks();
         unsafe {
             let mut output = [0i8; 1024];
             let code = extension.handle_call(
@@ -336,6 +339,9 @@ mod extension {
             );
             assert!(extension.context().arma().is_some());
         }
+
+        extension.context().callback_null("test$exit", "test$exit");
+        handle.join().unwrap();
     }
 
     #[test]
