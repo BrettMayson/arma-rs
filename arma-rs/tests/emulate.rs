@@ -134,13 +134,7 @@ mod extension {
                 4,
             );
             let ptr = CString::new("arma_context").unwrap().into_raw();
-            extension.handle_call(
-                ptr,
-                output.as_mut_ptr(),
-                1024,
-                None,
-                None,
-            );
+            extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
             let cstring = CStr::from_ptr(output.as_ptr()).to_str();
             assert_eq!(
                 cstring,
