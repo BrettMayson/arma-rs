@@ -51,6 +51,16 @@ fn c_interface_full() {
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
+        .command("arma_context", |ctx: Context| -> String {
+            let arma = ctx.arma().unwrap();
+            format!(
+                "{:?},{:?},{:?},{:?}",
+                arma.caller(),
+                arma.source(),
+                arma.mission(),
+                arma.server()
+            )
+        })
         .finish();
     platform_extern!(
         fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
@@ -63,7 +73,7 @@ fn c_interface_full() {
     assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -74,7 +84,7 @@ fn c_interface_full() {
     };
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle(
+        extension.handle_call(
             CString::new("hello").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -86,7 +96,7 @@ fn c_interface_full() {
     }
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle(
+        extension.handle_call(
             CString::new("welcome").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -101,6 +111,31 @@ fn c_interface_full() {
         stack.read().unwrap().get("c_interface_full").unwrap().len(),
         1
     );
+    unsafe {
+        let mut output = [0i8; 1024];
+        extension.handle_arma_context(
+            vec![
+                CString::new("123").unwrap().into_raw(),     // steam ID
+                CString::new("pbo").unwrap().into_raw(),     // file source
+                CString::new("mission").unwrap().into_raw(), // mission name
+                CString::new("server").unwrap().into_raw(),  // server name
+            ]
+            .as_mut_ptr(),
+            4,
+        );
+        extension.handle_call(
+            CString::new("arma_context").unwrap().into_raw(),
+            output.as_mut_ptr(),
+            1024,
+            None,
+            None,
+        );
+        let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+        assert_eq!(
+            cstring,
+            Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
+        );
+    }
 }
 
 #[test]
@@ -144,7 +179,7 @@ fn c_interface_invalid_calls() {
     extension.run_callbacks();
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("hello").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -159,7 +194,7 @@ fn c_interface_invalid_calls() {
     // Unknown function name
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("invalid").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -174,7 +209,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback name
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_name").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -189,7 +224,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback func
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_func").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -204,7 +239,7 @@ fn c_interface_invalid_calls() {
     // Invalid callback data
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_invalid_data").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -219,7 +254,7 @@ fn c_interface_invalid_calls() {
     // Valid null callback
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_valid_null").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -234,7 +269,7 @@ fn c_interface_invalid_calls() {
     // Valid data callback
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("callback_valid_data").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -257,6 +292,48 @@ fn c_interface_invalid_calls() {
             .len(),
         2
     );
+
+    // Valid Arma context
+    // Note: Ordering of these arma context tests matter, used to confirm that the test correctly set arma context
+    unsafe {
+        assert!(extension.context().arma().is_none()); // Confirm expected status
+        extension.handle_arma_context(
+            vec![
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+            ]
+            .as_mut_ptr(),
+            4,
+        );
+        assert!(extension.context().arma().is_some());
+    }
+
+    // Arma context not enough args
+    unsafe {
+        assert!(extension.context().arma().is_some()); // Confirm expected status
+        extension.handle_arma_context(vec![].as_mut_ptr(), 0);
+        assert!(extension.context().arma().is_none());
+    }
+
+    // Arma context too many args
+    unsafe {
+        assert!(extension.context().arma().is_none()); // Confirm expected status
+        extension.handle_arma_context(
+            vec![
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+                CString::new("").unwrap().into_raw(),
+            ]
+            .as_mut_ptr(),
+            6,
+        );
+        assert!(extension.context().arma().is_some());
+    }
 }
 
 #[test]
@@ -289,7 +366,7 @@ fn c_interface_errors() {
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -317,7 +394,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -346,7 +423,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -368,7 +445,7 @@ fn c_interface_errors() {
             ("add_context_return", "3"),
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -396,7 +473,7 @@ fn c_interface_errors() {
             "add_context_return",
         ] {
             let mut output = [0i8; 1024];
-            let code = extension.handle(
+            let code = extension.handle_call(
                 CString::new(func).unwrap().into_raw(),
                 output.as_mut_ptr(),
                 1024,
@@ -418,7 +495,7 @@ fn c_interface_errors() {
     // Overflow
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("overflow").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -433,7 +510,7 @@ fn c_interface_errors() {
     // Result - true
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("result").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
@@ -448,7 +525,7 @@ fn c_interface_errors() {
     // Result - false
     unsafe {
         let mut output = [0i8; 1024];
-        let code = extension.handle(
+        let code = extension.handle_call(
             CString::new("result").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,

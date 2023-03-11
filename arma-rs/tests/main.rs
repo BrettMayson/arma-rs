@@ -1,4 +1,4 @@
-use arma_rs::{Context, Extension, Group};
+use arma_rs::{context, Context, Extension, Group};
 
 include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
@@ -331,4 +331,65 @@ fn state_change() {
         .get::<AtomicUsize>()
         .load(Ordering::Relaxed);
     assert_eq!(value, 21);
+}
+
+#[test]
+fn arma_context() {
+    let extension = Extension::build()
+        .command("context", |ctx: Context| -> String {
+            let arma = ctx.arma().unwrap();
+            format!(
+                "{:?},{:?},{:?},{:?}",
+                arma.caller(),
+                arma.source(),
+                arma.mission(),
+                arma.server()
+            )
+        })
+        .finish()
+        .testing();
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "context",
+            None,
+            context::ArmaContext::new(
+                context::Caller::Steam(123),
+                context::Source::Pbo(String::from("pbo")),
+                context::Mission::Mission(String::from("mission")),
+                context::Server::Multiplayer(String::from("server")),
+            ),
+        )
+    };
+    assert_eq!(
+        result,
+        "Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")"
+    );
+}
+
+#[test]
+fn arma_context_availability() {
+    let extension = Extension::build()
+        .command("has_arma_context", |ctx: Context| -> bool {
+            ctx.arma().is_some()
+        })
+        .finish()
+        .testing();
+    let (result, _) = unsafe {
+        extension.call_with_context(
+            "has_arma_context",
+            None,
+            context::ArmaContext::new(
+                context::Caller::Unknown,
+                context::Source::Console,
+                context::Mission::None,
+                context::Server::Singleplayer,
+            ),
+        )
+    };
+    assert_eq!(result, "true");
+    assert!(extension.context().arma().is_some());
+
+    let (result, _) = unsafe { extension.call("has_arma_context", None) };
+    assert_eq!(result, "false");
+    assert!(extension.context().arma().is_none());
 }

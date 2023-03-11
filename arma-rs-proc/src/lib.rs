@@ -16,19 +16,22 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    #[cfg(all(target_arch = "x86", target_os = "windows"))]
+    #[cfg(all(target_os = "windows", target_arch = "x86"))]
     let prefix = "safe32_";
 
     #[cfg(not(all(target_os = "windows", target_arch = "x86")))]
     let prefix = "";
 
-    let versionfn = Ident::new(&format!("{prefix}RVExtensionVersion"), Span::call_site());
-    let noargfn = Ident::new(&format!("{prefix}RVExtension"), Span::call_site());
-    let argfn = Ident::new(&format!("{prefix}RVExtensionArgs"), Span::call_site());
-    let callbackfn = Ident::new(
-        &format!("{prefix}RVExtensionRegisterCallback"),
-        Span::call_site(),
-    );
+    macro_rules! fn_ident {
+        ( $name:literal ) => {
+            Ident::new(&format!("{prefix}{}", $name), Span::call_site())
+        };
+    }
+    let versionfn = fn_ident!("RVExtensionVersion");
+    let noargfn = fn_ident!("RVExtension");
+    let argfn = fn_ident!("RVExtensionArgs");
+    let callbackfn = fn_ident!("RVExtensionRegisterCallback");
+    let contextfn = fn_ident!("RVExtensionContext");
 
     TokenStream::from(quote! {
 
@@ -37,20 +40,14 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         static mut RV_EXTENSION: Option<Extension> = None;
 
         #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionVersion@8=_safe32_RVExtensionVersion@8"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtension@12=_safe32_RVExtension@12"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionArgs@20=_safe32_RVExtensionArgs@20"
-        }
-        #[cfg(all(target_os="windows", target_arch="x86"))]
-        arma_rs::link_args::windows::raw! {
-            unsafe "/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4"
+        arma_rs::link_args::windows! {
+            unsafe {
+                raw("/EXPORT:_RVExtensionVersion@8=_safe32_RVExtensionVersion@8");
+                raw("/EXPORT:_RVExtension@12=_safe32_RVExtension@12");
+                raw("/EXPORT:_RVExtensionArgs@20=_safe32_RVExtensionArgs@20");
+                raw("/EXPORT:_RVExtensionRegisterCallback@4=_safe32_RVExtensionRegisterCallback@4");
+                raw("/EXPORT:_RVExtensionContext@8=_safe32_RVExtensionContext@8");
+            }
         }
 
         #[no_mangle]
@@ -67,7 +64,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 if ext.allow_no_args() {
-                    ext.handle(function, output, size, None, None);
+                    ext.handle_call(function, output, size, None, None);
                 }
             }
         }
@@ -76,7 +73,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         pub unsafe extern #extern_type fn #argfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
-                ext.handle(function, output, size, Some(args), Some(arg_count))
+                ext.handle_call(function, output, size, Some(args), Some(arg_count))
             } else {
                 0
             }
@@ -88,6 +85,14 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
             if let Some(ext) = &mut RV_EXTENSION {
                 ext.register_callback(callback);
                 ext.run_callbacks();
+            }
+        }
+
+        #[no_mangle]
+        pub unsafe extern #extern_type fn #contextfn(args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) {
+            #ext_init
+            if let Some(ext) = &mut RV_EXTENSION {
+                ext.handle_arma_context(args, arg_count);
             }
         }
 

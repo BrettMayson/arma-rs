@@ -1,7 +1,10 @@
+//! For testing your extension.
+
 use std::time::Duration;
 
-use crate::{Context, State, Value};
+use crate::{context, Context, State, Value};
 
+/// Wrapper around [`crate::Extension`] used for testing.
 pub struct Extension(crate::Extension);
 
 const BUFFER_SIZE: libc::size_t = 10240; // The sized used by Arma 3 as of 2021-12-30
@@ -42,6 +45,7 @@ impl<T, E> Result<T, E> {
 }
 
 impl Extension {
+    /// Create a new testing Extension
     pub fn new(ext: crate::Extension) -> Self {
         Self(ext)
     }
@@ -59,11 +63,39 @@ impl Extension {
     }
 
     #[must_use]
-    /// Call a function, intended for tests
+    /// Call a function with Arma context.
+    ///
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn call_with_context(
+        &self,
+        function: &str,
+        args: Option<Vec<String>>,
+        context: context::ArmaContext,
+    ) -> (String, libc::c_int) {
+        self.set_arma_context(Some(context));
+        self.handle_call(function, args)
+    }
+
+    #[must_use]
+    /// Call a function without Arma context.
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
+        self.set_arma_context(None);
+        self.handle_call(function, args)
+    }
+
+    fn set_arma_context(&self, ctx: Option<context::ArmaContext>) {
+        self.0.arma_ctx.replace(ctx);
+    }
+
+    unsafe fn handle_call(
+        &self,
+        function: &str,
+        args: Option<Vec<String>>,
+    ) -> (String, libc::c_int) {
         let mut output = [0; BUFFER_SIZE];
         let len = args.as_ref().map(|a| a.len().try_into().unwrap());
         let mut args_pointer = args.map(|v| {
