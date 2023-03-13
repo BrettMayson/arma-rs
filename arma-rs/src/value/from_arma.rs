@@ -87,7 +87,7 @@ macro_rules! impl_from_arma_tuple {
                     .strip_suffix(']')
                     .ok_or_else(|| String::from("missing ']' at end of vec"))?;
                 let mut parts_iter = split_array(&source).into_iter();
-                Ok((
+                let ret = (
                     $(
                         {
                             let Some(n) = parts_iter.next() else {
@@ -96,7 +96,11 @@ macro_rules! impl_from_arma_tuple {
                             $t::from_arma(n.to_string().trim().to_string())?
                         }
                     ),*
-                ))
+                );
+                if parts_iter.next().is_some() {
+                    return Err(String::from("too many values in tuple"))
+                }
+                Ok(ret)
             }
         }
     };
