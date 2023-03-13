@@ -191,6 +191,8 @@ mod tests {
         );
         assert!(<(String, i32)>::from_arma(r#"["hello", 123"#.to_string()).is_err());
         assert!(<(String, i32)>::from_arma(r#""hello", 123"#.to_string()).is_err());
+        assert!(<(String, i32)>::from_arma(r#"["hello"]"#.to_string()).is_err());
+        assert!(<(String, i32)>::from_arma(r#"["hello", 123, 456]"#.to_string()).is_err());
     }
 
     #[test]
@@ -300,6 +302,8 @@ mod tests {
             vec![String::from("hello"), String::from("bye"),],
             <[String; 2]>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
         );
+        assert!(<[String; 2]>::from_arma(r#"["hello"]"#.to_string()).is_err());
+        assert!(<[String; 2]>::from_arma(r#"["hello","bye","world"]"#.to_string()).is_err());
     }
 
     #[test]
@@ -321,6 +325,8 @@ mod tests {
         assert_eq!(
             1_227_700,
             <u32>::from_arma(r#"1.2277e+006"#.to_string()).unwrap()
-        )
+        );
+        assert!(<u32>::from_arma(r#"e-10"#.to_string()).is_err());
+        assert!(<u32>::from_arma(r#"1.0e"#.to_string()).is_err());
     }
 }
