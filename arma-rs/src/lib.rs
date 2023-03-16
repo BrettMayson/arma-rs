@@ -78,7 +78,7 @@ impl Extension {
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
-            version: env!("CARGO_PKG_VERSION").to_string(),
+            version: std::env::var("CARGO_PKG_VERSION").unwrap_or_default(),
             group: Group::new(),
             state: State::default(),
             allow_no_args: false,
