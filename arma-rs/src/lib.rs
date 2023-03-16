@@ -78,7 +78,7 @@ impl Extension {
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
-            version: env!("CARGO_PKG_VERSION").to_string(),
+            version: String::from("0.0.0"),
             group: Group::new(),
             state: State::default(),
             allow_no_args: false,
