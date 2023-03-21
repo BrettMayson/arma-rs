@@ -7,8 +7,10 @@ use crossbeam_queue::SegQueue;
 use crate::{IntoArma, State, Value};
 
 mod arma;
+mod global;
 
 pub use arma::*;
+pub use global::GlobalContext;
 
 /// Contains information about the current execution context
 pub struct Context {
