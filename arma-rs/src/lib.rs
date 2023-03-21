@@ -64,12 +64,11 @@ pub type State = state::Container![Send + Sync];
 #[cfg(feature = "extension")]
 pub struct Extension {
     version: String,
-    group: Group,
+    group: group::InternalGroup,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     arma_ctx: RefCell<Option<context::ArmaContext>>,
-    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
@@ -80,7 +79,6 @@ impl Extension {
         ExtensionBuilder {
             version: String::from("0.0.0"),
             group: Group::new(),
-            state: State::default(),
             allow_no_args: false,
         }
     }
@@ -143,7 +141,7 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            GlobalContext::new(self.version.clone(), self.state.clone()),
+            GlobalContext::new(self.version.clone(), self.group.state.clone()),
             self.callback_queue.clone(),
             self.arma_ctx.borrow().clone(),
         )
@@ -236,7 +234,6 @@ impl Extension {
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
-    state: State,
     allow_no_args: bool,
 }
 
@@ -264,11 +261,11 @@ impl ExtensionBuilder {
     #[inline]
     #[must_use]
     /// Add state value to the extension.
-    pub fn state<T>(self, state: T) -> Self
+    pub fn state<T>(mut self, state: T) -> Self
     where
         T: Send + Sync + 'static,
     {
-        self.state.set(state);
+        self.group = self.group.state(state);
         self
     }
 
@@ -276,7 +273,7 @@ impl ExtensionBuilder {
     #[must_use]
     /// Freeze the State, disallowing new states to be added.
     pub fn freeze_state(mut self) -> Self {
-        self.state.freeze();
+        self.group = self.group.freeze_state();
         self
     }
 
@@ -310,12 +307,11 @@ impl ExtensionBuilder {
     pub fn finish(self) -> Extension {
         Extension {
             version: self.version,
-            group: self.group,
+            group: self.group.into(),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
             arma_ctx: RefCell::new(None),
-            state: Arc::new(self.state),
         }
     }
 }

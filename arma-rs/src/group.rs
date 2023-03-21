@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     command::{fn_handler, Factory, Handler},
-    Context,
+    Context, State,
 };
 
 #[derive(Default)]
@@ -11,6 +11,7 @@ use crate::{
 pub struct Group {
     commands: HashMap<String, Box<Handler>>,
     children: HashMap<String, Self>,
+    state: State,
 }
 
 impl Group {
@@ -20,7 +21,25 @@ impl Group {
         Self {
             commands: HashMap::new(),
             children: HashMap::new(),
+            state: State::default(),
         }
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn state<T>(self, state: T) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
+        self.state.set(state);
+        self
+    }
+
+    #[inline]
+    #[must_use]
+    pub fn freeze_state(mut self) -> Self {
+        self.state.freeze();
+        self
     }
 
     #[inline]
@@ -46,7 +65,15 @@ impl Group {
         self.children.insert(name.into(), child);
         self
     }
+}
 
+pub(crate) struct InternalGroup {
+    commands: HashMap<String, Box<Handler>>,
+    children: HashMap<String, Self>,
+    pub(crate) state: Arc<State>,
+}
+
+impl InternalGroup {
     pub(crate) fn handle(
         &self,
         context: Context,
@@ -64,6 +91,21 @@ impl Group {
             (handler.handler)(context, output, size, args, count)
         } else {
             1
+        }
+    }
+}
+
+impl From<Group> for InternalGroup {
+    fn from(group: Group) -> Self {
+        let children = group
+            .children
+            .into_iter()
+            .map(|(name, group)| (name, Self::from(group)))
+            .collect();
+        Self {
+            commands: group.commands,
+            children,
+            state: Arc::new(group.state),
         }
     }
 }
