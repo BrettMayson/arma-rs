@@ -23,8 +23,3 @@ impl GlobalContext {
         &self.state
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-}

@@ -5,7 +5,7 @@ use arma_rs::{Context, Group};
 pub struct Counter(pub AtomicUsize);
 
 pub fn increment(ctx: Context) {
-    let counter = ctx.state().get::<Counter>();
+    let counter = ctx.global().state().get::<Counter>();
     counter.0.fetch_add(1, Ordering::SeqCst);
 }
 

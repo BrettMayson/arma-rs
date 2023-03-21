@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, State, Value};
+use crate::{IntoArma, Value};
 
 mod arma;
 mod global;
@@ -14,21 +14,21 @@ pub use global::GlobalContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma: Option<ArmaContext>,
-    state: Arc<State>,
+    global: GlobalContext,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    arma: Option<ArmaContext>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        arma: Option<ArmaContext>,
-        state: Arc<State>,
+        global: GlobalContext,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+        arma: Option<ArmaContext>,
     ) -> Self {
         Self {
+            global,
             arma,
-            state,
             queue,
             buffer_size: 0,
         }
@@ -39,9 +39,9 @@ impl Context {
         self
     }
 
-    /// Get a reference to the extensions state container.
-    pub fn state(&self) -> &State {
-        &self.state
+    #[must_use]
+    pub const fn global(&self) -> &GlobalContext {
+        &self.global
     }
 
     #[must_use]
@@ -95,17 +95,26 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::State;
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()));
+        let ctx = Context::new(
+            GlobalContext::new(String::new(), Arc::new(State::default())),
+            Arc::new(SegQueue::new()),
+            None,
+        );
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
+        let ctx = Context::new(
+            GlobalContext::new(String::new(), Arc::new(State::default())),
+            Arc::new(SegQueue::new()),
+            None,
+        )
+        .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }
