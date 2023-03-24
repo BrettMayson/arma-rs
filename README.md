@@ -119,21 +119,21 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
-## Arma Context
+## Arma Info
 
-Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
+Since Arma v2.11 additional info is provided each time the extension is called. This info can be accessed through the optional `Context` argument.
 
 ```rust,skt-group
 use arma_rs::Context;
 
-pub fn arma_context(ctx: Context) -> String {
-    if let Some(arma_ctx) = ctx.arma() {
+pub fn arma_info(ctx: Context) -> String {
+    if let Some(arma) = ctx.arma_info() {
         format!(
             "{:?},{:?},{:?},{:?}",
-            arma_ctx.caller(),
-            arma_ctx.source(),
-            arma_ctx.mission(),
-            arma_ctx.server()
+            arma.caller(),
+            arma.source(),
+            arma.mission(),
+            arma.server()
         )
     } else {
         String::new()
@@ -141,7 +141,7 @@ pub fn arma_context(ctx: Context) -> String {
 }
 
 pub fn group() -> arma_rs::Group {
-    arma_rs::Group::new().command("context", arma_context)
+    arma_rs::Group::new().command("info", arma_info)
 }
 ```
 
