@@ -144,8 +144,8 @@ impl Extension {
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             self.group.state.clone(),
             self.callback_queue.clone(),
-            self.arma_ctx.borrow().clone(),
         )
+        .with_arma(self.arma_ctx.borrow().clone())
     }
 
     /// Called by generated code, do not call directly.

@@ -26,15 +26,19 @@ impl Context {
         global: GlobalContext,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-        arma: Option<ArmaContext>,
     ) -> Self {
         Self {
             global,
             state,
-            arma,
+            arma: None,
             queue,
             buffer_size: 0,
         }
+    }
+
+    pub(crate) fn with_state(mut self, state: Arc<State>) -> Self {
+        self.state = state;
+        self
     }
 
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
@@ -42,8 +46,8 @@ impl Context {
         self
     }
 
-    pub(crate) fn with_state(mut self, state: Arc<State>) -> Self {
-        self.state = state;
+    pub(crate) fn with_arma(mut self, arma: Option<ArmaContext>) -> Self {
+        self.arma = arma;
         self
     }
 
@@ -116,7 +120,6 @@ mod tests {
             GlobalContext::new(String::new(), Arc::new(State::default())),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
-            None,
         );
         assert_eq!(ctx.buffer_len(), 0);
     }
@@ -127,7 +130,6 @@ mod tests {
             GlobalContext::new(String::new(), Arc::new(State::default())),
             Arc::new(State::default()),
             Arc::new(SegQueue::new()),
-            None,
         )
         .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
