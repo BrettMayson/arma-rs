@@ -145,6 +145,52 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
+## Persistent State
+
+Both the extension and command groups allow for type based persistent state values with at most one instance per type. These state values can then be accessed through the optional `Context` argument.
+
+### Global State
+
+Extension state is accessible from any command handler.
+
+```rust,skt-call-init
+use arma_rs::{arma, Context, Extension};
+
+use std::sync::atomic::{AtomicU32, Ordering};
+
+#[arma]
+fn init() -> Extension {
+    Extension::build()
+        .command("counter_increment", increment)
+        .state(AtomicU32::new(0))
+        .finish()
+}
+
+pub fn increment(ctx: Context) {
+    let counter = ctx.global().state().get::<AtomicU32>();
+    counter.fetch_add(1, Ordering::SeqCst);
+}
+```
+
+### Group State
+
+Command group state is only accessible from command handlers within the same group.
+
+```rust,skt-group
+use arma_rs::{Context, Extension};
+
+use std::sync::atomic::{AtomicU32, Ordering};
+
+pub fn increment(ctx: Context) {
+    let counter = ctx.group().unwrap().state().get::<AtomicU32>();
+    counter.fetch_add(1, Ordering::SeqCst);
+}
+
+pub fn group() -> arma_rs::Group {
+    arma_rs::Group::new().command("increment", increment).state(AtomicU32::new(0))
+}
+```
+
 ## Custom Return Types
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
