@@ -187,7 +187,9 @@ pub fn increment(ctx: Context) {
 }
 
 pub fn group() -> arma_rs::Group {
-    arma_rs::Group::new().command("increment", increment).state(AtomicU32::new(0))
+    arma_rs::Group::new()
+        .command("increment", increment)
+        .state(AtomicU32::new(0))
 }
 ```
 
