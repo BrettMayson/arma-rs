@@ -5,12 +5,12 @@ use arma_rs::{Context, Group};
 pub struct Counter(pub AtomicU32);
 
 pub fn increment(ctx: Context) {
-    let counter = ctx.state().get::<Counter>();
+    let counter = ctx.group().unwrap().state().get::<Counter>();
     counter.0.fetch_add(1, Ordering::SeqCst);
 }
 
 pub fn current(ctx: Context) -> u32 {
-    let counter = ctx.state().get::<Counter>();
+    let counter = ctx.group().unwrap().state().get::<Counter>();
     counter.0.load(Ordering::SeqCst)
 }
 

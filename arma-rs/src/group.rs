@@ -2,7 +2,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     command::{fn_handler, Factory, Handler},
-    Context, State,
+    context::{Context, GroupContext},
+    State,
 };
 
 #[derive(Default)]
@@ -89,7 +90,7 @@ impl InternalGroup {
             })
         } else if let Some(handler) = self.commands.get(function) {
             (handler.handler)(
-                context.with_state(self.state.clone()),
+                context.with_group_ctx(GroupContext::new(self.state.clone())),
                 output,
                 size,
                 args,

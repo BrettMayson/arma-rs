@@ -33,7 +33,7 @@ pub use command::*;
 #[cfg(feature = "extension")]
 pub mod context;
 #[cfg(feature = "extension")]
-pub use context::{Context, GlobalContext};
+pub use context::{Context, GlobalContext, GroupContext};
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -140,12 +140,15 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(
+        let ctx = Context::new(
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
-            self.group.state.clone(),
             self.callback_queue.clone(),
-        )
-        .with_arma_info(self.arma_info.borrow().clone())
+        );
+        if let Some(arma_info) = self.arma_info.borrow().as_ref() {
+            ctx.with_arma_info(arma_info.clone())
+        } else {
+            ctx
+        }
     }
 
     /// Called by generated code, do not call directly.

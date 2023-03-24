@@ -4,16 +4,18 @@ use std::{path::Path, sync::Arc};
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, State, Value};
+use crate::{IntoArma, Value};
 
 mod global;
+mod group;
 
 pub use global::GlobalContext;
+pub use group::GroupContext;
 
 /// Contains information about the current execution context
 pub struct Context {
     global: GlobalContext,
-    state: Arc<State>,
+    group: Option<GroupContext>,
     arma_info: Option<ArmaInfo>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -22,30 +24,29 @@ pub struct Context {
 impl Context {
     pub(crate) fn new(
         global: GlobalContext,
-        state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
         Self {
             global,
-            state,
+            group: None,
             arma_info: None,
             queue,
             buffer_size: 0,
         }
     }
 
-    pub(crate) fn with_state(mut self, state: Arc<State>) -> Self {
-        self.state = state;
+    pub(crate) fn with_group_ctx(mut self, ctx: GroupContext) -> Self {
+        self.group = Some(ctx);
+        self
+    }
+
+    pub(crate) fn with_arma_info(mut self, info: ArmaInfo) -> Self {
+        self.arma_info = Some(info);
         self
     }
 
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
         self.buffer_size = buffer_size;
-        self
-    }
-
-    pub(crate) fn with_arma_info(mut self, arma_info: Option<ArmaInfo>) -> Self {
-        self.arma_info = arma_info;
         self
     }
 
@@ -55,8 +56,8 @@ impl Context {
     }
 
     #[must_use]
-    pub fn state(&self) -> &State {
-        &self.state
+    pub const fn group(&self) -> Option<&GroupContext> {
+        self.group.as_ref()
     }
 
     #[must_use]
@@ -249,7 +250,6 @@ mod tests {
     fn context_buffer_len_zero() {
         let ctx = Context::new(
             GlobalContext::new(String::new(), Arc::new(State::default())),
-            Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         );
         assert_eq!(ctx.buffer_len(), 0);
@@ -259,7 +259,6 @@ mod tests {
     fn context_buffer_len() {
         let ctx = Context::new(
             GlobalContext::new(String::new(), Arc::new(State::default())),
-            Arc::new(State::default()),
             Arc::new(SegQueue::new()),
         )
         .with_buffer_size(100);
