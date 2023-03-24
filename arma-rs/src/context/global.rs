@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::State;
 
+/// Contains information about the extension
 pub struct GlobalContext {
     version: String,
     state: Arc<State>,
@@ -13,12 +14,13 @@ impl GlobalContext {
     }
 
     #[must_use]
+    /// Version of the Arma extension
     pub fn version(&self) -> &str {
         &self.version
     }
 
     #[must_use]
-    /// Get a reference to the extensions state container.
+    /// Global state container
     pub fn state(&self) -> &State {
         &self.state
     }

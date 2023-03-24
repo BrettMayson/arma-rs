@@ -33,7 +33,7 @@ pub use command::*;
 #[cfg(feature = "extension")]
 pub mod context;
 #[cfg(feature = "extension")]
-pub use context::{Context, GlobalContext, GroupContext};
+pub use context::*;
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -264,7 +264,7 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Add state value to the extension.
+    /// Add a new state value to the extension if it has not be added already
     pub fn state<T>(mut self, state: T) -> Self
     where
         T: Send + Sync + 'static,
@@ -275,7 +275,7 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Freeze the State, disallowing new states to be added.
+    /// Freeze the extension's state, preventing new states from being added
     pub fn freeze_state(mut self) -> Self {
         self.group = self.group.freeze_state();
         self

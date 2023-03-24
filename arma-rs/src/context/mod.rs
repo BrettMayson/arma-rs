@@ -51,11 +51,13 @@ impl Context {
     }
 
     #[must_use]
+    /// Global context
     pub const fn global(&self) -> &GlobalContext {
         &self.global
     }
 
     #[must_use]
+    /// Group context, only provided in called commands
     pub const fn group(&self) -> Option<&GroupContext> {
         self.group.as_ref()
     }

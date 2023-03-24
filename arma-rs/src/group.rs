@@ -28,6 +28,7 @@ impl Group {
 
     #[inline]
     #[must_use]
+    /// Add a new state value to the group if it has not be added already
     pub fn state<T>(self, state: T) -> Self
     where
         T: Send + Sync + 'static,
@@ -38,6 +39,7 @@ impl Group {
 
     #[inline]
     #[must_use]
+    /// Freeze the group's state, preventing new states from being added
     pub fn freeze_state(mut self) -> Self {
         self.state.freeze();
         self
