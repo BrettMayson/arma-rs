@@ -88,7 +88,13 @@ impl InternalGroup {
                 group.handle(context, function, output, size, args, count)
             })
         } else if let Some(handler) = self.commands.get(function) {
-            (handler.handler)(context, output, size, args, count)
+            (handler.handler)(
+                context.with_state(self.state.clone()),
+                output,
+                size,
+                args,
+                count,
+            )
         } else {
             1
         }

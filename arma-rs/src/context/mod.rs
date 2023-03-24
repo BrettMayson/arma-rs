@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, Value};
+use crate::{IntoArma, State, Value};
 
 mod arma;
 mod global;
@@ -15,19 +15,22 @@ pub use global::GlobalContext;
 /// Contains information about the current execution context
 pub struct Context {
     global: GlobalContext,
-    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    state: Arc<State>,
     arma: Option<ArmaContext>,
+    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
         global: GlobalContext,
+        state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
         arma: Option<ArmaContext>,
     ) -> Self {
         Self {
             global,
+            state,
             arma,
             queue,
             buffer_size: 0,
@@ -39,9 +42,19 @@ impl Context {
         self
     }
 
+    pub(crate) fn with_state(mut self, state: Arc<State>) -> Self {
+        self.state = state;
+        self
+    }
+
     #[must_use]
     pub const fn global(&self) -> &GlobalContext {
         &self.global
+    }
+
+    #[must_use]
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
     #[must_use]
@@ -101,6 +114,7 @@ mod tests {
     fn context_buffer_len_zero() {
         let ctx = Context::new(
             GlobalContext::new(String::new(), Arc::new(State::default())),
+            Arc::new(State::default()),
             Arc::new(SegQueue::new()),
             None,
         );
@@ -111,6 +125,7 @@ mod tests {
     fn context_buffer_len() {
         let ctx = Context::new(
             GlobalContext::new(String::new(), Arc::new(State::default())),
+            Arc::new(State::default()),
             Arc::new(SegQueue::new()),
             None,
         )

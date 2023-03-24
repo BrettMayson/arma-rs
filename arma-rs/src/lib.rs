@@ -142,6 +142,7 @@ impl Extension {
     pub fn context(&self) -> Context {
         Context::new(
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
+            self.group.state.clone(),
             self.callback_queue.clone(),
             self.arma_ctx.borrow().clone(),
         )
