@@ -44,6 +44,7 @@ pub mod testing;
 pub use testing::Result;
 
 #[cfg(all(windows, feature = "extension"))]
+#[doc(hidden)]
 /// Used by generated code to call back into Arma
 pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
@@ -51,6 +52,7 @@ pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
 ) -> libc::c_int;
 #[cfg(all(not(windows), feature = "extension"))]
+#[doc(hidden)]
 /// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
@@ -104,11 +106,13 @@ impl Extension {
         self.allow_no_args
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -149,6 +153,7 @@ impl Extension {
         )
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -181,6 +186,7 @@ impl Extension {
         testing::Extension::new(self)
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     pub fn run_callbacks(&self) {
         let queue = self.callback_queue.clone();
@@ -320,6 +326,7 @@ impl ExtensionBuilder {
     }
 }
 
+#[doc(hidden)]
 /// Called by generated code, do not call directly.
 ///
 /// # Safety
