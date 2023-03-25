@@ -292,7 +292,7 @@ impl ExtensionBuilder {
     /// Example:
     /// ```sqf
     /// "my_ext" callExtension "my_func"
-    /// ``
+    /// ```
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
