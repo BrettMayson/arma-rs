@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_info: RefCell<Option<context::ArmaInfo>>,
+    arma_ctx: RefCell<Option<context::ArmaContext>>,
 }
 
 #[cfg(feature = "extension")]
@@ -110,23 +110,23 @@ impl Extension {
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_arma_info(&mut self, args: *mut *mut i8, count: libc::c_int) {
-        const INFO_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
-        let ctx = match count.cmp(&(INFO_COUNT as i32)) {
+    pub unsafe fn handle_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+        const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
+        let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
-                error!("invalid amount of args passed to `handle_arma_info`");
+                error!("invalid amount of args passed to `set_arma_context`");
                 None
             }
             ordering => {
                 if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `handle_arma_info`");
+                    warn!("unexpected amount of args passed to `set_arma_context`");
                 }
 
-                let argv: Vec<_> = std::slice::from_raw_parts(args, INFO_COUNT)
+                let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                Some(context::ArmaInfo::new(
+                Some(context::ArmaContext::new(
                     context::Caller::from(argv[0].as_ref()),
                     context::Source::from(argv[1].as_ref()),
                     context::Mission::from(argv[2].as_ref()),
@@ -134,21 +134,17 @@ impl Extension {
                 ))
             }
         };
-        self.arma_info.replace(ctx);
+        self.arma_ctx.replace(ctx);
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        let ctx = Context::new(
+        Context::new(
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
+            self.arma_ctx.borrow().clone(),
             self.callback_queue.clone(),
-        );
-        if let Some(arma_info) = self.arma_info.borrow().as_ref() {
-            ctx.with_arma_info(arma_info.clone())
-        } else {
-            ctx
-        }
+        )
     }
 
     /// Called by generated code, do not call directly.
@@ -315,7 +311,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_info: RefCell::new(None),
+            arma_ctx: RefCell::new(None),
         }
     }
 }

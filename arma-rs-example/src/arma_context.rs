@@ -1,13 +1,13 @@
 use arma_rs::{Context, Group};
 
 pub fn arma(ctx: Context) -> Result<String, String> {
-    if let Some(arma_info) = ctx.arma_info() {
+    if let Some(arma_ctx) = ctx.arma() {
         Ok(format!(
             "{:?},{:?},{:?},{:?}",
-            arma_info.caller(),
-            arma_info.source(),
-            arma_info.mission(),
-            arma_info.server()
+            arma_ctx.caller(),
+            arma_ctx.source(),
+            arma_ctx.mission(),
+            arma_ctx.server()
         ))
     } else {
         Err("Arma version needs to be 2.11 or higher".to_string())
@@ -23,16 +23,16 @@ mod tests {
     use arma_rs::{context, Extension};
 
     #[test]
-    fn test_arma_info() {
+    fn test_arma_context() {
         let extension = Extension::build()
-            .group("info", super::group())
+            .group("context", super::group())
             .finish()
             .testing();
         let (result, code) = unsafe {
-            extension.call_with_info(
-                "info:arma",
+            extension.call_with_context(
+                "context:arma",
                 None,
-                context::ArmaInfo::new(
+                context::ArmaContext::new(
                     context::Caller::Unknown,
                     context::Source::Console,
                     context::Mission::None,

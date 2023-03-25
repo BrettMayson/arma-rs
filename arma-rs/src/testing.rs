@@ -63,32 +63,32 @@ impl Extension {
     }
 
     #[must_use]
-    /// Call a function with Arma info.
+    /// Call a function with Arma context.
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn call_with_info(
+    pub unsafe fn call_with_context(
         &self,
         function: &str,
         args: Option<Vec<String>>,
-        info: context::ArmaInfo,
+        context: context::ArmaContext,
     ) -> (String, libc::c_int) {
-        self.set_arma_info(Some(info));
+        self.set_arma_context(Some(context));
         self.handle_call(function, args)
     }
 
     #[must_use]
-    /// Call a function without Arma info.
+    /// Call a function without Arma context.
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        self.set_arma_info(None);
+        self.set_arma_context(None);
         self.handle_call(function, args)
     }
 
-    fn set_arma_info(&self, info: Option<context::ArmaInfo>) {
-        self.0.arma_info.replace(info);
+    fn set_arma_context(&self, ctx: Option<context::ArmaContext>) {
+        self.0.arma_ctx.replace(ctx);
     }
 
     unsafe fn handle_call(

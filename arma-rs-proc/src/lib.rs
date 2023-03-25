@@ -92,7 +92,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         pub unsafe extern #extern_type fn #contextfn(args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) {
             #ext_init
             if let Some(ext) = &mut RV_EXTENSION {
-                ext.handle_arma_info(args, arg_count);
+                ext.handle_arma_context(args, arg_count);
             }
         }
 
