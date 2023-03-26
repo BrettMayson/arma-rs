@@ -1,10 +1,11 @@
 use std::path::Path;
 
 /// Identification of the player calling your extension.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Caller {
     /// The player's steamID64.
     Steam(u64),
+    #[default]
     /// Unable to determine.
     Unknown,
 }
@@ -20,7 +21,7 @@ impl From<&str> for Caller {
 }
 
 /// Source of the extension call.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Source {
     /// Absolute path of the file on the players system.
     /// For example on windows: `C:\Users\user\Documents\Arma 3\missions\test.VR\fn_armaContext.sqf`.
@@ -28,6 +29,7 @@ pub enum Source {
     /// Path inside of a pbo.
     /// For example: `z\test\addons\main\fn_armaContext.sqf`.
     Pbo(String),
+    #[default]
     /// Debug console.
     Console,
 }
@@ -45,10 +47,11 @@ impl From<&str> for Source {
 }
 
 /// Current mission.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Mission {
     /// Mission name.
     Mission(String),
+    #[default]
     /// Not in a mission.
     None,
 }
@@ -64,10 +67,11 @@ impl From<&str> for Mission {
 }
 
 /// Current server.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Server {
     /// Server name
     Multiplayer(String),
+    #[default]
     /// Singleplayer or no mission
     Singleplayer,
 }
@@ -83,7 +87,7 @@ impl From<&str> for Server {
 }
 
 /// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
-#[derive(Clone)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ArmaCallContext {
     caller: Caller,
     source: Source,

@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_call_ctx: RefCell<Option<context::ArmaCallContext>>,
+    arma_call_ctx: RefCell<context::ArmaCallContext>,
     state: Arc<State>,
 }
 
@@ -117,7 +117,7 @@ impl Extension {
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
                 error!("invalid amount of args passed to `handle_arma_call_context`");
-                None
+                context::ArmaCallContext::default()
             }
             ordering => {
                 if ordering == Ordering::Greater {
@@ -128,12 +128,12 @@ impl Extension {
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                Some(context::ArmaCallContext::new(
+                context::ArmaCallContext::new(
                     context::Caller::from(argv[0].as_ref()),
                     context::Source::from(argv[1].as_ref()),
                     context::Mission::from(argv[2].as_ref()),
                     context::Server::from(argv[3].as_ref()),
-                ))
+                )
             }
         };
         self.arma_call_ctx.replace(ctx);
@@ -314,7 +314,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_call_ctx: RefCell::new(None),
+            arma_call_ctx: RefCell::new(context::ArmaCallContext::default()),
             state: Arc::new(self.state),
         }
     }

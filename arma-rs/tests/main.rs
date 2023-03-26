@@ -336,8 +336,8 @@ fn state_change() {
 #[test]
 fn arma_call_context() {
     let extension = Extension::build()
-        .command("call_context", |ctx: Context| -> String {
-            let call_ctx = ctx.arma_call().unwrap();
+        .command("call_ctx", |ctx: Context| -> String {
+            let call_ctx = ctx.arma_call();
             format!(
                 "{:?},{:?},{:?},{:?}",
                 call_ctx.caller(),
@@ -350,7 +350,7 @@ fn arma_call_context() {
         .testing();
     let (result, _) = unsafe {
         extension.call_with_context(
-            "call_context",
+            "call_ctx",
             None,
             context::ArmaCallContext::new(
                 context::Caller::Steam(123),
@@ -369,27 +369,33 @@ fn arma_call_context() {
 #[test]
 fn arma_call_context_availability() {
     let extension = Extension::build()
-        .command("has_arma_call_context", |ctx: Context| -> bool {
-            ctx.arma_call().is_some()
+        .command("is_call_ctx_default", |ctx: Context| -> bool {
+            ctx.arma_call() == &context::ArmaCallContext::default()
         })
         .finish()
         .testing();
     let (result, _) = unsafe {
         extension.call_with_context(
-            "has_arma_call_context",
+            "is_call_ctx_default",
             None,
             context::ArmaCallContext::new(
-                context::Caller::Unknown,
-                context::Source::Console,
-                context::Mission::None,
-                context::Server::Singleplayer,
+                context::Caller::Steam(123),
+                context::Source::Pbo(String::from("pbo")),
+                context::Mission::Mission(String::from("mission")),
+                context::Server::Multiplayer(String::from("server")),
             ),
         )
     };
-    assert_eq!(result, "true");
-    assert!(extension.context().arma_call().is_some());
-
-    let (result, _) = unsafe { extension.call("has_arma_call_context", None) };
     assert_eq!(result, "false");
-    assert!(extension.context().arma_call().is_none());
+    assert_ne!(
+        extension.context().arma_call(),
+        &context::ArmaCallContext::default()
+    );
+
+    let (result, _) = unsafe { extension.call("is_call_ctx_default", None) };
+    assert_eq!(result, "true");
+    assert_eq!(
+        extension.context().arma_call(),
+        &context::ArmaCallContext::default()
+    );
 }

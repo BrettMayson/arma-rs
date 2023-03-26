@@ -73,7 +73,7 @@ impl Extension {
         args: Option<Vec<String>>,
         context: context::ArmaCallContext,
     ) -> (String, libc::c_int) {
-        self.set_arma_call_context(Some(context));
+        self.set_arma_call_context(context);
         self.handle_call(function, args)
     }
 
@@ -83,11 +83,11 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        self.set_arma_call_context(None);
+        self.set_arma_call_context(context::ArmaCallContext::default());
         self.handle_call(function, args)
     }
 
-    fn set_arma_call_context(&self, ctx: Option<context::ArmaCallContext>) {
+    fn set_arma_call_context(&self, ctx: context::ArmaCallContext) {
         self.0.arma_call_ctx.replace(ctx);
     }
 

@@ -12,15 +12,15 @@ pub use arma::*;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma_call: Option<ArmaCallContext>,
     state: Arc<State>,
+    arma_call: ArmaCallContext,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        arma_call: Option<ArmaCallContext>,
+        arma_call: ArmaCallContext,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
@@ -44,8 +44,8 @@ impl Context {
 
     #[must_use]
     /// Context automatically provided by Arma. Supported since Arma version 2.11.
-    pub const fn arma_call(&self) -> Option<&ArmaCallContext> {
-        self.arma_call.as_ref()
+    pub const fn arma_call(&self) -> &ArmaCallContext {
+        &self.arma_call
     }
 
     #[must_use]
@@ -96,14 +96,22 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()));
+        let ctx = Context::new(
+            ArmaCallContext::default(),
+            Arc::new(State::default()),
+            Arc::new(SegQueue::new()),
+        );
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
+        let ctx = Context::new(
+            ArmaCallContext::default(),
+            Arc::new(State::default()),
+            Arc::new(SegQueue::new()),
+        )
+        .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Once, RwLock},
 };
 
-use arma_rs::{Context, Extension};
+use arma_rs::{context, Context, Extension};
 
 macro_rules! platform_extern {
     ($($func_body:tt)*) => {
@@ -52,13 +52,13 @@ fn c_interface_full() {
             ctx.callback_data("callback", "fired", id);
         })
         .command("arma_call_context", |ctx: Context| -> String {
-            let arma = ctx.arma_call().unwrap();
+            let call_ctx = ctx.arma_call();
             format!(
                 "{:?},{:?},{:?},{:?}",
-                arma.caller(),
-                arma.source(),
-                arma.mission(),
-                arma.server()
+                call_ctx.caller(),
+                call_ctx.source(),
+                call_ctx.mission(),
+                call_ctx.server()
             )
         })
         .finish();
@@ -296,43 +296,64 @@ fn c_interface_invalid_calls() {
     // Valid Arma call context
     // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
     unsafe {
-        assert!(extension.context().arma_call().is_none()); // Confirm expected status
+        // Confirm expected status
+        assert_eq!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
         extension.handle_arma_call_context(
             vec![
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
+                CString::new("123").unwrap().into_raw(),     // steam ID
+                CString::new("pbo").unwrap().into_raw(),     // file source
+                CString::new("mission").unwrap().into_raw(), // mission name
+                CString::new("server").unwrap().into_raw(),  // server name
             ]
             .as_mut_ptr(),
             4,
         );
-        assert!(extension.context().arma_call().is_some());
+        assert_ne!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
     }
 
     // Arma call context not enough args
     unsafe {
-        assert!(extension.context().arma_call().is_some()); // Confirm expected status
+        // Confirm expected status
+        assert_ne!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
         extension.handle_arma_call_context(vec![].as_mut_ptr(), 0);
-        assert!(extension.context().arma_call().is_none());
+        assert_eq!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
     }
 
     // Arma call context too many args
     unsafe {
-        assert!(extension.context().arma_call().is_none()); // Confirm expected status
+        // Confirm expected status
+        assert_eq!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
         extension.handle_arma_call_context(
             vec![
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
-                CString::new("").unwrap().into_raw(),
+                CString::new("123").unwrap().into_raw(),     // steam ID
+                CString::new("pbo").unwrap().into_raw(),     // file source
+                CString::new("mission").unwrap().into_raw(), // mission name
+                CString::new("server").unwrap().into_raw(),  // server name
                 CString::new("").unwrap().into_raw(),
                 CString::new("").unwrap().into_raw(),
             ]
             .as_mut_ptr(),
             6,
         );
-        assert!(extension.context().arma_call().is_some());
+        assert_ne!(
+            extension.context().arma_call(),
+            &context::ArmaCallContext::default()
+        );
     }
 }
 
