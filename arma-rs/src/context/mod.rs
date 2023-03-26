@@ -16,16 +16,20 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        arma_call: ArmaCallContext,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
         Self {
-            arma_call,
             state,
+            arma_call: ArmaCallContext::default(),
             queue,
             buffer_size: 0,
         }
+    }
+
+    pub(crate) fn with_arma_call_ctx(mut self, arma_call_ctx: ArmaCallContext) -> Self {
+        self.arma_call = arma_call_ctx;
+        self
     }
 
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
@@ -227,22 +231,14 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(
-            ArmaCallContext::default(),
-            Arc::new(State::default()),
-            Arc::new(SegQueue::new()),
-        );
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()));
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(
-            ArmaCallContext::default(),
-            Arc::new(State::default()),
-            Arc::new(SegQueue::new()),
-        )
-        .with_buffer_size(100);
+        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()))
+            .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 

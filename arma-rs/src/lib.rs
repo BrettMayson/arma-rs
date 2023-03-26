@@ -142,11 +142,8 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(
-            self.arma_call_ctx.borrow().clone(),
-            self.state.clone(),
-            self.callback_queue.clone(),
-        )
+        Context::new(self.state.clone(), self.callback_queue.clone())
+            .with_arma_call_ctx(self.arma_call_ctx.borrow().clone())
     }
 
     /// Called by generated code, do not call directly.
