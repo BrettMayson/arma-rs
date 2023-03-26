@@ -84,16 +84,16 @@ impl From<&str> for Server {
 
 /// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
 #[derive(Clone)]
-pub struct ArmaContext {
+pub struct ArmaCallContext {
     caller: Caller,
     source: Source,
     mission: Mission,
     server: Server,
 }
 
-impl ArmaContext {
+impl ArmaCallContext {
     #[must_use]
-    /// Create a new [`ArmaContext`]. Mainly for use with [`crate::testing`].
+    /// Create a new [`ArmaCallContext`]. Mainly for use with [`crate::testing`].
     pub const fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
         Self {
             caller,

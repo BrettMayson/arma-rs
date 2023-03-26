@@ -51,8 +51,8 @@ fn c_interface_full() {
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
-        .command("arma_context", |ctx: Context| -> String {
-            let arma = ctx.arma().unwrap();
+        .command("arma_call_context", |ctx: Context| -> String {
+            let arma = ctx.arma_call().unwrap();
             format!(
                 "{:?},{:?},{:?},{:?}",
                 arma.caller(),
@@ -113,7 +113,7 @@ fn c_interface_full() {
     );
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle_arma_context(
+        extension.handle_arma_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
                 CString::new("pbo").unwrap().into_raw(),     // file source
@@ -124,7 +124,7 @@ fn c_interface_full() {
             4,
         );
         extension.handle_call(
-            CString::new("arma_context").unwrap().into_raw(),
+            CString::new("arma_call_context").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
             None,
@@ -293,11 +293,11 @@ fn c_interface_invalid_calls() {
         2
     );
 
-    // Valid Arma context
-    // Note: Ordering of these arma context tests matter, used to confirm that the test correctly set arma context
+    // Valid Arma call context
+    // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
     unsafe {
-        assert!(extension.context().arma().is_none()); // Confirm expected status
-        extension.handle_arma_context(
+        assert!(extension.context().arma_call().is_none()); // Confirm expected status
+        extension.handle_arma_call_context(
             vec![
                 CString::new("").unwrap().into_raw(),
                 CString::new("").unwrap().into_raw(),
@@ -307,20 +307,20 @@ fn c_interface_invalid_calls() {
             .as_mut_ptr(),
             4,
         );
-        assert!(extension.context().arma().is_some());
+        assert!(extension.context().arma_call().is_some());
     }
 
-    // Arma context not enough args
+    // Arma call context not enough args
     unsafe {
-        assert!(extension.context().arma().is_some()); // Confirm expected status
-        extension.handle_arma_context(vec![].as_mut_ptr(), 0);
-        assert!(extension.context().arma().is_none());
+        assert!(extension.context().arma_call().is_some()); // Confirm expected status
+        extension.handle_arma_call_context(vec![].as_mut_ptr(), 0);
+        assert!(extension.context().arma_call().is_none());
     }
 
-    // Arma context too many args
+    // Arma call context too many args
     unsafe {
-        assert!(extension.context().arma().is_none()); // Confirm expected status
-        extension.handle_arma_context(
+        assert!(extension.context().arma_call().is_none()); // Confirm expected status
+        extension.handle_arma_call_context(
             vec![
                 CString::new("").unwrap().into_raw(),
                 CString::new("").unwrap().into_raw(),
@@ -332,7 +332,7 @@ fn c_interface_invalid_calls() {
             .as_mut_ptr(),
             6,
         );
-        assert!(extension.context().arma().is_some());
+        assert!(extension.context().arma_call().is_some());
     }
 }
 

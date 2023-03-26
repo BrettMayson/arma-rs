@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_ctx: RefCell<Option<context::ArmaContext>>,
+    arma_call_ctx: RefCell<Option<context::ArmaCallContext>>,
     state: Arc<State>,
 }
 
@@ -112,23 +112,23 @@ impl Extension {
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+    pub unsafe fn handle_arma_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
-                error!("invalid amount of args passed to `set_arma_context`");
+                error!("invalid amount of args passed to `handle_arma_call_context`");
                 None
             }
             ordering => {
                 if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `set_arma_context`");
+                    warn!("unexpected amount of args passed to `handle_arma_call_context`");
                 }
 
                 let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                Some(context::ArmaContext::new(
+                Some(context::ArmaCallContext::new(
                     context::Caller::from(argv[0].as_ref()),
                     context::Source::from(argv[1].as_ref()),
                     context::Mission::from(argv[2].as_ref()),
@@ -136,14 +136,14 @@ impl Extension {
                 ))
             }
         };
-        self.arma_ctx.replace(ctx);
+        self.arma_call_ctx.replace(ctx);
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            self.arma_ctx.borrow().clone(),
+            self.arma_call_ctx.borrow().clone(),
             self.state.clone(),
             self.callback_queue.clone(),
         )
@@ -314,7 +314,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_ctx: RefCell::new(None),
+            arma_call_ctx: RefCell::new(None),
             state: Arc::new(self.state),
         }
     }

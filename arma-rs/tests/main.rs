@@ -334,25 +334,25 @@ fn state_change() {
 }
 
 #[test]
-fn arma_context() {
+fn arma_call_context() {
     let extension = Extension::build()
-        .command("context", |ctx: Context| -> String {
-            let arma = ctx.arma().unwrap();
+        .command("call_context", |ctx: Context| -> String {
+            let call_ctx = ctx.arma_call().unwrap();
             format!(
                 "{:?},{:?},{:?},{:?}",
-                arma.caller(),
-                arma.source(),
-                arma.mission(),
-                arma.server()
+                call_ctx.caller(),
+                call_ctx.source(),
+                call_ctx.mission(),
+                call_ctx.server()
             )
         })
         .finish()
         .testing();
     let (result, _) = unsafe {
         extension.call_with_context(
-            "context",
+            "call_context",
             None,
-            context::ArmaContext::new(
+            context::ArmaCallContext::new(
                 context::Caller::Steam(123),
                 context::Source::Pbo(String::from("pbo")),
                 context::Mission::Mission(String::from("mission")),
@@ -367,18 +367,18 @@ fn arma_context() {
 }
 
 #[test]
-fn arma_context_availability() {
+fn arma_call_context_availability() {
     let extension = Extension::build()
-        .command("has_arma_context", |ctx: Context| -> bool {
-            ctx.arma().is_some()
+        .command("has_arma_call_context", |ctx: Context| -> bool {
+            ctx.arma_call().is_some()
         })
         .finish()
         .testing();
     let (result, _) = unsafe {
         extension.call_with_context(
-            "has_arma_context",
+            "has_arma_call_context",
             None,
-            context::ArmaContext::new(
+            context::ArmaCallContext::new(
                 context::Caller::Unknown,
                 context::Source::Console,
                 context::Mission::None,
@@ -387,9 +387,9 @@ fn arma_context_availability() {
         )
     };
     assert_eq!(result, "true");
-    assert!(extension.context().arma().is_some());
+    assert!(extension.context().arma_call().is_some());
 
-    let (result, _) = unsafe { extension.call("has_arma_context", None) };
+    let (result, _) = unsafe { extension.call("has_arma_call_context", None) };
     assert_eq!(result, "false");
-    assert!(extension.context().arma().is_none());
+    assert!(extension.context().arma_call().is_none());
 }

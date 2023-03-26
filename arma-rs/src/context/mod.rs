@@ -12,7 +12,7 @@ pub use arma::*;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma: Option<ArmaContext>,
+    arma_call: Option<ArmaCallContext>,
     state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -20,12 +20,12 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        arma: Option<ArmaContext>,
+        arma_call: Option<ArmaCallContext>,
         state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     ) -> Self {
         Self {
-            arma,
+            arma_call,
             state,
             queue,
             buffer_size: 0,
@@ -44,8 +44,8 @@ impl Context {
 
     #[must_use]
     /// Context automatically provided by Arma. Supported since Arma version 2.11.
-    pub const fn arma(&self) -> Option<&ArmaContext> {
-        self.arma.as_ref()
+    pub const fn arma_call(&self) -> Option<&ArmaCallContext> {
+        self.arma_call.as_ref()
     }
 
     #[must_use]

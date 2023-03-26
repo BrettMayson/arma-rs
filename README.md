@@ -126,14 +126,14 @@ Since Arma v2.11 additional context is provided each time the extension is calle
 ```rust,skt-group
 use arma_rs::Context;
 
-pub fn arma_context(ctx: Context) -> String {
-    if let Some(arma_ctx) = ctx.arma() {
+pub fn arma_call_context(ctx: Context) -> String {
+    if let Some(call_ctx) = ctx.arma_call() {
         format!(
             "{:?},{:?},{:?},{:?}",
-            arma_ctx.caller(),
-            arma_ctx.source(),
-            arma_ctx.mission(),
-            arma_ctx.server()
+            call_ctx.caller(),
+            call_ctx.source(),
+            call_ctx.mission(),
+            call_ctx.server()
         )
     } else {
         String::new()
@@ -141,7 +141,7 @@ pub fn arma_context(ctx: Context) -> String {
 }
 
 pub fn group() -> arma_rs::Group {
-    arma_rs::Group::new().command("context", arma_context)
+    arma_rs::Group::new().command("call_context", arma_call_context)
 }
 ```
 
