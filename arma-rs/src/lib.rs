@@ -33,7 +33,7 @@ pub use command::*;
 #[cfg(feature = "extension")]
 pub mod context;
 #[cfg(feature = "extension")]
-pub use context::Context;
+pub use context::*;
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_call_ctx: RefCell<context::ArmaCallContext>,
+    arma_call_ctx: RefCell<ArmaCallContext>,
     state: Arc<State>,
 }
 
@@ -117,7 +117,7 @@ impl Extension {
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
                 error!("invalid amount of args passed to `handle_arma_call_context`");
-                context::ArmaCallContext::default()
+                ArmaCallContext::default()
             }
             ordering => {
                 if ordering == Ordering::Greater {
@@ -128,11 +128,11 @@ impl Extension {
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                context::ArmaCallContext::new(
-                    context::Caller::from(argv[0].as_ref()),
-                    context::Source::from(argv[1].as_ref()),
-                    context::Mission::from(argv[2].as_ref()),
-                    context::Server::from(argv[3].as_ref()),
+                ArmaCallContext::new(
+                    Caller::from(argv[0].as_ref()),
+                    Source::from(argv[1].as_ref()),
+                    Mission::from(argv[2].as_ref()),
+                    Server::from(argv[3].as_ref()),
                 )
             }
         };
@@ -314,7 +314,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_call_ctx: RefCell::new(context::ArmaCallContext::default()),
+            arma_call_ctx: RefCell::new(ArmaCallContext::default()),
             state: Arc::new(self.state),
         }
     }

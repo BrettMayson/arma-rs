@@ -1,4 +1,4 @@
-use arma_rs::{context, Context, Extension, Group};
+use arma_rs::{Caller, Context, Extension, Group, Mission, Server, Source};
 
 include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
@@ -337,13 +337,12 @@ fn state_change() {
 fn arma_call_context() {
     let extension = Extension::build()
         .command("call_ctx", |ctx: Context| -> String {
-            let call_ctx = ctx.arma_call();
             format!(
                 "{:?},{:?},{:?},{:?}",
-                call_ctx.caller(),
-                call_ctx.source(),
-                call_ctx.mission(),
-                call_ctx.server()
+                ctx.caller(),
+                ctx.source(),
+                ctx.mission(),
+                ctx.server()
             )
         })
         .finish()
@@ -352,12 +351,10 @@ fn arma_call_context() {
         extension.call_with_context(
             "call_ctx",
             None,
-            context::ArmaCallContext::new(
-                context::Caller::Steam(123),
-                context::Source::Pbo(String::from("pbo")),
-                context::Mission::Mission(String::from("mission")),
-                context::Server::Multiplayer(String::from("server")),
-            ),
+            Caller::Steam(123),
+            Source::Pbo(String::from("pbo")),
+            Mission::Mission(String::from("mission")),
+            Server::Multiplayer(String::from("server")),
         )
     };
     assert_eq!(
@@ -368,34 +365,31 @@ fn arma_call_context() {
 
 #[test]
 fn arma_call_context_availability() {
+    fn is_call_ctx_default(ctx: Context) -> bool {
+        ctx.caller() == &Caller::default()
+            && ctx.source() == &Source::default()
+            && ctx.mission() == &Mission::default()
+            && ctx.server() == &Server::default()
+    }
+
     let extension = Extension::build()
-        .command("is_call_ctx_default", |ctx: Context| -> bool {
-            ctx.arma_call() == &context::ArmaCallContext::default()
-        })
+        .command("is_call_ctx_default", is_call_ctx_default)
         .finish()
         .testing();
     let (result, _) = unsafe {
         extension.call_with_context(
             "is_call_ctx_default",
             None,
-            context::ArmaCallContext::new(
-                context::Caller::Steam(123),
-                context::Source::Pbo(String::from("pbo")),
-                context::Mission::Mission(String::from("mission")),
-                context::Server::Multiplayer(String::from("server")),
-            ),
+            Caller::Steam(123),
+            Source::Pbo(String::from("pbo")),
+            Mission::Mission(String::from("mission")),
+            Server::Multiplayer(String::from("server")),
         )
     };
     assert_eq!(result, "false");
-    assert_ne!(
-        extension.context().arma_call(),
-        &context::ArmaCallContext::default()
-    );
+    assert!(!is_call_ctx_default(extension.context()));
 
     let (result, _) = unsafe { extension.call("is_call_ctx_default", None) };
     assert_eq!(result, "true");
-    assert_eq!(
-        extension.context().arma_call(),
-        &context::ArmaCallContext::default()
-    );
+    assert!(is_call_ctx_default(extension.context()));
 }

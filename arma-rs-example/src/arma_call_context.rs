@@ -1,13 +1,12 @@
 use arma_rs::{Context, Group};
 
 pub fn arma_call(ctx: Context) -> String {
-    let call_ctx = ctx.arma_call();
     format!(
         "{:?},{:?},{:?},{:?}",
-        call_ctx.caller(),
-        call_ctx.source(),
-        call_ctx.mission(),
-        call_ctx.server()
+        ctx.caller(),
+        ctx.source(),
+        ctx.mission(),
+        ctx.server()
     )
 }
 
@@ -17,7 +16,7 @@ pub fn group() -> Group {
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{context, Extension};
+    use arma_rs::{Caller, Extension, Mission, Server, Source};
 
     #[test]
     fn test_arma_call_context() {
@@ -29,12 +28,10 @@ mod tests {
             extension.call_with_context(
                 "context:arma_call",
                 None,
-                context::ArmaCallContext::new(
-                    context::Caller::Unknown,
-                    context::Source::Console,
-                    context::Mission::None,
-                    context::Server::Singleplayer,
-                ),
+                Caller::Unknown,
+                Source::Console,
+                Mission::None,
+                Server::Singleplayer,
             )
         };
         assert_eq!(code, 0);

@@ -127,13 +127,12 @@ Since Arma v2.11 additional context is provided each time the extension is calle
 use arma_rs::Context;
 
 pub fn arma_call_context(ctx: Context) -> String {
-    let call_ctx = ctx.arma_call();
     format!(
         "{:?},{:?},{:?},{:?}",
-        call_ctx.caller(),
-        call_ctx.source(),
-        call_ctx.mission(),
-        call_ctx.server()
+        ctx.caller(),
+        ctx.source(),
+        ctx.mission(),
+        ctx.server()
     )
 }
 

@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Once, RwLock},
 };
 
-use arma_rs::{context, Context, Extension};
+use arma_rs::{Caller, Context, Extension, Mission, Server, Source};
 
 macro_rules! platform_extern {
     ($($func_body:tt)*) => {
@@ -52,13 +52,12 @@ fn c_interface_full() {
             ctx.callback_data("callback", "fired", id);
         })
         .command("arma_call_context", |ctx: Context| -> String {
-            let call_ctx = ctx.arma_call();
             format!(
                 "{:?},{:?},{:?},{:?}",
-                call_ctx.caller(),
-                call_ctx.source(),
-                call_ctx.mission(),
-                call_ctx.server()
+                ctx.caller(),
+                ctx.source(),
+                ctx.mission(),
+                ctx.server()
             )
         })
         .finish();
@@ -295,12 +294,16 @@ fn c_interface_invalid_calls() {
 
     // Valid Arma call context
     // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
+    fn is_arma_call_ctx_default(ctx: Context) -> bool {
+        ctx.caller() == &Caller::default()
+            && ctx.source() == &Source::default()
+            && ctx.mission() == &Mission::default()
+            && ctx.server() == &Server::default()
+    }
+
     unsafe {
         // Confirm expected status
-        assert_eq!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(is_arma_call_ctx_default(extension.context()));
         extension.handle_arma_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
@@ -311,33 +314,21 @@ fn c_interface_invalid_calls() {
             .as_mut_ptr(),
             4,
         );
-        assert_ne!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(!is_arma_call_ctx_default(extension.context()));
     }
 
     // Arma call context not enough args
     unsafe {
         // Confirm expected status
-        assert_ne!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(!is_arma_call_ctx_default(extension.context()));
         extension.handle_arma_call_context(vec![].as_mut_ptr(), 0);
-        assert_eq!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(is_arma_call_ctx_default(extension.context()));
     }
 
     // Arma call context too many args
     unsafe {
         // Confirm expected status
-        assert_eq!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(is_arma_call_ctx_default(extension.context()));
         extension.handle_arma_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
@@ -350,10 +341,7 @@ fn c_interface_invalid_calls() {
             .as_mut_ptr(),
             6,
         );
-        assert_ne!(
-            extension.context().arma_call(),
-            &context::ArmaCallContext::default()
-        );
+        assert!(!is_arma_call_ctx_default(extension.context()));
     }
 }
 
