@@ -111,20 +111,17 @@ impl Context {
 
 /// Errors that can occur when trying to access context information
 pub enum ContextError {
-    /// The global state is not available
-    NoGlobalState,
-    /// The group state is not available
-    NoGroupState,
     /// The group context is not available
     NoGroupContext,
+    /// The type is not in the state
+    NotInState
 }
 
 impl ToString for ContextError {
     fn to_string(&self) -> String {
         match self {
-            Self::NoGlobalState => "No global state available".to_string(),
-            Self::NoGroupState => "No group state available".to_string(),
             Self::NoGroupContext => "No group context available".to_string(),
+            Self::NotInState => "Type not in state".to_string(),
         }
     }
 }
