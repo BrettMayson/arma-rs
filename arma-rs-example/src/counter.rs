@@ -1,17 +1,18 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use arma_rs::{Context, Group};
+use arma_rs::{Context, ContextError, ContextState, Group};
 
 pub struct Counter(pub AtomicU32);
 
-pub fn increment(ctx: Context) {
-    let counter = ctx.group().unwrap().state().get::<Counter>();
+pub fn increment(ctx: Context) -> Result<(), ContextError> {
+    let counter = ctx.group()?.get::<Counter>()?;
     counter.0.fetch_add(1, Ordering::SeqCst);
+    Ok(())
 }
 
-pub fn current(ctx: Context) -> u32 {
-    let counter = ctx.group().unwrap().state().get::<Counter>();
-    counter.0.load(Ordering::SeqCst)
+pub fn current(ctx: Context) -> Result<u32, ContextError> {
+    let counter = ctx.group()?.get::<Counter>()?;
+    Ok(counter.0.load(Ordering::SeqCst))
 }
 
 pub fn group() -> Group {

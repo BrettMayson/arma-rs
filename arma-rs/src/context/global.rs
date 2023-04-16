@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::State;
+use crate::{ContextError, ContextState, State};
 
 /// Contains information about the extension
 pub struct GlobalContext {
@@ -18,10 +18,20 @@ impl GlobalContext {
     pub fn version(&self) -> &str {
         &self.version
     }
+}
 
-    #[must_use]
-    /// Global state container
-    pub fn state(&self) -> &State {
-        &self.state
+impl ContextState for GlobalContext {
+    fn get<T>(&self) -> Result<&T, ContextError>
+    where
+        T: Send + Sync + 'static,
+    {
+        self.state.try_get().ok_or(ContextError::NoGroupState)
+    }
+
+    fn set<T>(&self, value: T) -> bool
+    where
+        T: Send + Sync + 'static,
+    {
+        self.state.set(value)
     }
 }

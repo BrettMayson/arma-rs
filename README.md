@@ -154,7 +154,7 @@ Both the extension and command groups allow for type based persistent state valu
 Extension state is accessible from any command handler.
 
 ```rust,skt-call-init
-use arma_rs::{arma, Context, Extension};
+use arma_rs::{arma, Context, ContextState, ContextError, Extension};
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
@@ -166,9 +166,10 @@ fn init() -> Extension {
         .finish()
 }
 
-pub fn increment(ctx: Context) {
-    let counter = ctx.global().state().get::<AtomicU32>();
+pub fn increment(ctx: Context) -> Result<(), ContextError> {
+    let counter = ctx.global().get::<AtomicU32>()?;
     counter.fetch_add(1, Ordering::SeqCst);
+    Ok(())
 }
 ```
 
@@ -177,13 +178,14 @@ pub fn increment(ctx: Context) {
 Command group state is only accessible from command handlers within the same group.
 
 ```rust,skt-group
-use arma_rs::{Context, Extension};
+use arma_rs::{Context, ContextState, ContextError, Extension};
 
 use std::sync::atomic::{AtomicU32, Ordering};
 
-pub fn increment(ctx: Context) {
-    let counter = ctx.group().unwrap().state().get::<AtomicU32>();
+pub fn increment(ctx: Context) -> Result<(), ContextError> {
+    let counter = ctx.group()?.get::<AtomicU32>()?;
     counter.fetch_add(1, Ordering::SeqCst);
+    Ok(())
 }
 
 pub fn group() -> arma_rs::Group {
