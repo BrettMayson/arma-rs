@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{ContextError, ContextState, State};
+use crate::{ContextState, State};
 
 /// Contains information about the current group
 pub struct GroupContext {
@@ -14,11 +14,11 @@ impl GroupContext {
 }
 
 impl ContextState for GroupContext {
-    fn get<T>(&self) -> Result<&T, ContextError>
+    fn get<T>(&self) -> Option<&T>
     where
         T: Send + Sync + 'static,
     {
-        self.state.try_get().ok_or(ContextError::NotInState)
+        self.state.try_get()
     }
 
     fn set<T>(&self, value: T) -> bool

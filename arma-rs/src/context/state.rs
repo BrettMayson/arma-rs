@@ -1,9 +1,7 @@
-use crate::ContextError;
-
 /// A trait for accessing state values
 pub trait ContextState {
     /// Get a reference to a state value
-    fn get<T>(&self) -> Result<&T, ContextError>
+    fn get<T>(&self) -> Option<&T>
     where
         T: Send + Sync + 'static;
 
