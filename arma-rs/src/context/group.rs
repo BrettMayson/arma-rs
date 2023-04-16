@@ -18,7 +18,7 @@ impl ContextState for GroupContext {
     where
         T: Send + Sync + 'static,
     {
-        self.state.try_get().ok_or(ContextError::NoGroupState)
+        self.state.try_get().ok_or(ContextError::NotInState)
     }
 
     fn set<T>(&self, value: T) -> bool
