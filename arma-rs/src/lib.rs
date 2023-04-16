@@ -141,9 +141,10 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            GlobalContext::new(self.version.clone(), self.group.state.clone()),
-            self.arma_ctx.borrow().clone(),
             self.callback_queue.clone(),
+            GlobalContext::new(self.version.clone(), self.group.state.clone()),
+            GroupContext::new(self.group.state.clone()),
+            self.arma_ctx.borrow().clone(),
         )
     }
 

@@ -92,7 +92,7 @@ impl InternalGroup {
             })
         } else if let Some(handler) = self.commands.get(function) {
             (handler.handler)(
-                context.with_group_ctx(GroupContext::new(self.state.clone())),
+                context.with_group(GroupContext::new(self.state.clone())),
                 output,
                 size,
                 args,
