@@ -271,7 +271,7 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Freeze the extension's state, preventing new states from being added
+    /// Freeze the group's state, preventing the state from changing, allowing for faster reads
     pub fn freeze_state(mut self) -> Self {
         self.group = self.group.freeze_state();
         self

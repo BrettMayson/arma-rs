@@ -39,7 +39,7 @@ impl Group {
 
     #[inline]
     #[must_use]
-    /// Freeze the group's state, preventing new states from being added
+    /// Freeze the group's state, preventing the state from changing, allowing for faster reads
     pub fn freeze_state(mut self) -> Self {
         self.state.freeze();
         self
