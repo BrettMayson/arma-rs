@@ -64,7 +64,7 @@ impl Context {
     #[must_use]
     /// Context automatically provided by Arma. Supported since Arma version 2.11.
     pub const fn arma(&self) -> Option<&ArmaContext> {
-        self.arma.as_ref()
+        self.arma.as_ref()1
     }
 
     #[must_use]
@@ -114,7 +114,7 @@ pub enum ContextError {
     /// The group context is not available
     NoGroupContext,
     /// The type is not in the state
-    NotInState
+    NotInState,
 }
 
 impl ToString for ContextError {
