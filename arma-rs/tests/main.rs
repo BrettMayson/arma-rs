@@ -1,4 +1,4 @@
-use arma_rs::{context, Context, Extension, Group};
+use arma_rs::{context, Context, ContextState, Extension, Group};
 
 include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
 
@@ -288,9 +288,7 @@ fn state_build() {
 #[test]
 fn state_new() {
     let extension = Extension::build()
-        .command("new", |ctx: Context, new: String| {
-            ctx.global().state().set(new)
-        })
+        .command("new", |ctx: Context, new: String| ctx.global().set(new))
         .finish()
         .testing();
 
@@ -302,9 +300,7 @@ fn state_new() {
 #[test]
 fn state_freeze() {
     let extension = Extension::build()
-        .command("new", |ctx: Context, new: String| {
-            ctx.global().state().set(new)
-        })
+        .command("new", |ctx: Context, new: String| ctx.global().set(new))
         .freeze_state()
         .finish()
         .testing();
@@ -323,8 +319,8 @@ fn state_change() {
         .state(AtomicUsize::new(42))
         .command("set", |ctx: Context, new: usize| {
             ctx.global()
-                .state()
                 .get::<AtomicUsize>()
+                .expect("state not found")
                 .store(new, Ordering::Relaxed)
         })
         .finish()

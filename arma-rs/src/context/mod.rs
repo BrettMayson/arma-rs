@@ -1,6 +1,6 @@
 //! Contextual execution information.
 
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 use crossbeam_queue::SegQueue;
 
@@ -9,7 +9,9 @@ use crate::{IntoArma, Value};
 mod arma;
 mod global;
 mod group;
+mod state;
 
+pub use self::state::ContextState;
 pub use arma::*;
 pub use global::GlobalContext;
 pub use group::GroupContext;
@@ -54,10 +56,9 @@ impl Context {
         &self.global
     }
 
-    #[must_use]
     /// Group context, only provided in called commands
-    pub const fn group(&self) -> Option<&GroupContext> {
-        self.group.as_ref()
+    pub fn group(&self) -> Result<&GroupContext, ContextError> {
+        self.group.as_ref().ok_or(ContextError::NoGroupContext)
     }
 
     #[must_use]
@@ -105,6 +106,38 @@ impl Context {
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
         self.queue.push((name.to_string(), func.to_string(), None));
+    }
+}
+
+/// Errors that can occur when trying to access context information
+pub enum ContextError {
+    /// The global state is not available
+    NoGlobalState,
+    /// The group state is not available
+    NoGroupState,
+    /// The group context is not available
+    NoGroupContext,
+}
+
+impl ToString for ContextError {
+    fn to_string(&self) -> String {
+        match self {
+            Self::NoGlobalState => "No global state available".to_string(),
+            Self::NoGroupState => "No group state available".to_string(),
+            Self::NoGroupContext => "No group context available".to_string(),
+        }
+    }
+}
+
+impl IntoArma for ContextError {
+    fn to_arma(&self) -> Value {
+        Value::String(self.to_string())
+    }
+}
+
+impl Debug for ContextError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }
 
