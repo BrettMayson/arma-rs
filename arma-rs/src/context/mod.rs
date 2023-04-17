@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crossbeam_queue::SegQueue;
+use crossbeam_channel::Sender;
 
 use crate::{IntoArma, State, Value};
 
@@ -14,7 +14,7 @@ pub use arma::*;
 pub struct Context {
     arma: Option<ArmaContext>,
     state: Arc<State>,
-    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    queue: Sender<(String, String, Option<Value>)>,
     buffer_size: usize,
 }
 
@@ -22,7 +22,7 @@ impl Context {
     pub(crate) fn new(
         arma: Option<ArmaContext>,
         state: Arc<State>,
-        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+        queue: Sender<(String, String, Option<Value>)>,
     ) -> Self {
         Self {
             arma,
@@ -70,7 +70,8 @@ impl Context {
         V: IntoArma,
     {
         self.queue
-            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+            .send((name.to_string(), func.to_string(), Some(data.to_arma())))
+            .unwrap();
     }
 
     /// Sends a callback with data into Arma
@@ -80,30 +81,35 @@ impl Context {
         V: IntoArma,
     {
         self.queue
-            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+            .send((name.to_string(), func.to_string(), Some(data.to_arma())))
+            .unwrap();
     }
 
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
-        self.queue.push((name.to_string(), func.to_string(), None));
+        self.queue
+            .send((name.to_string(), func.to_string(), None))
+            .unwrap();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crossbeam_channel::unbounded;
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()));
+        let (sender, _) = unbounded();
+        let ctx = Context::new(None, Arc::new(State::default()), sender);
         assert_eq!(ctx.buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
+        let (sender, _) = unbounded();
+        let ctx = Context::new(None, Arc::new(State::default()), sender).with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
     }
 }

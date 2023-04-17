@@ -8,7 +8,7 @@ use std::{cell::RefCell, cmp::Ordering, sync::Arc};
 pub use arma_rs_proc::arma;
 
 #[cfg(feature = "extension")]
-use crossbeam_queue::SegQueue;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 #[cfg(feature = "extension")]
 pub use libc;
 
@@ -69,7 +69,9 @@ pub struct Extension {
     group: Group,
     allow_no_args: bool,
     callback: Option<Callback>,
-    callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    callback_sender: Sender<(String, String, Option<Value>)>,
+    callback_receiver: Receiver<(String, String, Option<Value>)>,
+    callback_thread: Option<std::thread::JoinHandle<()>>,
     arma_ctx: RefCell<Option<context::ArmaContext>>,
     state: Arc<State>,
 }
@@ -149,7 +151,7 @@ impl Extension {
         Context::new(
             self.arma_ctx.borrow().clone(),
             self.state.clone(),
-            self.callback_queue.clone(),
+            self.callback_sender.clone(),
         )
     }
 
@@ -188,52 +190,54 @@ impl Extension {
 
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
-    pub fn run_callbacks(&self) {
-        let queue = self.callback_queue.clone();
-        let callback = self.callback;
-        std::thread::spawn(move || loop {
-            if let Some((name, func, data)) = queue.pop() {
-                if let Some(c) = callback {
-                    let name = if let Ok(cstring) = std::ffi::CString::new(name) {
-                        cstring
-                    } else {
-                        error!("callback name was not valid");
-                        continue;
-                    };
-                    let func = if let Ok(cstring) = std::ffi::CString::new(func) {
-                        cstring
-                    } else {
-                        error!("callback func was not valid");
-                        continue;
-                    };
-                    let data = if let Ok(cstring) = std::ffi::CString::new(match data {
-                        Some(value) => match value {
-                            Value::String(s) => s,
-                            v => v.to_string(),
-                        },
-                        None => String::new(),
-                    }) {
-                        cstring
-                    } else {
-                        error!("callback data was not valid");
-                        continue;
-                    };
+    pub fn run_callbacks(&mut self) {
+        let Some(callback) = self.callback else {
+            error!("callback was not registered");
+            return;
+        };
 
-                    let (name, func, data) = (name.into_raw(), func.into_raw(), data.into_raw());
-                    loop {
-                        if c(name, func, data) >= 0 {
-                            break;
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(1));
+        let receiver = self.callback_receiver.clone();
+        self.callback_thread = Some(std::thread::spawn(move || loop {
+            if let Ok((name, func, data)) = receiver.recv() {
+                let name = if let Ok(cstring) = std::ffi::CString::new(name) {
+                    cstring
+                } else {
+                    error!("callback name was not valid");
+                    continue;
+                };
+                let func = if let Ok(cstring) = std::ffi::CString::new(func) {
+                    cstring
+                } else {
+                    error!("callback func was not valid");
+                    continue;
+                };
+                let data = if let Ok(cstring) = std::ffi::CString::new(match data {
+                    Some(value) => match value {
+                        Value::String(s) => s,
+                        v => v.to_string(),
+                    },
+                    None => String::new(),
+                }) {
+                    cstring
+                } else {
+                    error!("callback data was not valid");
+                    continue;
+                };
+
+                let (name, func, data) = (name.into_raw(), func.into_raw(), data.into_raw());
+                loop {
+                    if callback(name, func, data) >= 0 {
+                        break;
                     }
-                    unsafe {
-                        drop(std::ffi::CString::from_raw(name));
-                        drop(std::ffi::CString::from_raw(func));
-                        drop(std::ffi::CString::from_raw(data));
-                    }
+                    std::thread::sleep(std::time::Duration::from_millis(1));
+                }
+                unsafe {
+                    drop(std::ffi::CString::from_raw(name));
+                    drop(std::ffi::CString::from_raw(func));
+                    drop(std::ffi::CString::from_raw(data));
                 }
             }
-        });
+        }));
     }
 }
 
@@ -314,12 +318,15 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
+        let (sender, receiver) = unbounded();
         Extension {
             version: self.version,
             group: self.group,
             allow_no_args: self.allow_no_args,
             callback: None,
-            callback_queue: Arc::new(SegQueue::new()),
+            callback_sender: sender,
+            callback_receiver: receiver,
+            callback_thread: None,
             arma_ctx: RefCell::new(None),
             state: Arc::new(self.state),
         }
