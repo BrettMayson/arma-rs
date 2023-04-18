@@ -58,6 +58,12 @@ pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
 #[cfg(feature = "extension")]
+enum CallbackMessage {
+    Call(String, String, Option<Value>),
+    Terminate,
+}
+
+#[cfg(feature = "extension")]
 /// State container that can hold at most one value per type key.
 pub type State = state::Container![Send + Sync];
 
@@ -69,13 +75,12 @@ pub struct Extension {
     group: Group,
     allow_no_args: bool,
     callback: Option<Callback>,
-    callback_sender: Sender<(String, String, Option<Value>)>,
-    callback_receiver: Receiver<(String, String, Option<Value>)>,
+    callback_sender: Sender<CallbackMessage>,
+    callback_receiver: Receiver<CallbackMessage>,
     callback_thread: Option<std::thread::JoinHandle<()>>,
     arma_ctx: RefCell<Option<context::ArmaContext>>,
     state: Arc<State>,
 }
-
 #[cfg(feature = "extension")]
 impl Extension {
     #[must_use]
@@ -197,8 +202,8 @@ impl Extension {
         };
 
         let receiver = self.callback_receiver.clone();
-        self.callback_thread = Some(std::thread::spawn(move || loop {
-            if let Ok((name, func, data)) = receiver.recv() {
+        self.callback_thread = Some(std::thread::spawn(move || {
+            while let Ok(CallbackMessage::Call(name, func, data)) = receiver.recv() {
                 let name = if let Ok(cstring) = std::ffi::CString::new(name) {
                     cstring
                 } else {
@@ -238,6 +243,19 @@ impl Extension {
                 }
             }
         }));
+    }
+}
+
+#[cfg(feature = "extension")]
+impl Drop for Extension {
+    // Note: this is not called when the extension is unloaded in arma. Only needed for testing.
+    fn drop(&mut self) {
+        if let Some(thread) = self.callback_thread.take() {
+            self.callback_sender
+                .send(CallbackMessage::Terminate)
+                .unwrap();
+            thread.join().unwrap();
+        }
     }
 }
 

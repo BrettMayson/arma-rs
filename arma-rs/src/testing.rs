@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use crate::{context, Context, State, Value};
+use crate::{context, CallbackMessage, Context, State, Value};
 
 /// Wrapper around [`crate::Extension`] used for testing.
 pub struct Extension(crate::Extension);
@@ -135,7 +135,7 @@ impl Extension {
         let queue = self.0.callback_receiver.clone();
         let start = std::time::Instant::now();
         loop {
-            if let Ok((name, func, data)) = queue.try_recv() {
+            if let Ok(CallbackMessage::Call(name, func, data)) = queue.try_recv() {
                 match handler(&name, &func, data) {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),

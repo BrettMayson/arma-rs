@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crossbeam_channel::Sender;
 
-use crate::{IntoArma, State, Value};
+use crate::{CallbackMessage, IntoArma, State};
 
 mod arma;
 
@@ -14,7 +14,7 @@ pub use arma::*;
 pub struct Context {
     arma: Option<ArmaContext>,
     state: Arc<State>,
-    queue: Sender<(String, String, Option<Value>)>,
+    queue: Sender<CallbackMessage>,
     buffer_size: usize,
 }
 
@@ -22,7 +22,7 @@ impl Context {
     pub(crate) fn new(
         arma: Option<ArmaContext>,
         state: Arc<State>,
-        queue: Sender<(String, String, Option<Value>)>,
+        queue: Sender<CallbackMessage>,
     ) -> Self {
         Self {
             arma,
@@ -70,7 +70,11 @@ impl Context {
         V: IntoArma,
     {
         self.queue
-            .send((name.to_string(), func.to_string(), Some(data.to_arma())))
+            .send(CallbackMessage::Call(
+                name.to_string(),
+                func.to_string(),
+                Some(data.to_arma()),
+            ))
             .unwrap();
     }
 
@@ -81,7 +85,11 @@ impl Context {
         V: IntoArma,
     {
         self.queue
-            .send((name.to_string(), func.to_string(), Some(data.to_arma())))
+            .send(CallbackMessage::Call(
+                name.to_string(),
+                func.to_string(),
+                Some(data.to_arma()),
+            ))
             .unwrap();
     }
 
@@ -89,7 +97,11 @@ impl Context {
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
         self.queue
-            .send((name.to_string(), func.to_string(), None))
+            .send(CallbackMessage::Call(
+                name.to_string(),
+                func.to_string(),
+                None,
+            ))
             .unwrap();
     }
 }
