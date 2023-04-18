@@ -9,7 +9,7 @@ use crate::{IntoArma, State, Value};
 /// Contains information about the current execution context
 pub struct Context {
     state: Arc<State>,
-    arma_call: ArmaCallContext,
+    call: ArmaCallContext,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
@@ -21,14 +21,14 @@ impl Context {
     ) -> Self {
         Self {
             state,
-            arma_call: ArmaCallContext::default(),
+            call: ArmaCallContext::default(),
             queue,
             buffer_size: 0,
         }
     }
 
-    pub(crate) fn with_arma_call_ctx(mut self, arma_call_ctx: ArmaCallContext) -> Self {
-        self.arma_call = arma_call_ctx;
+    pub(crate) fn with_call(mut self, call: ArmaCallContext) -> Self {
+        self.call = call;
         self
     }
 
@@ -47,13 +47,13 @@ impl Context {
     /// # Note
     /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
     pub const fn caller(&self) -> &Caller {
-        &self.arma_call.caller
+        &self.call.caller
     }
 
     #[must_use]
     /// Source from where the extension was called.
     pub const fn source(&self) -> &Source {
-        &self.arma_call.source
+        &self.call.source
     }
 
     #[must_use]
@@ -61,13 +61,13 @@ impl Context {
     /// # Note
     /// Could result in [`Mission::None`] in missions prior to Arma v2.02.
     pub const fn mission(&self) -> &Mission {
-        &self.arma_call.mission
+        &self.call.mission
     }
 
     #[must_use]
     /// Current server's name
     pub const fn server(&self) -> &Server {
-        &self.arma_call.server
+        &self.call.server
     }
 
     #[must_use]

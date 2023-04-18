@@ -68,7 +68,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
-    arma_call_ctx: RefCell<ArmaCallContext>,
+    call_ctx: RefCell<ArmaCallContext>,
     state: Arc<State>,
 }
 
@@ -136,14 +136,14 @@ impl Extension {
                 )
             }
         };
-        self.arma_call_ctx.replace(ctx);
+        self.call_ctx.replace(ctx);
     }
 
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(self.state.clone(), self.callback_queue.clone())
-            .with_arma_call_ctx(self.arma_call_ctx.borrow().clone())
+            .with_call(self.call_ctx.borrow().clone())
     }
 
     /// Called by generated code, do not call directly.
@@ -311,7 +311,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
-            arma_call_ctx: RefCell::new(ArmaCallContext::default()),
+            call_ctx: RefCell::new(ArmaCallContext::default()),
             state: Arc::new(self.state),
         }
     }

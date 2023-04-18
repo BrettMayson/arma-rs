@@ -76,7 +76,7 @@ impl Extension {
         mission: Mission,
         server: Server,
     ) -> (String, libc::c_int) {
-        self.set_arma_call_context(ArmaCallContext::new(caller, source, mission, server));
+        self.set_call_context(ArmaCallContext::new(caller, source, mission, server));
         self.handle_call(function, args)
     }
 
@@ -86,12 +86,12 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        self.set_arma_call_context(ArmaCallContext::default());
+        self.set_call_context(ArmaCallContext::default());
         self.handle_call(function, args)
     }
 
-    fn set_arma_call_context(&self, ctx: ArmaCallContext) {
-        self.0.arma_call_ctx.replace(ctx);
+    fn set_call_context(&self, ctx: ArmaCallContext) {
+        self.0.call_ctx.replace(ctx);
     }
 
     unsafe fn handle_call(
