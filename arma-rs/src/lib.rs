@@ -196,50 +196,48 @@ impl Extension {
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
     pub fn run_callbacks(&mut self) {
-        let Some(callback) = self.callback else {
-            error!("callback was not registered");
-            return;
-        };
-
+        let callback = self.callback;
         let receiver = self.callback_receiver.clone();
         self.callback_thread = Some(std::thread::spawn(move || {
             while let Ok(CallbackMessage::Call(name, func, data)) = receiver.recv() {
-                let name = if let Ok(cstring) = std::ffi::CString::new(name) {
-                    cstring
-                } else {
-                    error!("callback name was not valid");
-                    continue;
-                };
-                let func = if let Ok(cstring) = std::ffi::CString::new(func) {
-                    cstring
-                } else {
-                    error!("callback func was not valid");
-                    continue;
-                };
-                let data = if let Ok(cstring) = std::ffi::CString::new(match data {
-                    Some(value) => match value {
-                        Value::String(s) => s,
-                        v => v.to_string(),
-                    },
-                    None => String::new(),
-                }) {
-                    cstring
-                } else {
-                    error!("callback data was not valid");
-                    continue;
-                };
+                if let Some(c) = callback {
+                    let name = if let Ok(cstring) = std::ffi::CString::new(name) {
+                        cstring
+                    } else {
+                        error!("callback name was not valid");
+                        continue;
+                    };
+                    let func = if let Ok(cstring) = std::ffi::CString::new(func) {
+                        cstring
+                    } else {
+                        error!("callback func was not valid");
+                        continue;
+                    };
+                    let data = if let Ok(cstring) = std::ffi::CString::new(match data {
+                        Some(value) => match value {
+                            Value::String(s) => s,
+                            v => v.to_string(),
+                        },
+                        None => String::new(),
+                    }) {
+                        cstring
+                    } else {
+                        error!("callback data was not valid");
+                        continue;
+                    };
 
-                let (name, func, data) = (name.into_raw(), func.into_raw(), data.into_raw());
-                loop {
-                    if callback(name, func, data) >= 0 {
-                        break;
+                    let (name, func, data) = (name.into_raw(), func.into_raw(), data.into_raw());
+                    loop {
+                        if c(name, func, data) >= 0 {
+                            break;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(1));
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(1));
-                }
-                unsafe {
-                    drop(std::ffi::CString::from_raw(name));
-                    drop(std::ffi::CString::from_raw(func));
-                    drop(std::ffi::CString::from_raw(data));
+                    unsafe {
+                        drop(std::ffi::CString::from_raw(name));
+                        drop(std::ffi::CString::from_raw(func));
+                        drop(std::ffi::CString::from_raw(data));
+                    }
                 }
             }
         }));

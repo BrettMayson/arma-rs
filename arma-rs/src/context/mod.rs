@@ -69,13 +69,11 @@ impl Context {
     where
         V: IntoArma,
     {
-        self.queue
-            .send(CallbackMessage::Call(
-                name.to_string(),
-                func.to_string(),
-                Some(data.to_arma()),
-            ))
-            .unwrap();
+        let _ = self.queue.try_send(CallbackMessage::Call(
+            name.to_string(),
+            func.to_string(),
+            Some(data.to_arma()),
+        ));
     }
 
     /// Sends a callback with data into Arma
@@ -84,25 +82,21 @@ impl Context {
     where
         V: IntoArma,
     {
-        self.queue
-            .send(CallbackMessage::Call(
-                name.to_string(),
-                func.to_string(),
-                Some(data.to_arma()),
-            ))
-            .unwrap();
+        let _ = self.queue.try_send(CallbackMessage::Call(
+            name.to_string(),
+            func.to_string(),
+            Some(data.to_arma()),
+        ));
     }
 
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
-        self.queue
-            .send(CallbackMessage::Call(
-                name.to_string(),
-                func.to_string(),
-                None,
-            ))
-            .unwrap();
+        let _ = self.queue.try_send(CallbackMessage::Call(
+            name.to_string(),
+            func.to_string(),
+            None,
+        ));
     }
 }
 
