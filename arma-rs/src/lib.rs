@@ -155,7 +155,6 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        #[allow(unused_mut, clippy::let_and_return)]
         Context::new(
             self.callback_queue.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
