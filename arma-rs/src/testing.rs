@@ -1,6 +1,6 @@
 //! For testing your extension.
 
-use std::{ops::Add, time::Duration};
+use std::time::Duration;
 
 use crate::{context, CallbackMessage, Context, State, Value};
 
@@ -133,7 +133,7 @@ impl Extension {
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
         let (_, rx) = &self.0.callback_channel;
-        let deadline = std::time::Instant::now().add(timeout);
+        let deadline = std::time::Instant::now() + timeout;
         loop {
             match rx.recv_deadline(deadline) {
                 Ok(CallbackMessage::Call(name, func, data)) => match handler(&name, &func, data) {
