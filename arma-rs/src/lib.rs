@@ -246,7 +246,7 @@ impl Extension {
 
 #[cfg(feature = "extension")]
 impl Drop for Extension {
-    // Note: this is not called when the extension is unloaded in arma. Only needed for testing.
+    // Never called when loaded by arma, instead this is purely required for rust testing.
     fn drop(&mut self) {
         if let Some(thread) = self.callback_thread.take() {
             self.callback_sender
