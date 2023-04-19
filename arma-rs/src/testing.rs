@@ -132,10 +132,10 @@ impl Extension {
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
-        let queue = self.0.callback_receiver.clone();
+        let callback = self.0.callback_receiver.clone();
         let start = std::time::Instant::now();
         loop {
-            if let Ok(CallbackMessage::Call(name, func, data)) = queue.try_recv() {
+            if let Ok(CallbackMessage::Call(name, func, data)) = callback.try_recv() {
                 match handler(&name, &func, data) {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),
