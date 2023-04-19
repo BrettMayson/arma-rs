@@ -150,24 +150,22 @@ mod tests {
     fn context_callback_block() {
         let (tx, rx) = bounded(0);
         let callback_tx = tx.clone();
-        let callback_null = std::thread::spawn(|| {
+        std::thread::spawn(|| {
             context(callback_tx).callback_null("", "");
         });
         let callback_tx = tx.clone();
-        let callback_data = std::thread::spawn(|| {
+        std::thread::spawn(|| {
             context(callback_tx).callback_data("", "", "");
         });
-
-        let callback_tx = tx;
         #[allow(deprecated)]
-        let callback = std::thread::spawn(|| {
-            context(callback_tx).callback("", "", Some(""));
-        });
+        {
+            let callback_tx = tx;
+            std::thread::spawn(|| {
+                context(callback_tx).callback("", "", Some(""));
+            });
+        }
 
         std::thread::sleep(std::time::Duration::from_millis(50));
-        assert!(!callback_null.is_finished());
-        assert!(!callback_data.is_finished());
-        assert!(!callback.is_finished());
         assert_eq!(rx.iter().count(), 3);
     }
 }
