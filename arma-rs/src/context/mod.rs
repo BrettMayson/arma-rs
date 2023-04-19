@@ -4,32 +4,46 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, State, Value};
+use crate::{IntoArma, Value};
 
 mod arma;
+mod global;
+mod group;
+mod state;
 
+pub use self::state::ContextState;
 pub use arma::*;
+pub use global::GlobalContext;
+pub use group::GroupContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma: Option<ArmaContext>,
-    state: Arc<State>,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    global: GlobalContext,
+    group: GroupContext,
+    arma: Option<ArmaContext>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        arma: Option<ArmaContext>,
-        state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+        global: GlobalContext,
+        group: GroupContext,
+        arma: Option<ArmaContext>,
     ) -> Self {
         Self {
-            arma,
-            state,
             queue,
+            global,
+            group,
+            arma,
             buffer_size: 0,
         }
+    }
+
+    pub(crate) fn with_group(mut self, ctx: GroupContext) -> Self {
+        self.group = ctx;
+        self
     }
 
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
@@ -37,9 +51,15 @@ impl Context {
         self
     }
 
-    /// Get a reference to the extensions state container.
-    pub fn state(&self) -> &State {
-        &self.state
+    #[must_use]
+    /// Global context
+    pub const fn global(&self) -> &GlobalContext {
+        &self.global
+    }
+
+    /// Group context, is equal to `GlobalContext` if the call is from the global scope.
+    pub fn group(&self) -> &GroupContext {
+        &self.group
     }
 
     #[must_use]
@@ -93,17 +113,24 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::State;
+
+    fn context() -> Context {
+        Context::new(
+            Arc::new(SegQueue::new()),
+            GlobalContext::new(String::new(), Arc::new(State::default())),
+            GroupContext::new(Arc::new(State::default())),
+            None,
+        )
+    }
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()));
-        assert_eq!(ctx.buffer_len(), 0);
+        assert_eq!(context().buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(None, Arc::new(State::default()), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
-        assert_eq!(ctx.buffer_len(), 99);
+        assert_eq!(context().with_buffer_size(100).buffer_len(), 99);
     }
 }
