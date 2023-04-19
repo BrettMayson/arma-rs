@@ -1,8 +1,6 @@
 //! For testing your extension.
 
-use std::time::Duration;
-
-use crossbeam_channel::{after, select};
+use std::{ops::Add, time::Duration};
 
 use crate::{context, CallbackMessage, Context, State, Value};
 
@@ -135,19 +133,16 @@ impl Extension {
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
         let (_, rx) = &self.0.callback_channel;
+        let deadline = std::time::Instant::now().add(timeout);
         loop {
-            select! {
-                recv(rx) -> msg => {
-                    if let Ok(CallbackMessage::Call(name, func, data)) = msg {
-                        match handler(&name, &func, data) {
-                            Result::Ok(value) => return Result::Ok(value),
-                            Result::Err(error) => return Result::Err(error),
-                            Result::Timeout => return Result::Timeout,
-                            Result::Continue => {},
-                        }
-                    }
-                }
-                recv(after(timeout)) -> _ => return Result::Timeout,
+            match rx.recv_deadline(deadline) {
+                Ok(CallbackMessage::Call(name, func, data)) => match handler(&name, &func, data) {
+                    Result::Ok(value) => return Result::Ok(value),
+                    Result::Err(error) => return Result::Err(error),
+                    Result::Timeout => return Result::Timeout,
+                    Result::Continue => {}
+                },
+                _ => return Result::Timeout,
             }
         }
     }
