@@ -87,7 +87,7 @@ impl Context {
     where
         V: IntoArma,
     {
-        let _ = self.callback_tx.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             Some(data.to_arma()),
@@ -100,7 +100,7 @@ impl Context {
     where
         V: IntoArma,
     {
-        let _ = self.callback_tx.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             Some(data.to_arma()),
@@ -110,7 +110,7 @@ impl Context {
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
-        let _ = self.callback_tx.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             None,
@@ -122,11 +122,10 @@ impl Context {
 mod tests {
     use super::*;
     use crate::State;
-    use crossbeam_channel::unbounded;
+    use crossbeam_channel::{bounded, Sender};
     use std::sync::Arc;
 
-    fn context() -> Context {
-        let (tx, _) = unbounded();
+    fn context(tx: Sender<CallbackMessage>) -> Context {
         Context::new(
             tx,
             GlobalContext::new(String::new(), Arc::new(State::default())),
@@ -137,11 +136,38 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        assert_eq!(context().buffer_len(), 0);
+        let (tx, _) = bounded(0);
+        assert_eq!(context(tx).buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        assert_eq!(context().with_buffer_size(100).buffer_len(), 99);
+        let (tx, _) = bounded(0);
+        assert_eq!(context(tx).with_buffer_size(100).buffer_len(), 99);
+    }
+
+    #[test]
+    fn context_callback_block() {
+        let (tx, rx) = bounded(0);
+        let callback_tx = tx.clone();
+        let callback_null = std::thread::spawn(|| {
+            context(callback_tx).callback_null("", "");
+        });
+        let callback_tx = tx.clone();
+        let callback_data = std::thread::spawn(|| {
+            context(callback_tx).callback_data("", "", "");
+        });
+
+        let callback_tx = tx;
+        #[allow(deprecated)]
+        let callback = std::thread::spawn(|| {
+            context(callback_tx).callback("", "", Some(""));
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        assert!(!callback_null.is_finished());
+        assert!(!callback_data.is_finished());
+        assert!(!callback.is_finished());
+        assert_eq!(rx.iter().count(), 3);
     }
 }
