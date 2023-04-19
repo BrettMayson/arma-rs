@@ -22,7 +22,6 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
-        .state(counter::Counter(0.into()))
         .group("context", arma_call_context::group())
         .group("counter", counter::group())
         .group("system", system_info::group())

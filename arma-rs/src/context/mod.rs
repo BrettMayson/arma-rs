@@ -4,40 +4,49 @@ use std::sync::Arc;
 
 use crossbeam_queue::SegQueue;
 
-use crate::{IntoArma, State, Value};
+use crate::{IntoArma, Value};
 
 #[cfg(feature = "call-context")]
 mod call;
+mod global;
+mod group;
+mod state;
 
+pub use self::state::ContextState;
 #[cfg(feature = "call-context")]
 pub use call::*;
+pub use global::GlobalContext;
+pub use group::GroupContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    state: Arc<State>,
+    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    global: GlobalContext,
+    group: GroupContext,
     #[cfg(feature = "call-context")]
     call: ArmaCallContext,
-    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        state: Arc<State>,
         queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+        global: GlobalContext,
+        group: GroupContext,
+        #[cfg(feature = "call-context")] call: ArmaCallContext,
     ) -> Self {
         Self {
-            state,
-            #[cfg(feature = "call-context")]
-            call: ArmaCallContext::default(),
             queue,
+            global,
+            group,
+            #[cfg(feature = "call-context")]
+            call,
             buffer_size: 0,
         }
     }
 
-    #[cfg(feature = "call-context")]
-    pub(crate) fn with_call(mut self, call: ArmaCallContext) -> Self {
-        self.call = call;
+    pub(crate) fn with_group(mut self, ctx: GroupContext) -> Self {
+        self.group = ctx;
         self
     }
 
@@ -46,9 +55,15 @@ impl Context {
         self
     }
 
-    /// Get a reference to the extensions state container.
-    pub fn state(&self) -> &State {
-        &self.state
+    #[must_use]
+    /// Global context
+    pub const fn global(&self) -> &GlobalContext {
+        &self.global
+    }
+
+    /// Group context, is equal to `GlobalContext` if the call is from the global scope.
+    pub fn group(&self) -> &GroupContext {
+        &self.group
     }
 
     #[cfg(feature = "call-context")]
@@ -128,17 +143,25 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::State;
+
+    fn context() -> Context {
+        Context::new(
+            Arc::new(SegQueue::new()),
+            GlobalContext::new(String::new(), Arc::new(State::default())),
+            GroupContext::new(Arc::new(State::default())),
+            #[cfg(feature = "call-context")]
+            ArmaCallContext::default(),
+        )
+    }
 
     #[test]
     fn context_buffer_len_zero() {
-        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()));
-        assert_eq!(ctx.buffer_len(), 0);
+        assert_eq!(context().buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()))
-            .with_buffer_size(100);
-        assert_eq!(ctx.buffer_len(), 99);
+        assert_eq!(context().with_buffer_size(100).buffer_len(), 99);
     }
 }

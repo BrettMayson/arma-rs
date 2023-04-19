@@ -12,12 +12,14 @@ type HandlerFunc = Box<
     ) -> libc::c_int,
 >;
 
+#[doc(hidden)]
 /// A wrapper for `HandlerFunc`
 pub struct Handler {
     /// The function to call
     pub handler: HandlerFunc,
 }
 
+#[doc(hidden)]
 /// Create a new handler from a Factory
 pub fn fn_handler<C, I, R>(command: C) -> Handler
 where
@@ -37,6 +39,7 @@ where
     }
 }
 
+#[doc(hidden)]
 /// Execute a command
 pub trait Executor: 'static {
     /// # Safety
@@ -51,6 +54,7 @@ pub trait Executor: 'static {
     );
 }
 
+#[doc(hidden)]
 /// A factory for creating a command handler.
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`

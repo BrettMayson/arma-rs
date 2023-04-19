@@ -4,6 +4,8 @@ use quote::quote;
 use syn::ItemFn;
 
 #[proc_macro_attribute]
+/// Used to generate the necessary boilerplate for an Arma extension.
+/// It should be applied to a function that takes no arguments and returns an extension.
 pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();

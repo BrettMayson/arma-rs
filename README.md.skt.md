@@ -5,7 +5,7 @@ fn main() {{}}
 ```
 
 ```rust,skt-call-init
-use arma_rs::{{*, loadout::*}};
+use arma_rs::{{loadout::*}};
 fn main() {{
     let ext = init();
 }}
@@ -14,7 +14,6 @@ fn main() {{
 ```
 
 ```rust,skt-group
-use arma_rs::{{*, loadout::*}};
 fn main() {{
     let ext = arma_rs::Extension::build().group("test", group()).finish();
 }}

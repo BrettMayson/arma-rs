@@ -103,7 +103,6 @@ pub enum Server {
     Singleplayer,
 }
 
-#[cfg(feature = "call-context")]
 impl From<&str> for Server {
     fn from(s: &str) -> Self {
         if s.is_empty() {

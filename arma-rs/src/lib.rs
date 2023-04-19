@@ -46,6 +46,7 @@ pub mod testing;
 pub use testing::Result;
 
 #[cfg(all(windows, feature = "extension"))]
+#[doc(hidden)]
 /// Used by generated code to call back into Arma
 pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
@@ -53,6 +54,7 @@ pub type Callback = extern "stdcall" fn(
     *const libc::c_char,
 ) -> libc::c_int;
 #[cfg(all(not(windows), feature = "extension"))]
+#[doc(hidden)]
 /// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
@@ -66,13 +68,12 @@ pub type State = state::Container![Send + Sync];
 #[cfg(feature = "extension")]
 pub struct Extension {
     version: String,
-    group: Group,
+    group: group::InternalGroup,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     #[cfg(feature = "call-context")]
     call_ctx: RefCell<ArmaCallContext>,
-    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
@@ -81,9 +82,8 @@ impl Extension {
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
         ExtensionBuilder {
-            version: env!("CARGO_PKG_VERSION").to_string(),
+            version: String::from("0.0.0"),
             group: Group::new(),
-            state: State::default(),
             allow_no_args: false,
         }
     }
@@ -107,12 +107,14 @@ impl Extension {
         self.allow_no_args
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
     }
 
     #[cfg(feature = "call-context")]
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -147,14 +149,16 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         #[allow(unused_mut, clippy::let_and_return)]
-        let mut ctx = Context::new(self.state.clone(), self.callback_queue.clone());
-        #[cfg(feature = "call-context")]
-        {
-            ctx = ctx.with_call(self.call_ctx.borrow().clone());
-        }
-        ctx
+        Context::new(
+            self.callback_queue.clone(),
+            GlobalContext::new(self.version.clone(), self.group.state.clone()),
+            GroupContext::new(self.group.state.clone()),
+            #[cfg(feature = "call-context")]
+            self.call_ctx.borrow().clone(),
+        )
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -187,6 +191,7 @@ impl Extension {
         testing::Extension::new(self)
     }
 
+    #[doc(hidden)]
     /// Called by generated code, do not call directly.
     pub fn run_callbacks(&self) {
         let queue = self.callback_queue.clone();
@@ -242,7 +247,6 @@ impl Extension {
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
-    state: State,
     allow_no_args: bool,
 }
 
@@ -269,20 +273,20 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Add state value to the extension.
-    pub fn state<T>(self, state: T) -> Self
+    /// Add a new state value to the extension if it has not be added already
+    pub fn state<T>(mut self, state: T) -> Self
     where
         T: Send + Sync + 'static,
     {
-        self.state.set(state);
+        self.group = self.group.state(state);
         self
     }
 
     #[inline]
     #[must_use]
-    /// Freeze the State, disallowing new states to be added.
+    /// Freeze the extension's state, preventing the state from changing, allowing for faster reads
     pub fn freeze_state(mut self) -> Self {
-        self.state.freeze();
+        self.group = self.group.freeze_state();
         self
     }
 
@@ -292,7 +296,7 @@ impl ExtensionBuilder {
     /// Example:
     /// ```sqf
     /// "my_ext" callExtension "my_func"
-    /// ``
+    /// ```
     pub const fn allow_no_args(mut self) -> Self {
         self.allow_no_args = true;
         self
@@ -316,17 +320,17 @@ impl ExtensionBuilder {
     pub fn finish(self) -> Extension {
         Extension {
             version: self.version,
-            group: self.group,
+            group: self.group.into(),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
             #[cfg(feature = "call-context")]
             call_ctx: RefCell::new(ArmaCallContext::default()),
-            state: Arc::new(self.state),
         }
     }
 }
 
+#[doc(hidden)]
 /// Called by generated code, do not call directly.
 ///
 /// # Safety

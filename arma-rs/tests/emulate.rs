@@ -140,7 +140,7 @@ fn c_interface_full() {
 #[test]
 fn c_interface_builder() {
     let extension = Extension::build().finish();
-    assert_eq!(extension.version(), env!("CARGO_PKG_VERSION").to_string());
+    assert_eq!(extension.version(), String::from("0.0.0"));
     assert!(!extension.allow_no_args());
 
     let extension = Extension::build().version("1.0.0".to_string()).finish();
