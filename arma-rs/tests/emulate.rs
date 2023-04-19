@@ -51,7 +51,7 @@ fn c_interface_full() {
         .command("callback", |ctx: Context, id: String| {
             ctx.callback_data("callback", "fired", id);
         })
-        .command("arma_call_context", |ctx: Context| -> String {
+        .command("call_context", |ctx: Context| -> String {
             format!(
                 "{:?},{:?},{:?},{:?}",
                 ctx.caller(),
@@ -112,7 +112,7 @@ fn c_interface_full() {
     );
     unsafe {
         let mut output = [0i8; 1024];
-        extension.handle_arma_call_context(
+        extension.handle_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
                 CString::new("pbo").unwrap().into_raw(),     // file source
@@ -123,7 +123,7 @@ fn c_interface_full() {
             4,
         );
         extension.handle_call(
-            CString::new("arma_call_context").unwrap().into_raw(),
+            CString::new("call_context").unwrap().into_raw(),
             output.as_mut_ptr(),
             1024,
             None,
@@ -304,7 +304,7 @@ fn c_interface_invalid_calls() {
     unsafe {
         // Confirm expected status
         assert!(is_call_ctx_default(extension.context()));
-        extension.handle_arma_call_context(
+        extension.handle_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
                 CString::new("pbo").unwrap().into_raw(),     // file source
@@ -321,7 +321,7 @@ fn c_interface_invalid_calls() {
     unsafe {
         // Confirm expected status
         assert!(!is_call_ctx_default(extension.context()));
-        extension.handle_arma_call_context(vec![].as_mut_ptr(), 0);
+        extension.handle_call_context(vec![].as_mut_ptr(), 0);
         assert!(is_call_ctx_default(extension.context()));
     }
 
@@ -329,7 +329,7 @@ fn c_interface_invalid_calls() {
     unsafe {
         // Confirm expected status
         assert!(is_call_ctx_default(extension.context()));
-        extension.handle_arma_call_context(
+        extension.handle_call_context(
             vec![
                 CString::new("123").unwrap().into_raw(),     // steam ID
                 CString::new("pbo").unwrap().into_raw(),     // file source

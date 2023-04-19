@@ -1,6 +1,6 @@
 use arma_rs::{arma, Extension, Group};
 
-mod arma_call_context;
+mod call_context;
 mod counter;
 mod system_info;
 mod timer;
@@ -22,7 +22,7 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
-        .group("context", arma_call_context::group())
+        .group("call_context", call_context::group())
         .group("counter", counter::group())
         .group("system", system_info::group())
         .group("timer", timer::group())

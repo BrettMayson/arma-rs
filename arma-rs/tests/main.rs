@@ -335,7 +335,7 @@ fn state_change() {
 }
 
 #[test]
-fn arma_call_context() {
+fn call_context() {
     let extension = Extension::build()
         .command("call_ctx", |ctx: Context| -> String {
             format!(
@@ -365,7 +365,7 @@ fn arma_call_context() {
 }
 
 #[test]
-fn arma_call_context_availability() {
+fn call_context_availability() {
     fn is_call_ctx_default(ctx: Context) -> bool {
         ctx.caller() == &Caller::default()
             && ctx.source() == &Source::default()

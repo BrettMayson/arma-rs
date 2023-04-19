@@ -118,16 +118,16 @@ impl Extension {
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_arma_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+    pub unsafe fn handle_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
-                error!("invalid amount of args passed to `handle_arma_call_context`");
+                error!("invalid amount of args passed to `handle_call_context`");
                 ArmaCallContext::default()
             }
             ordering => {
                 if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `handle_arma_call_context`");
+                    warn!("unexpected amount of args passed to `handle_call_context`");
                 }
 
                 let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)

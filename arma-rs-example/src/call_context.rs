@@ -1,6 +1,6 @@
 use arma_rs::{Context, Group};
 
-pub fn arma_call(ctx: Context) -> String {
+pub fn current(ctx: Context) -> String {
     format!(
         "{:?},{:?},{:?},{:?}",
         ctx.caller(),
@@ -11,7 +11,7 @@ pub fn arma_call(ctx: Context) -> String {
 }
 
 pub fn group() -> Group {
-    Group::new().command("arma_call", arma_call)
+    Group::new().command("current", current)
 }
 
 #[cfg(test)]
@@ -19,14 +19,14 @@ mod tests {
     use arma_rs::{Caller, Extension, Mission, Server, Source};
 
     #[test]
-    fn test_arma_call_context() {
+    fn test_current() {
         let extension = Extension::build()
             .group("context", super::group())
             .finish()
             .testing();
         let (result, code) = unsafe {
             extension.call_with_context(
-                "context:arma_call",
+                "context:current",
                 None,
                 Caller::Unknown,
                 Source::Console,
