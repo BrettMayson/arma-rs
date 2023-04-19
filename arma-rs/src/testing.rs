@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use crate::{ArmaCallContext, Caller, Context, Mission, Server, Source, State, Value};
+use crate::{Context, State, Value};
+
+#[cfg(feature = "call-context")]
+use crate::{ArmaCallContext, Caller, Mission, Server, Source};
 
 /// Wrapper around [`crate::Extension`] used for testing.
 pub struct Extension(crate::Extension);
@@ -62,6 +65,7 @@ impl Extension {
         &self.0.state
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
     /// Call a function with Arma call context.
     ///
@@ -85,11 +89,16 @@ impl Extension {
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
+    ///
+    /// # Note
+    /// If the `call-context` feature is enabled, this function will use default values for the call context.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
+        #[cfg(feature = "call-context")]
         self.set_call_context(ArmaCallContext::default());
         self.handle_call(function, args)
     }
 
+    #[cfg(feature = "call-context")]
     fn set_call_context(&self, ctx: ArmaCallContext) {
         self.0.call_ctx.replace(ctx);
     }

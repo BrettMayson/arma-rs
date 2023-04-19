@@ -25,8 +25,9 @@ uuid = { version = "1.2.2", optional = true }
 link_args = "0.6.0"
 
 [features]
-default = ["extension"]
+default = ["extension", "call-context"]
 extension = ["libc", "crossbeam-queue"]
+call-context = ["extension", "arma-rs-proc/call-context"]
 
 [build-dependencies]
 skeptic = "0.13.7"

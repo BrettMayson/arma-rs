@@ -3,7 +3,9 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::{cell::RefCell, cmp::Ordering, sync::Arc};
+use std::sync::Arc;
+#[cfg(feature = "call-context")]
+use std::{cell::RefCell, cmp::Ordering};
 
 pub use arma_rs_proc::arma;
 
@@ -68,6 +70,7 @@ pub struct Extension {
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    #[cfg(feature = "call-context")]
     call_ctx: RefCell<ArmaCallContext>,
     state: Arc<State>,
 }
@@ -109,6 +112,7 @@ impl Extension {
         self.callback = Some(callback);
     }
 
+    #[cfg(feature = "call-context")]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
@@ -142,8 +146,13 @@ impl Extension {
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
-        Context::new(self.state.clone(), self.callback_queue.clone())
-            .with_call(self.call_ctx.borrow().clone())
+        #[allow(unused_mut, clippy::let_and_return)]
+        let mut ctx = Context::new(self.state.clone(), self.callback_queue.clone());
+        #[cfg(feature = "call-context")]
+        {
+            ctx = ctx.with_call(self.call_ctx.borrow().clone());
+        }
+        ctx
     }
 
     /// Called by generated code, do not call directly.
@@ -311,6 +320,7 @@ impl ExtensionBuilder {
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_queue: Arc::new(SegQueue::new()),
+            #[cfg(feature = "call-context")]
             call_ctx: RefCell::new(ArmaCallContext::default()),
             state: Arc::new(self.state),
         }

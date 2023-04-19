@@ -31,10 +31,10 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let noargfn = fn_ident!("RVExtension");
     let argfn = fn_ident!("RVExtensionArgs");
     let callbackfn = fn_ident!("RVExtensionRegisterCallback");
+    #[cfg(feature = "call-context")]
     let contextfn = fn_ident!("RVExtensionContext");
 
-    TokenStream::from(quote! {
-
+    let mut result = quote! {
         use arma_rs::libc as arma_rs_libc;
 
         static mut RV_EXTENSION: Option<Extension> = None;
@@ -87,7 +87,10 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 ext.run_callbacks();
             }
         }
+    };
 
+    #[cfg(feature = "call-context")]
+    result.extend(quote! {
         #[no_mangle]
         pub unsafe extern #extern_type fn #contextfn(args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) {
             #ext_init
@@ -95,7 +98,8 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 ext.handle_arma_call_context(args, arg_count);
             }
         }
+    });
 
-        #ast
-    })
+    result.extend(quote! {#ast});
+    TokenStream::from(result)
 }

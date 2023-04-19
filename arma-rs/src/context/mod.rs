@@ -1,6 +1,9 @@
 //! Contextual execution information.
 
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
+
+#[cfg(feature = "call-context")]
+use std::path::Path;
 
 use crossbeam_queue::SegQueue;
 
@@ -9,6 +12,7 @@ use crate::{IntoArma, State, Value};
 /// Contains information about the current execution context
 pub struct Context {
     state: Arc<State>,
+    #[cfg(feature = "call-context")]
     call: ArmaCallContext,
     queue: Arc<SegQueue<(String, String, Option<Value>)>>,
     buffer_size: usize,
@@ -21,12 +25,14 @@ impl Context {
     ) -> Self {
         Self {
             state,
+            #[cfg(feature = "call-context")]
             call: ArmaCallContext::default(),
             queue,
             buffer_size: 0,
         }
     }
 
+    #[cfg(feature = "call-context")]
     pub(crate) fn with_call(mut self, call: ArmaCallContext) -> Self {
         self.call = call;
         self
@@ -42,6 +48,7 @@ impl Context {
         &self.state
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
     /// Player that called the extension. Could be [`Caller::Unknown`] when the player's steamID64 is unavailable
     /// # Note
@@ -50,12 +57,14 @@ impl Context {
         &self.call.caller
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
     /// Source from where the extension was called.
     pub const fn source(&self) -> &Source {
         &self.call.source
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
     /// Current mission's name.
     /// # Note
@@ -64,6 +73,7 @@ impl Context {
         &self.call.mission
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
     /// Current server's name
     pub const fn server(&self) -> &Server {
@@ -112,6 +122,7 @@ impl Context {
     }
 }
 
+#[cfg(feature = "call-context")]
 /// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
 #[derive(Clone, Default)]
 pub(crate) struct ArmaCallContext {
@@ -121,6 +132,7 @@ pub(crate) struct ArmaCallContext {
     server: Server,
 }
 
+#[cfg(feature = "call-context")]
 impl ArmaCallContext {
     #[must_use]
     /// Create a new [`ArmaCallContext`]. Mainly for use with [`crate::testing`].
@@ -139,6 +151,7 @@ impl ArmaCallContext {
     }
 }
 
+#[cfg(feature = "call-context")]
 /// Identification of the player calling your extension.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Caller {
@@ -149,6 +162,7 @@ pub enum Caller {
     Unknown,
 }
 
+#[cfg(feature = "call-context")]
 impl From<&str> for Caller {
     fn from(s: &str) -> Self {
         if s.is_empty() || s == "0" {
@@ -159,6 +173,7 @@ impl From<&str> for Caller {
     }
 }
 
+#[cfg(feature = "call-context")]
 /// Source of the extension call.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Source {
@@ -173,6 +188,7 @@ pub enum Source {
     Console,
 }
 
+#[cfg(feature = "call-context")]
 impl From<&str> for Source {
     fn from(s: &str) -> Self {
         if s.is_empty() {
@@ -185,6 +201,7 @@ impl From<&str> for Source {
     }
 }
 
+#[cfg(feature = "call-context")]
 /// Current mission.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Mission {
@@ -195,6 +212,7 @@ pub enum Mission {
     None,
 }
 
+#[cfg(feature = "call-context")]
 impl From<&str> for Mission {
     fn from(s: &str) -> Self {
         if s.is_empty() {
@@ -205,6 +223,7 @@ impl From<&str> for Mission {
     }
 }
 
+#[cfg(feature = "call-context")]
 /// Current server.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Server {
@@ -215,6 +234,7 @@ pub enum Server {
     Singleplayer,
 }
 
+#[cfg(feature = "call-context")]
 impl From<&str> for Server {
     fn from(s: &str) -> Self {
         if s.is_empty() {
@@ -242,38 +262,45 @@ mod tests {
         assert_eq!(ctx.buffer_len(), 99);
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn caller_empty() {
         assert_eq!(Caller::from(""), Caller::Unknown);
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn caller_zero() {
         assert_eq!(Caller::from("0"), Caller::Unknown);
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn source_empty() {
         assert_eq!(Source::from(""), Source::Console);
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn source_pbo() {
         let path = "x\\ctx\\addons\\main\\fn_armaContext.sqf";
         assert_eq!(Source::from(path), Source::Pbo(path.to_string()));
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn source_file() {
         let path = env!("CARGO_MANIFEST_DIR");
         assert_eq!(Source::from(path), Source::File(path.to_string()));
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn mission_empty() {
         assert_eq!(Mission::from(""), Mission::None);
     }
 
+    #[cfg(feature = "call-context")]
     #[test]
     fn server_empty() {
         assert_eq!(Server::from(""), Server::Singleplayer);
