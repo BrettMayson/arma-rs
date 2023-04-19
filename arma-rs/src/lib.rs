@@ -81,6 +81,7 @@ pub struct Extension {
     arma_ctx: RefCell<Option<context::ArmaContext>>,
     state: Arc<State>,
 }
+
 #[cfg(feature = "extension")]
 impl Extension {
     #[must_use]
