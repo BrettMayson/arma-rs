@@ -3,7 +3,7 @@
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
 #[cfg(feature = "extension")]
-use std::{cell::RefCell, cmp::Ordering, sync::Arc};
+use std::{cell::RefCell, cmp::Ordering};
 
 pub use arma_rs_proc::arma;
 
@@ -33,7 +33,7 @@ pub use command::*;
 #[cfg(feature = "extension")]
 pub mod context;
 #[cfg(feature = "extension")]
-pub use context::Context;
+pub use context::*;
 #[cfg(feature = "extension")]
 mod group;
 #[cfg(feature = "extension")]
@@ -72,13 +72,12 @@ pub type State = state::Container![Send + Sync];
 #[cfg(feature = "extension")]
 pub struct Extension {
     version: String,
-    group: Group,
+    group: group::InternalGroup,
     allow_no_args: bool,
     callback: Option<Callback>,
     callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
     arma_ctx: RefCell<Option<context::ArmaContext>>,
-    state: Arc<State>,
 }
 
 #[cfg(feature = "extension")]
@@ -89,7 +88,6 @@ impl Extension {
         ExtensionBuilder {
             version: String::from("0.0.0"),
             group: Group::new(),
-            state: State::default(),
             allow_no_args: false,
         }
     }
@@ -154,9 +152,10 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            self.arma_ctx.borrow().clone(),
-            self.state.clone(),
             self.callback_channel.0.clone(),
+            GlobalContext::new(self.version.clone(), self.group.state.clone()),
+            GroupContext::new(self.group.state.clone()),
+            self.arma_ctx.borrow().clone(),
         )
     }
 
@@ -261,7 +260,6 @@ impl Drop for Extension {
 pub struct ExtensionBuilder {
     version: String,
     group: Group,
-    state: State,
     allow_no_args: bool,
 }
 
@@ -288,20 +286,20 @@ impl ExtensionBuilder {
 
     #[inline]
     #[must_use]
-    /// Add state value to the extension.
-    pub fn state<T>(self, state: T) -> Self
+    /// Add a new state value to the extension if it has not be added already
+    pub fn state<T>(mut self, state: T) -> Self
     where
         T: Send + Sync + 'static,
     {
-        self.state.set(state);
+        self.group = self.group.state(state);
         self
     }
 
     #[inline]
     #[must_use]
-    /// Freeze the State, disallowing new states to be added.
+    /// Freeze the extension's state, preventing the state from changing, allowing for faster reads
     pub fn freeze_state(mut self) -> Self {
-        self.state.freeze();
+        self.group = self.group.freeze_state();
         self
     }
 
@@ -335,13 +333,12 @@ impl ExtensionBuilder {
     pub fn finish(self) -> Extension {
         Extension {
             version: self.version,
-            group: self.group,
+            group: self.group.into(),
             allow_no_args: self.allow_no_args,
             callback: None,
             callback_channel: unbounded(),
             callback_thread: None,
             arma_ctx: RefCell::new(None),
-            state: Arc::new(self.state),
         }
     }
 }

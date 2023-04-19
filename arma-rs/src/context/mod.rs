@@ -1,35 +1,47 @@
 //! Contextual execution information.
 
-use std::sync::Arc;
-
 use crossbeam_channel::Sender;
 
-use crate::{CallbackMessage, IntoArma, State};
+use crate::{CallbackMessage, IntoArma};
 
 mod arma;
+mod global;
+mod group;
+mod state;
 
+pub use self::state::ContextState;
 pub use arma::*;
+pub use global::GlobalContext;
+pub use group::GroupContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    arma: Option<ArmaContext>,
-    state: Arc<State>,
     callback_tx: Sender<CallbackMessage>,
+    global: GlobalContext,
+    group: GroupContext,
+    arma: Option<ArmaContext>,
     buffer_size: usize,
 }
 
 impl Context {
     pub(crate) fn new(
-        arma: Option<ArmaContext>,
-        state: Arc<State>,
         callback_tx: Sender<CallbackMessage>,
+        global: GlobalContext,
+        group: GroupContext,
+        arma: Option<ArmaContext>,
     ) -> Self {
         Self {
-            arma,
-            state,
             callback_tx,
+            global,
+            group,
+            arma,
             buffer_size: 0,
         }
+    }
+
+    pub(crate) fn with_group(mut self, ctx: GroupContext) -> Self {
+        self.group = ctx;
+        self
     }
 
     pub(crate) const fn with_buffer_size(mut self, buffer_size: usize) -> Self {
@@ -37,9 +49,15 @@ impl Context {
         self
     }
 
-    /// Get a reference to the extensions state container.
-    pub fn state(&self) -> &State {
-        &self.state
+    #[must_use]
+    /// Global context
+    pub const fn global(&self) -> &GlobalContext {
+        &self.global
+    }
+
+    /// Group context, is equal to `GlobalContext` if the call is from the global scope.
+    pub fn group(&self) -> &GroupContext {
+        &self.group
     }
 
     #[must_use]
@@ -103,19 +121,27 @@ impl Context {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::State;
     use crossbeam_channel::unbounded;
+    use std::sync::Arc;
+
+    fn context() -> Context {
+        let (tx, _) = unbounded();
+        Context::new(
+            tx,
+            GlobalContext::new(String::new(), Arc::new(State::default())),
+            GroupContext::new(Arc::new(State::default())),
+            None,
+        )
+    }
 
     #[test]
     fn context_buffer_len_zero() {
-        let (sender, _) = unbounded();
-        let ctx = Context::new(None, Arc::new(State::default()), sender);
-        assert_eq!(ctx.buffer_len(), 0);
+        assert_eq!(context().buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        let (sender, _) = unbounded();
-        let ctx = Context::new(None, Arc::new(State::default()), sender).with_buffer_size(100);
-        assert_eq!(ctx.buffer_len(), 99);
+        assert_eq!(context().with_buffer_size(100).buffer_len(), 99);
     }
 }
