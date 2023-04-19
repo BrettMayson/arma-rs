@@ -145,6 +145,13 @@ impl Extension {
         self.call_ctx.replace(ctx);
     }
 
+    #[cfg(not(feature = "call-context"))]
+    #[doc(hidden)]
+    /// Called by generated code, do not call directly.
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn handle_call_context(&mut self, _args: *mut *mut i8, _count: libc::c_int) {}
+
     #[must_use]
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {

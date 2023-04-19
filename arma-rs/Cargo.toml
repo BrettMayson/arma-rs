@@ -27,7 +27,7 @@ link_args = "0.6.0"
 [features]
 default = ["extension", "call-context"]
 extension = ["libc", "crossbeam-queue"]
-call-context = ["extension", "arma-rs-proc/call-context"]
+call-context = ["extension"]
 
 [build-dependencies]
 skeptic = "0.13.7"
