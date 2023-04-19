@@ -2,12 +2,15 @@
 
 use std::sync::Arc;
 
-#[cfg(feature = "call-context")]
-use std::path::Path;
-
 use crossbeam_queue::SegQueue;
 
 use crate::{IntoArma, State, Value};
+
+#[cfg(feature = "call-context")]
+mod call;
+
+#[cfg(feature = "call-context")]
+pub use call::*;
 
 /// Contains information about the current execution context
 pub struct Context {
@@ -122,129 +125,6 @@ impl Context {
     }
 }
 
-#[cfg(feature = "call-context")]
-/// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
-#[derive(Clone, Default)]
-pub(crate) struct ArmaCallContext {
-    caller: Caller,
-    source: Source,
-    mission: Mission,
-    server: Server,
-}
-
-#[cfg(feature = "call-context")]
-impl ArmaCallContext {
-    #[must_use]
-    /// Create a new [`ArmaCallContext`]. Mainly for use with [`crate::testing`].
-    pub(crate) const fn new(
-        caller: Caller,
-        source: Source,
-        mission: Mission,
-        server: Server,
-    ) -> Self {
-        Self {
-            caller,
-            source,
-            mission,
-            server,
-        }
-    }
-}
-
-#[cfg(feature = "call-context")]
-/// Identification of the player calling your extension.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum Caller {
-    /// The player's steamID64.
-    Steam(u64),
-    #[default]
-    /// Unable to determine.
-    Unknown,
-}
-
-#[cfg(feature = "call-context")]
-impl From<&str> for Caller {
-    fn from(s: &str) -> Self {
-        if s.is_empty() || s == "0" {
-            Self::Unknown
-        } else {
-            s.parse::<u64>().map_or(Self::Unknown, Self::Steam)
-        }
-    }
-}
-
-#[cfg(feature = "call-context")]
-/// Source of the extension call.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum Source {
-    /// Absolute path of the file on the players system.
-    /// For example on windows: `C:\Users\user\Documents\Arma 3\missions\test.VR\fn_armaContext.sqf`.
-    File(String),
-    /// Path inside of a pbo.
-    /// For example: `z\test\addons\main\fn_armaContext.sqf`.
-    Pbo(String),
-    #[default]
-    /// Debug console.
-    Console,
-}
-
-#[cfg(feature = "call-context")]
-impl From<&str> for Source {
-    fn from(s: &str) -> Self {
-        if s.is_empty() {
-            Self::Console
-        } else if Path::new(s).is_absolute() {
-            Self::File(s.to_string())
-        } else {
-            Self::Pbo(s.to_string())
-        }
-    }
-}
-
-#[cfg(feature = "call-context")]
-/// Current mission.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum Mission {
-    /// Mission name.
-    Mission(String),
-    #[default]
-    /// Not in a mission.
-    None,
-}
-
-#[cfg(feature = "call-context")]
-impl From<&str> for Mission {
-    fn from(s: &str) -> Self {
-        if s.is_empty() {
-            Self::None
-        } else {
-            Self::Mission(s.to_string())
-        }
-    }
-}
-
-#[cfg(feature = "call-context")]
-/// Current server.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub enum Server {
-    /// Server name
-    Multiplayer(String),
-    #[default]
-    /// Singleplayer or no mission
-    Singleplayer,
-}
-
-#[cfg(feature = "call-context")]
-impl From<&str> for Server {
-    fn from(s: &str) -> Self {
-        if s.is_empty() {
-            Self::Singleplayer
-        } else {
-            Self::Multiplayer(s.to_string())
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -260,49 +140,5 @@ mod tests {
         let ctx = Context::new(Arc::new(State::default()), Arc::new(SegQueue::new()))
             .with_buffer_size(100);
         assert_eq!(ctx.buffer_len(), 99);
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn caller_empty() {
-        assert_eq!(Caller::from(""), Caller::Unknown);
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn caller_zero() {
-        assert_eq!(Caller::from("0"), Caller::Unknown);
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn source_empty() {
-        assert_eq!(Source::from(""), Source::Console);
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn source_pbo() {
-        let path = "x\\ctx\\addons\\main\\fn_armaContext.sqf";
-        assert_eq!(Source::from(path), Source::Pbo(path.to_string()));
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn source_file() {
-        let path = env!("CARGO_MANIFEST_DIR");
-        assert_eq!(Source::from(path), Source::File(path.to_string()));
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn mission_empty() {
-        assert_eq!(Mission::from(""), Mission::None);
-    }
-
-    #[cfg(feature = "call-context")]
-    #[test]
-    fn server_empty() {
-        assert_eq!(Server::from(""), Server::Singleplayer);
     }
 }
