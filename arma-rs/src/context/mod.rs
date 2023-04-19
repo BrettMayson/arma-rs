@@ -14,7 +14,7 @@ pub use arma::*;
 pub struct Context {
     arma: Option<ArmaContext>,
     state: Arc<State>,
-    callback: Sender<CallbackMessage>,
+    callback_tx: Sender<CallbackMessage>,
     buffer_size: usize,
 }
 
@@ -22,12 +22,12 @@ impl Context {
     pub(crate) fn new(
         arma: Option<ArmaContext>,
         state: Arc<State>,
-        callback: Sender<CallbackMessage>,
+        callback_tx: Sender<CallbackMessage>,
     ) -> Self {
         Self {
             arma,
             state,
-            callback,
+            callback_tx,
             buffer_size: 0,
         }
     }
@@ -69,7 +69,7 @@ impl Context {
     where
         V: IntoArma,
     {
-        let _ = self.callback.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.try_send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             Some(data.to_arma()),
@@ -82,7 +82,7 @@ impl Context {
     where
         V: IntoArma,
     {
-        let _ = self.callback.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.try_send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             Some(data.to_arma()),
@@ -92,7 +92,7 @@ impl Context {
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
     pub fn callback_null(&self, name: &str, func: &str) {
-        let _ = self.callback.try_send(CallbackMessage::Call(
+        let _ = self.callback_tx.try_send(CallbackMessage::Call(
             name.to_string(),
             func.to_string(),
             None,

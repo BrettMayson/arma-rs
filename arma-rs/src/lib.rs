@@ -75,8 +75,7 @@ pub struct Extension {
     group: Group,
     allow_no_args: bool,
     callback: Option<Callback>,
-    callback_sender: Sender<CallbackMessage>,
-    callback_receiver: Receiver<CallbackMessage>,
+    callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
     arma_ctx: RefCell<Option<context::ArmaContext>>,
     state: Arc<State>,
@@ -157,7 +156,7 @@ impl Extension {
         Context::new(
             self.arma_ctx.borrow().clone(),
             self.state.clone(),
-            self.callback_sender.clone(),
+            self.callback_channel.0.clone(),
         )
     }
 
@@ -198,9 +197,9 @@ impl Extension {
     /// Called by generated code, do not call directly.
     pub fn run_callbacks(&mut self) {
         let callback = self.callback;
-        let receiver = self.callback_receiver.clone();
+        let (_, rx) = self.callback_channel.clone();
         self.callback_thread = Some(std::thread::spawn(move || {
-            while let Ok(CallbackMessage::Call(name, func, data)) = receiver.recv() {
+            while let Ok(CallbackMessage::Call(name, func, data)) = rx.recv() {
                 if let Some(c) = callback {
                     let name = if let Ok(cstring) = std::ffi::CString::new(name) {
                         cstring
@@ -250,9 +249,8 @@ impl Drop for Extension {
     // Never called when loaded by arma, instead this is purely required for rust testing.
     fn drop(&mut self) {
         if let Some(thread) = self.callback_thread.take() {
-            self.callback_sender
-                .send(CallbackMessage::Terminate)
-                .unwrap();
+            let (tx, _) = &self.callback_channel;
+            tx.send(CallbackMessage::Terminate).unwrap();
             thread.join().unwrap();
         }
     }
@@ -335,14 +333,12 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
-        let (sender, receiver) = unbounded();
         Extension {
             version: self.version,
             group: self.group,
             allow_no_args: self.allow_no_args,
             callback: None,
-            callback_sender: sender,
-            callback_receiver: receiver,
+            callback_channel: unbounded(),
             callback_thread: None,
             arma_ctx: RefCell::new(None),
             state: Arc::new(self.state),
