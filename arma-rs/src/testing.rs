@@ -111,6 +111,11 @@ impl Extension {
             args_pointer.as_mut().map(Vec::as_mut_ptr),
             len,
         );
+        if let Some(args) = args_pointer {
+            for arg in args {
+                let _ = std::ffi::CString::from_raw(arg);
+            }
+        }
         (
             std::ffi::CStr::from_ptr(output.as_ptr())
                 .to_str()
