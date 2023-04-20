@@ -266,7 +266,7 @@ mod extension {
             let _ = CString::from_raw(ptr);
         }
 
-        std::thread::sleep(std::time::Duration::from_millis(50));
+        std::thread::sleep(std::time::Duration::from_millis(500));
         let stack = get_callback_stack();
         assert_eq!(
             stack
