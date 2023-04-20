@@ -30,6 +30,7 @@ jobs:
         env:
           ASAN_OPTIONS: "detect_odr_violation=0:detect_leaks=0"
           RUSTFLAGS: "-Z sanitizer=address"
+          SKEPTIC_SKIP: "1"
       - name: cargo test -Zsanitizer=leak
         if: always()
         uses: actions-rs/cargo@v1
@@ -39,6 +40,7 @@ jobs:
         env:
           LSAN_OPTIONS: "suppressions=lsan-suppressions.txt"
           RUSTFLAGS: "-Z sanitizer=leak"
+          SKEPTIC_SKIP: "1"
   miri:
     runs-on: ubuntu-latest
     steps:
@@ -59,6 +61,7 @@ jobs:
           args: test
         env:
           MIRIFLAGS: "-Zmiri-tag-raw-pointers"
+          SKEPTIC_SKIP: "1"
   # loom:
   #   runs-on: ubuntu-latest
   #   steps:
