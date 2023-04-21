@@ -62,7 +62,7 @@ impl Context {
     }
 
     /// Group context, is equal to `GlobalContext` if the call is from the global scope.
-    pub fn group(&self) -> &GroupContext {
+    pub const fn group(&self) -> &GroupContext {
         &self.group
     }
 
