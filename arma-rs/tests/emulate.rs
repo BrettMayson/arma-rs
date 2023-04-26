@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, Once, RwLock},
 };
 
-use arma_rs::{Context, Extension};
+use arma_rs::{CallbackError, Context, Extension};
 
 macro_rules! platform_extern {
     ($($func_body:tt)*) => {
@@ -48,9 +48,12 @@ fn c_interface_full() {
         .command("welcome", |name: String| -> String {
             format!("Welcome {name}")
         })
-        .command("callback", |ctx: Context, id: String| {
-            ctx.callback_data("callback", "fired", id);
-        })
+        .command(
+            "callback",
+            |ctx: Context, id: String| -> Result<(), CallbackError> {
+                ctx.callback_data("callback", "fired", id)
+            },
+        )
         .command("arma_context", |ctx: Context| -> String {
             let arma = ctx.arma().unwrap();
             format!(
@@ -154,21 +157,34 @@ fn c_interface_builder() {
 #[test]
 fn c_interface_invalid_calls() {
     let mut extension = Extension::build()
-        .command("callback_invalid_name", |ctx: Context| {
-            ctx.callback_null("call\0back", "fired");
-        })
-        .command("callback_invalid_func", |ctx: Context| {
-            ctx.callback_null("callback", "fir\0ed");
-        })
-        .command("callback_invalid_data", |ctx: Context| {
-            ctx.callback_data("callback", "fired", "dat\0a");
-        })
-        .command("callback_valid_null", |ctx: Context| {
-            ctx.callback_null("callback", "fired");
-        })
-        .command("callback_valid_data", |ctx: Context| {
-            ctx.callback_data("callback", "fired", "data");
-        })
+        .command(
+            "callback_invalid_name",
+            |ctx: Context| -> Result<(), CallbackError> {
+                ctx.callback_null("call\0back", "fired")
+            },
+        )
+        .command(
+            "callback_invalid_func",
+            |ctx: Context| -> Result<(), CallbackError> {
+                ctx.callback_null("callback", "fir\0ed")
+            },
+        )
+        .command(
+            "callback_invalid_data",
+            |ctx: Context| -> Result<(), CallbackError> {
+                ctx.callback_data("callback", "fired", "dat\0a")
+            },
+        )
+        .command(
+            "callback_valid_null",
+            |ctx: Context| -> Result<(), CallbackError> { ctx.callback_null("callback", "fired") },
+        )
+        .command(
+            "callback_valid_data",
+            |ctx: Context| -> Result<(), CallbackError> {
+                ctx.callback_data("callback", "fired", "data")
+            },
+        )
         .finish();
     platform_extern!(
         fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {

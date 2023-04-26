@@ -2,7 +2,7 @@
 
 use crossbeam_channel::Sender;
 
-use crate::{CallbackMessage, IntoArma};
+use crate::{CallbackMessage, IntoArma, Value};
 
 mod arma;
 mod global;
@@ -77,44 +77,50 @@ impl Context {
         }
     }
 
-    /// Sends a callback with data into Arma
-    /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    #[deprecated(
-        since = "1.8.0",
-        note = "Use `callback_data` instead. This function may be removed in future versions."
-    )]
-    pub fn callback<V>(&self, name: &str, func: &str, data: Option<V>)
-    where
-        V: IntoArma,
-    {
-        let _ = self.callback_tx.send(CallbackMessage::Call(
-            name.to_string(),
-            func.to_string(),
-            Some(data.to_arma()),
-        ));
+    fn callback(&self, name: &str, func: &str, data: Option<Value>) -> Result<(), CallbackError> {
+        self.callback_tx
+            .send(CallbackMessage::Call(
+                name.to_string(),
+                func.to_string(),
+                data,
+            ))
+            .map_err(|_| CallbackError::ChannelClosed)
     }
 
     /// Sends a callback with data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    pub fn callback_data<V>(&self, name: &str, func: &str, data: V)
+    pub fn callback_data<V>(&self, name: &str, func: &str, data: V) -> Result<(), CallbackError>
     where
         V: IntoArma,
     {
-        let _ = self.callback_tx.send(CallbackMessage::Call(
-            name.to_string(),
-            func.to_string(),
-            Some(data.to_arma()),
-        ));
+        self.callback(name, func, Some(data.to_arma()))
     }
 
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    pub fn callback_null(&self, name: &str, func: &str) {
-        let _ = self.callback_tx.send(CallbackMessage::Call(
-            name.to_string(),
-            func.to_string(),
-            None,
-        ));
+    pub fn callback_null(&self, name: &str, func: &str) -> Result<(), CallbackError> {
+        self.callback(name, func, None)
+    }
+}
+
+/// Error that can occur when sending a callback
+#[derive(Debug)]
+pub enum CallbackError {
+    /// The callback channel has been closed
+    ChannelClosed,
+}
+
+impl ToString for CallbackError {
+    fn to_string(&self) -> String {
+        match self {
+            Self::ChannelClosed => "Callback channel closed".to_string(),
+        }
+    }
+}
+
+impl IntoArma for CallbackError {
+    fn to_arma(&self) -> Value {
+        Value::String(self.to_string())
     }
 }
 
@@ -151,21 +157,27 @@ mod tests {
         let (tx, rx) = bounded(0);
         let callback_tx = tx.clone();
         std::thread::spawn(|| {
-            context(callback_tx).callback_null("", "");
+            context(callback_tx).callback_null("", "").unwrap();
         });
-        let callback_tx = tx.clone();
+        let callback_tx = tx;
         std::thread::spawn(|| {
-            context(callback_tx).callback_data("", "", "");
+            context(callback_tx).callback_data("", "", "").unwrap();
         });
-        #[allow(deprecated)]
-        {
-            let callback_tx = tx;
-            std::thread::spawn(|| {
-                context(callback_tx).callback("", "", Some(""));
-            });
-        }
 
         std::thread::sleep(std::time::Duration::from_millis(50));
-        assert_eq!(rx.iter().count(), 3);
+        assert_eq!(rx.iter().count(), 2);
+    }
+
+    #[test]
+    fn context_callback_closed() {
+        let (tx, _) = bounded(0);
+        assert!(matches!(
+            context(tx.clone()).callback_null("", ""),
+            Err(CallbackError::ChannelClosed)
+        ));
+        assert!(matches!(
+            context(tx).callback_data("", "", ""),
+            Err(CallbackError::ChannelClosed)
+        ));
     }
 }
