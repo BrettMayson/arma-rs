@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use crate::{context, Context, State, Value};
+use crate::{context, CallbackMessage, Context, State, Value};
 
 /// Wrapper around [`crate::Extension`] used for testing.
 pub struct Extension(crate::Extension);
@@ -128,7 +128,7 @@ impl Extension {
     /// Create a callback handler
     ///
     /// Returns a Result from the handler if the callback was handled,
-    /// or `Result::Timeout` if either no event was recieved,or the handler
+    /// or `Result::Timeout` if either no event was received, or the handler
     /// returned `Result::Continue` until the timeout was reached.
     ///
     /// The handler must return a Result indicating the callback was handled to exit
@@ -137,19 +137,17 @@ impl Extension {
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
-        let queue = self.0.callback_queue.clone();
-        let start = std::time::Instant::now();
+        let (_, rx) = &self.0.callback_channel;
+        let deadline = std::time::Instant::now() + timeout;
         loop {
-            if let Some((name, func, data)) = queue.pop() {
-                match handler(&name, &func, data) {
+            match rx.recv_deadline(deadline) {
+                Ok(CallbackMessage::Call(name, func, data)) => match handler(&name, &func, data) {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),
                     Result::Timeout => return Result::Timeout,
                     Result::Continue => {}
-                }
-            }
-            if start.elapsed() > timeout {
-                return Result::Timeout;
+                },
+                _ => return Result::Timeout,
             }
         }
     }
