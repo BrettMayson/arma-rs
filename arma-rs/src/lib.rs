@@ -1,6 +1,14 @@
 #![warn(missing_docs, nonstandard_style)]
 
-//! Library for building powerful Extensions for Arma 3 easily in Rust
+/*!
+Library for building powerful Extensions for Arma 3 easily in Rust
+
+# Feature flags
+arma-rs has a few feature flags that can be enabled or disabled to suit your needs.
+
+- **`extension`** *(enabled by default)* - Extension functionality with FFI to interface with Arma.
+- **`call-context`** *(enabled by default)* - Support for extension call context provided by Arma since version 2.11.
+*/
 
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};

@@ -119,7 +119,7 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
-## Arma Context
+## Call Context
 
 Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
 
@@ -140,6 +140,8 @@ pub fn group() -> arma_rs::Group {
     arma_rs::Group::new().command("call_context", call_context)
 }
 ```
+
+Support for this context can be can be toggled using the `call-context` feature flag, which is enabled by default.
 
 ## Persistent State
 
