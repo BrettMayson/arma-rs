@@ -316,8 +316,6 @@ mod extension {
         fn call_context() {
             let mut extension = Extension::build().finish();
 
-            // Valid Arma call context
-            // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
             fn is_call_ctx_default(ctx: Context) -> bool {
                 ctx.caller() == &Caller::default()
                     && ctx.source() == &Source::default()
@@ -325,47 +323,63 @@ mod extension {
                     && ctx.server() == &Server::default()
             }
 
+            // Valid Arma call context
+            // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
             unsafe {
-                // Confirm expected status
-                assert!(is_call_ctx_default(extension.context()));
+                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
+                let ptr1 = CString::new("123").unwrap().into_raw();
+                let ptr2 = CString::new("pbo").unwrap().into_raw();
+                let ptr3 = CString::new("mission").unwrap().into_raw();
+                let ptr4 = CString::new("server").unwrap().into_raw();
                 extension.handle_call_context(
                     vec![
-                        CString::new("123").unwrap().into_raw(),     // steam ID
-                        CString::new("pbo").unwrap().into_raw(),     // file source
-                        CString::new("mission").unwrap().into_raw(), // mission name
-                        CString::new("server").unwrap().into_raw(),  // server name
+                        ptr1, // steam ID
+                        ptr2, // file source
+                        ptr3, // mission name
+                        ptr4, // server name
                     ]
                     .as_mut_ptr(),
                     4,
                 );
                 assert!(!is_call_ctx_default(extension.context()));
+                let _ = CString::from_raw(ptr1);
+                let _ = CString::from_raw(ptr2);
+                let _ = CString::from_raw(ptr3);
+                let _ = CString::from_raw(ptr4);
             }
 
             // Arma call context not enough args
             unsafe {
-                // Confirm expected status
-                assert!(!is_call_ctx_default(extension.context()));
+                assert!(!is_call_ctx_default(extension.context())); // Confirm expected status
                 extension.handle_call_context(vec![].as_mut_ptr(), 0);
                 assert!(is_call_ctx_default(extension.context()));
             }
 
             // Arma call context too many args
             unsafe {
-                // Confirm expected status
-                assert!(is_call_ctx_default(extension.context()));
+                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
+                let ptr = CString::new("").unwrap().into_raw();
+                let ptr1 = CString::new("123").unwrap().into_raw();
+                let ptr2 = CString::new("pbo").unwrap().into_raw();
+                let ptr3 = CString::new("mission").unwrap().into_raw();
+                let ptr4 = CString::new("server").unwrap().into_raw();
                 extension.handle_call_context(
                     vec![
-                        CString::new("123").unwrap().into_raw(),     // steam ID
-                        CString::new("pbo").unwrap().into_raw(),     // file source
-                        CString::new("mission").unwrap().into_raw(), // mission name
-                        CString::new("server").unwrap().into_raw(),  // server name
-                        CString::new("").unwrap().into_raw(),
-                        CString::new("").unwrap().into_raw(),
+                        ptr1, // steam ID
+                        ptr2, // file source
+                        ptr3, // mission name
+                        ptr4, // server name
+                        ptr, ptr,
                     ]
                     .as_mut_ptr(),
                     6,
                 );
                 assert!(!is_call_ctx_default(extension.context()));
+                let _ = CString::from_raw(ptr);
+                let _ = CString::from_raw(ptr1);
+                let _ = CString::from_raw(ptr2);
+                let _ = CString::from_raw(ptr3);
+                let _ = CString::from_raw(ptr4);
             }
         }
     }
