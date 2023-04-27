@@ -1,6 +1,5 @@
 use std::path::Path;
 
-/// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
 #[derive(Clone, Default)]
 pub(crate) struct ArmaCallContext {
     pub(super) caller: Caller,
@@ -10,8 +9,6 @@ pub(crate) struct ArmaCallContext {
 }
 
 impl ArmaCallContext {
-    #[must_use]
-    /// Create a new [`ArmaCallContext`]. Mainly for use with [`crate::testing`].
     pub(crate) const fn new(
         caller: Caller,
         source: Source,

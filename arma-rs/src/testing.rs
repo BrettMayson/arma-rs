@@ -91,7 +91,7 @@ impl Extension {
     /// This function is unsafe because it interacts with the C API.
     ///
     /// # Note
-    /// If the `call-context` feature is enabled, this function will use default values for the call context.
+    /// If the `call-context` feature is enabled, this function passes default values for each field.
     pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
         #[cfg(feature = "call-context")]
         self.set_call_context(ArmaCallContext::default());
