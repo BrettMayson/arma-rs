@@ -1,10 +1,8 @@
 //! Contextual execution information.
 
-use std::sync::Arc;
+use crossbeam_channel::Sender;
 
-use crossbeam_queue::SegQueue;
-
-use crate::{IntoArma, Value};
+use crate::{CallbackMessage, IntoArma, Value};
 
 #[cfg(feature = "call-context")]
 mod call;
@@ -20,7 +18,7 @@ pub use group::GroupContext;
 
 /// Contains information about the current execution context
 pub struct Context {
-    queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    callback_tx: Sender<CallbackMessage>,
     global: GlobalContext,
     group: GroupContext,
     #[cfg(feature = "call-context")]
@@ -30,13 +28,13 @@ pub struct Context {
 
 impl Context {
     pub(crate) fn new(
-        queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+        callback_tx: Sender<CallbackMessage>,
         global: GlobalContext,
         group: GroupContext,
         #[cfg(feature = "call-context")] call: ArmaCallContext,
     ) -> Self {
         Self {
-            queue,
+            callback_tx,
             global,
             group,
             #[cfg(feature = "call-context")]
@@ -109,34 +107,50 @@ impl Context {
         }
     }
 
-    /// Sends a callback with data into Arma
-    /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    #[deprecated(
-        since = "1.8.0",
-        note = "Use `callback_data` instead. This function may be removed in future versions."
-    )]
-    pub fn callback<V>(&self, name: &str, func: &str, data: Option<V>)
-    where
-        V: IntoArma,
-    {
-        self.queue
-            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+    fn callback(&self, name: &str, func: &str, data: Option<Value>) -> Result<(), CallbackError> {
+        self.callback_tx
+            .send(CallbackMessage::Call(
+                name.to_string(),
+                func.to_string(),
+                data,
+            ))
+            .map_err(|_| CallbackError::ChannelClosed)
     }
 
     /// Sends a callback with data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    pub fn callback_data<V>(&self, name: &str, func: &str, data: V)
+    pub fn callback_data<V>(&self, name: &str, func: &str, data: V) -> Result<(), CallbackError>
     where
         V: IntoArma,
     {
-        self.queue
-            .push((name.to_string(), func.to_string(), Some(data.to_arma())));
+        self.callback(name, func, Some(data.to_arma()))
     }
 
     /// Sends a callback without data into Arma
     /// <https://community.bistudio.com/wiki/Arma_3:_Mission_Event_Handlers#ExtensionCallback>
-    pub fn callback_null(&self, name: &str, func: &str) {
-        self.queue.push((name.to_string(), func.to_string(), None));
+    pub fn callback_null(&self, name: &str, func: &str) -> Result<(), CallbackError> {
+        self.callback(name, func, None)
+    }
+}
+
+/// Error that can occur when sending a callback
+#[derive(Debug)]
+pub enum CallbackError {
+    /// The callback channel has been closed
+    ChannelClosed,
+}
+
+impl ToString for CallbackError {
+    fn to_string(&self) -> String {
+        match self {
+            Self::ChannelClosed => "Callback channel closed".to_string(),
+        }
+    }
+}
+
+impl IntoArma for CallbackError {
+    fn to_arma(&self) -> Value {
+        Value::String(self.to_string())
     }
 }
 
@@ -144,10 +158,12 @@ impl Context {
 mod tests {
     use super::*;
     use crate::State;
+    use crossbeam_channel::{bounded, Sender};
+    use std::sync::Arc;
 
-    fn context() -> Context {
+    fn context(tx: Sender<CallbackMessage>) -> Context {
         Context::new(
-            Arc::new(SegQueue::new()),
+            tx,
             GlobalContext::new(String::new(), Arc::new(State::default())),
             GroupContext::new(Arc::new(State::default())),
             #[cfg(feature = "call-context")]
@@ -157,11 +173,42 @@ mod tests {
 
     #[test]
     fn context_buffer_len_zero() {
-        assert_eq!(context().buffer_len(), 0);
+        let (tx, _) = bounded(0);
+        assert_eq!(context(tx).buffer_len(), 0);
     }
 
     #[test]
     fn context_buffer_len() {
-        assert_eq!(context().with_buffer_size(100).buffer_len(), 99);
+        let (tx, _) = bounded(0);
+        assert_eq!(context(tx).with_buffer_size(100).buffer_len(), 99);
+    }
+
+    #[test]
+    fn context_callback_block() {
+        let (tx, rx) = bounded(0);
+        let callback_tx = tx.clone();
+        std::thread::spawn(|| {
+            context(callback_tx).callback_null("", "").unwrap();
+        });
+        let callback_tx = tx;
+        std::thread::spawn(|| {
+            context(callback_tx).callback_data("", "", "").unwrap();
+        });
+
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        assert_eq!(rx.iter().count(), 2);
+    }
+
+    #[test]
+    fn context_callback_closed() {
+        let (tx, _) = bounded(0);
+        assert!(matches!(
+            context(tx.clone()).callback_null("", ""),
+            Err(CallbackError::ChannelClosed)
+        ));
+        assert!(matches!(
+            context(tx).callback_data("", "", ""),
+            Err(CallbackError::ChannelClosed)
+        ));
     }
 }

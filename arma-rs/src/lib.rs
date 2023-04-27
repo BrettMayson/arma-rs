@@ -2,15 +2,13 @@
 
 //! Library for building powerful Extensions for Arma 3 easily in Rust
 
-#[cfg(feature = "extension")]
-use std::sync::Arc;
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
 
 pub use arma_rs_proc::arma;
 
 #[cfg(feature = "extension")]
-use crossbeam_queue::SegQueue;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 #[cfg(feature = "extension")]
 pub use libc;
 
@@ -60,6 +58,12 @@ pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 
 #[cfg(feature = "extension")]
+enum CallbackMessage {
+    Call(String, String, Option<Value>),
+    Terminate,
+}
+
+#[cfg(feature = "extension")]
 /// State container that can hold at most one value per type key.
 pub type State = state::Container![Send + Sync];
 
@@ -71,7 +75,8 @@ pub struct Extension {
     group: group::InternalGroup,
     allow_no_args: bool,
     callback: Option<Callback>,
-    callback_queue: Arc<SegQueue<(String, String, Option<Value>)>>,
+    callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
+    callback_thread: Option<std::thread::JoinHandle<()>>,
     #[cfg(feature = "call-context")]
     call_ctx: RefCell<ArmaCallContext>,
 }
@@ -156,7 +161,7 @@ impl Extension {
     /// Get a context for interacting with Arma
     pub fn context(&self) -> Context {
         Context::new(
-            self.callback_queue.clone(),
+            self.callback_channel.0.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             GroupContext::new(self.group.state.clone()),
             #[cfg(feature = "call-context")]
@@ -199,11 +204,11 @@ impl Extension {
 
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
-    pub fn run_callbacks(&self) {
-        let queue = self.callback_queue.clone();
+    pub fn run_callbacks(&mut self) {
         let callback = self.callback;
-        std::thread::spawn(move || loop {
-            if let Some((name, func, data)) = queue.pop() {
+        let (_, rx) = self.callback_channel.clone();
+        self.callback_thread = Some(std::thread::spawn(move || {
+            while let Ok(CallbackMessage::Call(name, func, data)) = rx.recv() {
                 if let Some(c) = callback {
                     let name = if let Ok(cstring) = std::ffi::CString::new(name) {
                         cstring
@@ -244,7 +249,19 @@ impl Extension {
                     }
                 }
             }
-        });
+        }));
+    }
+}
+
+#[cfg(feature = "extension")]
+impl Drop for Extension {
+    // Never called when loaded by arma, instead this is purely required for rust testing.
+    fn drop(&mut self) {
+        if let Some(thread) = self.callback_thread.take() {
+            let (tx, _) = &self.callback_channel;
+            tx.send(CallbackMessage::Terminate).unwrap();
+            thread.join().unwrap();
+        }
     }
 }
 
@@ -329,7 +346,8 @@ impl ExtensionBuilder {
             group: self.group.into(),
             allow_no_args: self.allow_no_args,
             callback: None,
-            callback_queue: Arc::new(SegQueue::new()),
+            callback_channel: unbounded(),
+            callback_thread: None,
             #[cfg(feature = "call-context")]
             call_ctx: RefCell::new(ArmaCallContext::default()),
         }

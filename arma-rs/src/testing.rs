@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use crate::{Context, State, Value};
+use crate::{CallbackMessage, Context, State, Value};
 
 #[cfg(feature = "call-context")]
 use crate::{ArmaCallContext, Caller, Mission, Server, Source};
@@ -123,6 +123,11 @@ impl Extension {
             args_pointer.as_mut().map(Vec::as_mut_ptr),
             len,
         );
+        if let Some(args) = args_pointer {
+            for arg in args {
+                let _ = std::ffi::CString::from_raw(arg);
+            }
+        }
         (
             std::ffi::CStr::from_ptr(output.as_ptr())
                 .to_str()
@@ -135,7 +140,7 @@ impl Extension {
     /// Create a callback handler
     ///
     /// Returns a Result from the handler if the callback was handled,
-    /// or `Result::Timeout` if either no event was recieved,or the handler
+    /// or `Result::Timeout` if either no event was received, or the handler
     /// returned `Result::Continue` until the timeout was reached.
     ///
     /// The handler must return a Result indicating the callback was handled to exit
@@ -144,19 +149,17 @@ impl Extension {
     where
         F: Fn(&str, &str, Option<Value>) -> Result<T, E>,
     {
-        let queue = self.0.callback_queue.clone();
-        let start = std::time::Instant::now();
+        let (_, rx) = &self.0.callback_channel;
+        let deadline = std::time::Instant::now() + timeout;
         loop {
-            if let Some((name, func, data)) = queue.pop() {
-                match handler(&name, &func, data) {
+            match rx.recv_deadline(deadline) {
+                Ok(CallbackMessage::Call(name, func, data)) => match handler(&name, &func, data) {
                     Result::Ok(value) => return Result::Ok(value),
                     Result::Err(error) => return Result::Err(error),
                     Result::Timeout => return Result::Timeout,
                     Result::Continue => {}
-                }
-            }
-            if start.elapsed() > timeout {
-                return Result::Timeout;
+                },
+                _ => return Result::Timeout,
             }
         }
     }

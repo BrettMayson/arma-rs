@@ -28,6 +28,7 @@ impl IntoArma for serde_json::Value {
 }
 
 impl Value {
+    /// Convert a Value to a serde_json::Value
     pub fn to_json(&self) -> serde_json::Value {
         match self {
             Value::Null => serde_json::Value::Null,
