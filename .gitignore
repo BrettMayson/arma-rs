@@ -2,3 +2,4 @@ target/
 *.dll
 Cargo.lock
 cov/
+.vscode/

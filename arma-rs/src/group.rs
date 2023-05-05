@@ -82,7 +82,7 @@ impl InternalGroup {
         context: Context,
         function: &str,
         output: *mut libc::c_char,
-        size: libc::size_t,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     ) -> libc::c_int {

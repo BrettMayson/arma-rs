@@ -107,7 +107,7 @@ impl Extension {
             self.context(),
             function,
             output.as_mut_ptr(),
-            BUFFER_SIZE,
+            BUFFER_SIZE as libc::c_int,
             args_pointer.as_mut().map(Vec::as_mut_ptr),
             len,
         );

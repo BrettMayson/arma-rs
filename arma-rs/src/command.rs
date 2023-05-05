@@ -6,7 +6,7 @@ type HandlerFunc = Box<
     dyn Fn(
         Context,
         *mut libc::c_char,
-        libc::size_t,
+        libc::c_int,
         Option<*mut *mut i8>,
         Option<libc::c_int>,
     ) -> libc::c_int,
@@ -29,7 +29,7 @@ where
         handler: Box::new(
             move |context: Context,
                   output: *mut libc::c_char,
-                  size: libc::size_t,
+                  size: libc::c_int,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
@@ -48,7 +48,7 @@ pub trait Executor: 'static {
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: libc::size_t,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     );
@@ -66,7 +66,7 @@ pub trait Factory<A, R> {
         &self,
         context: Context,
         output: *mut libc::c_char,
-        size: libc::size_t,
+        size: libc::c_int,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     ) -> libc::c_int;
@@ -82,7 +82,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
             &self,
             context: Context,
             output: *mut libc::c_char,
-            size: libc::size_t,
+            size: libc::c_int,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
@@ -98,7 +98,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -155,7 +155,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::c_int, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -208,7 +208,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
 unsafe fn handle_output_and_return<R>(
     ret: R,
     output: *mut libc::c_char,
-    size: libc::size_t,
+    size: libc::c_int,
 ) -> libc::c_int
 where
     R: IntoExtResult + 'static,
