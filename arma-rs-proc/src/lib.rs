@@ -53,7 +53,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn #versionfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t) -> arma_rs_libc::c_int {
+        pub unsafe extern #extern_type fn #versionfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 arma_rs::write_cstr(ext.version().to_string(), output, size);
@@ -62,7 +62,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn #noargfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char) {
+        pub unsafe extern #extern_type fn #noargfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::c_int, function: *mut arma_rs_libc::c_char) {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 if ext.allow_no_args() {
@@ -72,7 +72,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         #[no_mangle]
-        pub unsafe extern #extern_type fn #argfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
+        pub unsafe extern #extern_type fn #argfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::c_int, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 ext.handle_call(function, output, size, Some(args), Some(arg_count))
