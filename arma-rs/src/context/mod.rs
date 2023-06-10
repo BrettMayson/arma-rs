@@ -66,7 +66,7 @@ impl Context {
 
     #[cfg(feature = "call-context")]
     #[must_use]
-    /// Player that called the extension. Could be [`Caller::Unknown`] when the player's steamID64 is unavailable
+    /// Player that called the extension. Can be [`Caller::Unknown`] when the player's steamID64 is unavailable
     /// # Note
     /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
     pub const fn caller(&self) -> &Caller {
@@ -84,7 +84,7 @@ impl Context {
     #[must_use]
     /// Current mission's name.
     /// # Note
-    /// Could result in [`Mission::None`] in missions prior to Arma v2.02.
+    /// Can result in [`Mission::None`] in missions made prior to Arma v2.02.
     pub const fn mission(&self) -> &Mission {
         &self.call.mission
     }
