@@ -43,111 +43,122 @@ mod extension {
         2
     }
 
-    #[test]
-    fn c_interface_full() {
-        let mut extension = Extension::build()
-            .command("hello", || -> &'static str { "Hello" })
-            .command("welcome", |name: String| -> String {
-                format!("Welcome {name}")
-            })
-            .command(
-                "callback",
-                |ctx: Context, id: String| -> Result<(), CallbackError> {
-                    ctx.callback_data("callback", "fired", id)
-                },
-            )
-            .command("arma_context", |ctx: Context| -> String {
-                let arma = ctx.arma().unwrap();
-                format!(
-                    "{:?},{:?},{:?},{:?}",
-                    arma.caller(),
-                    arma.source(),
-                    arma.mission(),
-                    arma.server()
+    mod c_interface_full {
+        use super::*;
+
+        #[test]
+        fn extension() {
+            let mut extension = Extension::build()
+                .command("hello", || -> &'static str { "Hello" })
+                .command("welcome", |name: String| -> String {
+                    format!("Welcome {name}")
+                })
+                .command(
+                    "callback",
+                    |ctx: Context, id: String| -> Result<(), CallbackError> {
+                        ctx.callback_data("callback", "fired", id)
+                    },
                 )
-            })
-            .finish();
-        platform_extern!(
-            fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
-                callback_handler("c_interface_full".to_string(), name, func, data)
+                .finish();
+            platform_extern!(
+                fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
+                    callback_handler("c_interface_full".to_string(), name, func, data)
+                }
+            );
+            extension.register_callback(callback);
+            extension.run_callbacks();
+            let stack = get_callback_stack();
+            assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback").unwrap().into_raw();
+                let ptr_hello = CString::new("hello").unwrap().into_raw();
+                let code = extension.handle_call(
+                    ptr,
+                    output.as_mut_ptr(),
+                    1024,
+                    Some(vec![ptr_hello].as_mut_ptr()),
+                    Some(1),
+                );
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+                let _ = CString::from_raw(ptr_hello);
+            };
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("hello").unwrap().into_raw();
+                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("Hello"));
+                let _ = CString::from_raw(ptr);
             }
-        );
-        extension.register_callback(callback);
-        extension.run_callbacks();
-        let stack = get_callback_stack();
-        assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback").unwrap().into_raw();
-            let ptr_hello = CString::new("hello").unwrap().into_raw();
-            let code = extension.handle_call(
-                ptr,
-                output.as_mut_ptr(),
-                1024,
-                Some(vec![ptr_hello].as_mut_ptr()),
-                Some(1),
-            );
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-            let _ = CString::from_raw(ptr_hello);
-        };
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("hello").unwrap().into_raw();
-            extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("Hello"));
-            let _ = CString::from_raw(ptr);
-        }
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("welcome").unwrap().into_raw();
-            let ptr_john = CString::new("John").unwrap().into_raw();
-            extension.handle_call(
-                ptr,
-                output.as_mut_ptr(),
-                1024,
-                Some(vec![ptr_john].as_mut_ptr()),
-                Some(1),
-            );
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("Welcome John"));
-            let _ = CString::from_raw(ptr);
-            let _ = CString::from_raw(ptr_john);
-        }
-        std::thread::sleep(std::time::Duration::from_millis(50));
-        assert_eq!(
-            stack.read().unwrap().get("c_interface_full").unwrap().len(),
-            1
-        );
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr1 = CString::new("123").unwrap().into_raw();
-            let ptr2 = CString::new("pbo").unwrap().into_raw();
-            let ptr3 = CString::new("mission").unwrap().into_raw();
-            let ptr4 = CString::new("server").unwrap().into_raw();
-            extension.handle_arma_context(
-                vec![
-                    ptr1, // steam ID
-                    ptr2, // file source
-                    ptr3, // mission name
-                    ptr4, // server name
-                ]
-                .as_mut_ptr(),
-                4,
-            );
-            let ptr = CString::new("arma_context").unwrap().into_raw();
-            extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("welcome").unwrap().into_raw();
+                let ptr_john = CString::new("John").unwrap().into_raw();
+                extension.handle_call(
+                    ptr,
+                    output.as_mut_ptr(),
+                    1024,
+                    Some(vec![ptr_john].as_mut_ptr()),
+                    Some(1),
+                );
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("Welcome John"));
+                let _ = CString::from_raw(ptr);
+                let _ = CString::from_raw(ptr_john);
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
             assert_eq!(
-                cstring,
-                Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
+                stack.read().unwrap().get("c_interface_full").unwrap().len(),
+                1
             );
-            let _ = CString::from_raw(ptr);
-            let _ = CString::from_raw(ptr1);
-            let _ = CString::from_raw(ptr2);
-            let _ = CString::from_raw(ptr3);
-            let _ = CString::from_raw(ptr4);
+        }
+
+        #[cfg(feature = "call-context")]
+        #[test]
+        fn call_context() {
+            let mut extension = Extension::build()
+                .command("call_context", |ctx: Context| -> String {
+                    format!(
+                        "{:?},{:?},{:?},{:?}",
+                        ctx.caller(),
+                        ctx.source(),
+                        ctx.mission(),
+                        ctx.server()
+                    )
+                })
+                .finish();
+
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr1 = CString::new("123").unwrap().into_raw();
+                let ptr2 = CString::new("pbo").unwrap().into_raw();
+                let ptr3 = CString::new("mission").unwrap().into_raw();
+                let ptr4 = CString::new("server").unwrap().into_raw();
+                extension.handle_call_context(
+                    vec![
+                        ptr1, // steam ID
+                        ptr2, // file source
+                        ptr3, // mission name
+                        ptr4, // server name
+                    ]
+                    .as_mut_ptr(),
+                    4,
+                );
+                let ptr = CString::new("call_context").unwrap().into_raw();
+                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(
+                    cstring,
+                    Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
+                );
+                let _ = CString::from_raw(ptr);
+                let _ = CString::from_raw(ptr1);
+                let _ = CString::from_raw(ptr2);
+                let _ = CString::from_raw(ptr3);
+                let _ = CString::from_raw(ptr4);
+            }
         }
     }
 
@@ -164,159 +175,212 @@ mod extension {
         assert!(extension.allow_no_args());
     }
 
-    #[test]
-    fn c_interface_invalid_calls() {
-        let mut extension = Extension::build()
-            .command(
-                "callback_invalid_name",
-                |ctx: Context| -> Result<(), CallbackError> {
-                    ctx.callback_null("call\0back", "fired")
-                },
-            )
-            .command(
-                "callback_invalid_func",
-                |ctx: Context| -> Result<(), CallbackError> {
-                    ctx.callback_null("callback", "fir\0ed")
-                },
-            )
-            .command(
-                "callback_invalid_data",
-                |ctx: Context| -> Result<(), CallbackError> {
-                    ctx.callback_data("callback", "fired", "dat\0a")
-                },
-            )
-            .command(
-                "callback_valid_null",
-                |ctx: Context| -> Result<(), CallbackError> {
-                    ctx.callback_null("callback", "fired")
-                },
-            )
-            .command(
-                "callback_valid_data",
-                |ctx: Context| -> Result<(), CallbackError> {
-                    ctx.callback_data("callback", "fired", "data")
-                },
-            )
-            .finish();
-        platform_extern!(
-            fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
-                callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
+    mod c_interface_invalid_calls {
+        use super::*;
+
+        #[cfg(feature = "call-context")]
+        use arma_rs::{Caller, Mission, Server, Source};
+
+        #[test]
+        fn extension() {
+            let mut extension = Extension::build()
+                .command(
+                    "callback_invalid_name",
+                    |ctx: Context| -> Result<(), CallbackError> {
+                        ctx.callback_null("call\0back", "fired")
+                    },
+                )
+                .command(
+                    "callback_invalid_func",
+                    |ctx: Context| -> Result<(), CallbackError> {
+                        ctx.callback_null("callback", "fir\0ed")
+                    },
+                )
+                .command(
+                    "callback_invalid_data",
+                    |ctx: Context| -> Result<(), CallbackError> {
+                        ctx.callback_data("callback", "fired", "dat\0a")
+                    },
+                )
+                .command(
+                    "callback_valid_null",
+                    |ctx: Context| -> Result<(), CallbackError> {
+                        ctx.callback_null("callback", "fired")
+                    },
+                )
+                .command(
+                    "callback_valid_data",
+                    |ctx: Context| -> Result<(), CallbackError> {
+                        ctx.callback_data("callback", "fired", "data")
+                    },
+                )
+                .finish();
+            platform_extern!(
+                fn callback(name: *const i8, func: *const i8, data: *const i8) -> i32 {
+                    callback_handler("c_interface_invalid_calls".to_string(), name, func, data)
+                }
+            );
+            extension.register_callback(callback);
+            extension.run_callbacks();
+            let ptr = CString::new("hello").unwrap().into_raw();
+            unsafe {
+                let mut output = [0i8; 1024];
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok(""));
+                assert_eq!(code, 1);
+                let _ = CString::from_raw(ptr);
             }
-        );
-        extension.register_callback(callback);
-        extension.run_callbacks();
-        let ptr = CString::new("hello").unwrap().into_raw();
-        unsafe {
-            let mut output = [0i8; 1024];
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok(""));
-            assert_eq!(code, 1);
-            let _ = CString::from_raw(ptr);
+
+            // Unknown function name
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("invalid").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok(""));
+                assert_eq!(code, 1);
+                let _ = CString::from_raw(ptr);
+            }
+
+            // Invalid callback name
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback_invalid_name").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("null"));
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+            }
+
+            // Invalid callback func
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback_invalid_func").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("null"));
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+            }
+
+            // Invalid callback data
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback_invalid_data").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("null"));
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+            }
+
+            // Valid null callback
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback_valid_null").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("null"));
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+            }
+
+            // Valid data callback
+            unsafe {
+                let mut output = [0i8; 1024];
+                let ptr = CString::new("callback_valid_data").unwrap().into_raw();
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+                assert_eq!(cstring, Ok("null"));
+                assert_eq!(code, 0);
+                let _ = CString::from_raw(ptr);
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            let stack = get_callback_stack();
+            assert_eq!(
+                stack
+                    .read()
+                    .unwrap()
+                    .get("c_interface_invalid_calls")
+                    .unwrap()
+                    .len(),
+                2
+            );
         }
 
-        // Unknown function name
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("invalid").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok(""));
-            assert_eq!(code, 1);
-            let _ = CString::from_raw(ptr);
-        }
+        #[cfg(feature = "call-context")]
+        #[test]
+        fn call_context() {
+            let mut extension = Extension::build().finish();
 
-        // Invalid callback name
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback_invalid_name").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("null"));
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-        }
+            fn is_call_ctx_default(ctx: Context) -> bool {
+                ctx.caller() == &Caller::default()
+                    && ctx.source() == &Source::default()
+                    && ctx.mission() == &Mission::default()
+                    && ctx.server() == &Server::default()
+            }
 
-        // Invalid callback func
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback_invalid_func").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("null"));
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-        }
+            // Valid Arma call context
+            // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
+            unsafe {
+                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
+                let ptr1 = CString::new("123").unwrap().into_raw();
+                let ptr2 = CString::new("pbo").unwrap().into_raw();
+                let ptr3 = CString::new("mission").unwrap().into_raw();
+                let ptr4 = CString::new("server").unwrap().into_raw();
+                extension.handle_call_context(
+                    vec![
+                        ptr1, // steam ID
+                        ptr2, // file source
+                        ptr3, // mission name
+                        ptr4, // server name
+                    ]
+                    .as_mut_ptr(),
+                    4,
+                );
+                assert!(!is_call_ctx_default(extension.context()));
+                let _ = CString::from_raw(ptr1);
+                let _ = CString::from_raw(ptr2);
+                let _ = CString::from_raw(ptr3);
+                let _ = CString::from_raw(ptr4);
+            }
 
-        // Invalid callback data
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback_invalid_data").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("null"));
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-        }
+            // Arma call context not enough args
+            unsafe {
+                assert!(!is_call_ctx_default(extension.context())); // Confirm expected status
+                extension.handle_call_context(vec![].as_mut_ptr(), 0);
+                assert!(is_call_ctx_default(extension.context()));
+            }
 
-        // Valid null callback
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback_valid_null").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("null"));
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-        }
-
-        // Valid data callback
-        unsafe {
-            let mut output = [0i8; 1024];
-            let ptr = CString::new("callback_valid_data").unwrap().into_raw();
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
-            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-            assert_eq!(cstring, Ok("null"));
-            assert_eq!(code, 0);
-            let _ = CString::from_raw(ptr);
-        }
-
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        let stack = get_callback_stack();
-        assert_eq!(
-            stack
-                .read()
-                .unwrap()
-                .get("c_interface_invalid_calls")
-                .unwrap()
-                .len(),
-            2
-        );
-
-        // Valid Arma context
-        // Note: Ordering of these arma context tests matter, used to confirm that the test correctly set arma context
-        unsafe {
-            assert!(extension.context().arma().is_none()); // Confirm expected status
-            let ptr = CString::new("").unwrap().into_raw();
-            extension.handle_arma_context(vec![ptr, ptr, ptr, ptr].as_mut_ptr(), 4);
-            assert!(extension.context().arma().is_some());
-            let _ = CString::from_raw(ptr);
-        }
-
-        // Arma context not enough args
-        unsafe {
-            assert!(extension.context().arma().is_some()); // Confirm expected status
-            extension.handle_arma_context(vec![].as_mut_ptr(), 0);
-            assert!(extension.context().arma().is_none());
-        }
-
-        // Arma context too many args
-        unsafe {
-            assert!(extension.context().arma().is_none()); // Confirm expected status
-            let ptr = CString::new("").unwrap().into_raw();
-            extension.handle_arma_context(vec![ptr, ptr, ptr, ptr, ptr, ptr].as_mut_ptr(), 6);
-            assert!(extension.context().arma().is_some());
-            let _ = CString::from_raw(ptr);
+            // Arma call context too many args
+            unsafe {
+                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
+                let ptr = CString::new("").unwrap().into_raw();
+                let ptr1 = CString::new("123").unwrap().into_raw();
+                let ptr2 = CString::new("pbo").unwrap().into_raw();
+                let ptr3 = CString::new("mission").unwrap().into_raw();
+                let ptr4 = CString::new("server").unwrap().into_raw();
+                extension.handle_call_context(
+                    vec![
+                        ptr1, // steam ID
+                        ptr2, // file source
+                        ptr3, // mission name
+                        ptr4, // server name
+                        ptr, ptr,
+                    ]
+                    .as_mut_ptr(),
+                    6,
+                );
+                assert!(!is_call_ctx_default(extension.context()));
+                let _ = CString::from_raw(ptr);
+                let _ = CString::from_raw(ptr1);
+                let _ = CString::from_raw(ptr2);
+                let _ = CString::from_raw(ptr3);
+                let _ = CString::from_raw(ptr4);
+            }
         }
     }
 

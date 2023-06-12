@@ -4,13 +4,15 @@ use crossbeam_channel::Sender;
 
 use crate::{CallbackMessage, IntoArma, Value};
 
-mod arma;
+#[cfg(feature = "call-context")]
+mod call;
 mod global;
 mod group;
 mod state;
 
 pub use self::state::ContextState;
-pub use arma::*;
+#[cfg(feature = "call-context")]
+pub use call::*;
 pub use global::GlobalContext;
 pub use group::GroupContext;
 
@@ -19,7 +21,8 @@ pub struct Context {
     callback_tx: Sender<CallbackMessage>,
     global: GlobalContext,
     group: GroupContext,
-    arma: Option<ArmaContext>,
+    #[cfg(feature = "call-context")]
+    call: ArmaCallContext,
     buffer_size: usize,
 }
 
@@ -28,13 +31,14 @@ impl Context {
         callback_tx: Sender<CallbackMessage>,
         global: GlobalContext,
         group: GroupContext,
-        arma: Option<ArmaContext>,
+        #[cfg(feature = "call-context")] call: ArmaCallContext,
     ) -> Self {
         Self {
             callback_tx,
             global,
             group,
-            arma,
+            #[cfg(feature = "call-context")]
+            call,
             buffer_size: 0,
         }
     }
@@ -56,14 +60,40 @@ impl Context {
     }
 
     /// Group context, is equal to `GlobalContext` if the call is from the global scope.
-    pub fn group(&self) -> &GroupContext {
+    pub const fn group(&self) -> &GroupContext {
         &self.group
     }
 
+    #[cfg(feature = "call-context")]
     #[must_use]
-    /// Context automatically provided by Arma. Supported since Arma version 2.11.
-    pub const fn arma(&self) -> Option<&ArmaContext> {
-        self.arma.as_ref()
+    /// Player that called the extension. Can be [`Caller::Unknown`] when the player's steamID64 is unavailable
+    /// # Note
+    /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
+    pub const fn caller(&self) -> &Caller {
+        &self.call.caller
+    }
+
+    #[cfg(feature = "call-context")]
+    #[must_use]
+    /// Source from where the extension was called.
+    pub const fn source(&self) -> &Source {
+        &self.call.source
+    }
+
+    #[cfg(feature = "call-context")]
+    #[must_use]
+    /// Current mission's name.
+    /// # Note
+    /// Can result in [`Mission::None`] in missions made prior to Arma v2.02.
+    pub const fn mission(&self) -> &Mission {
+        &self.call.mission
+    }
+
+    #[cfg(feature = "call-context")]
+    #[must_use]
+    /// Current server's name
+    pub const fn server(&self) -> &Server {
+        &self.call.server
     }
 
     #[must_use]
@@ -136,7 +166,8 @@ mod tests {
             tx,
             GlobalContext::new(String::new(), Arc::new(State::default())),
             GroupContext::new(Arc::new(State::default())),
-            None,
+            #[cfg(feature = "call-context")]
+            ArmaCallContext::default(),
         )
     }
 

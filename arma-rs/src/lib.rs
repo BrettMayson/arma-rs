@@ -1,8 +1,16 @@
 #![warn(missing_docs, nonstandard_style)]
 
-//! Library for building powerful Extensions for Arma 3 easily in Rust
+/*!
+Library for building powerful Extensions for Arma 3 easily in Rust
 
-#[cfg(feature = "extension")]
+# Feature flags
+arma-rs has a few feature flags that can be enabled or disabled to suit your needs.
+
+- **`extension`** *(enabled by default)* - Extension functionality with FFI to interface with Arma.
+- **`call-context`** *(enabled by default)* - Support for extension call context provided by Arma since version 2.11.
+*/
+
+#[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
 
 pub use arma_rs_proc::arma;
@@ -77,7 +85,8 @@ pub struct Extension {
     callback: Option<Callback>,
     callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
-    arma_ctx: RefCell<Option<context::ArmaContext>>,
+    #[cfg(feature = "call-context")]
+    call_ctx: RefCell<ArmaCallContext>,
 }
 
 #[cfg(feature = "extension")]
@@ -117,36 +126,44 @@ impl Extension {
         self.callback = Some(callback);
     }
 
+    #[cfg(feature = "call-context")]
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_arma_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
+    pub unsafe fn handle_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
         const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
-                error!("invalid amount of args passed to `set_arma_context`");
-                None
+                error!("invalid amount of args passed to `handle_call_context`");
+                ArmaCallContext::default()
             }
             ordering => {
                 if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `set_arma_context`");
+                    warn!("unexpected amount of args passed to `handle_call_context`");
                 }
 
                 let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
                     .iter()
                     .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
                     .collect();
-                Some(context::ArmaContext::new(
-                    context::Caller::from(argv[0].as_ref()),
-                    context::Source::from(argv[1].as_ref()),
-                    context::Mission::from(argv[2].as_ref()),
-                    context::Server::from(argv[3].as_ref()),
-                ))
+                ArmaCallContext::new(
+                    Caller::from(argv[0].as_ref()),
+                    Source::from(argv[1].as_ref()),
+                    Mission::from(argv[2].as_ref()),
+                    Server::from(argv[3].as_ref()),
+                )
             }
         };
-        self.arma_ctx.replace(ctx);
+        self.call_ctx.replace(ctx);
     }
+
+    #[cfg(not(feature = "call-context"))]
+    #[doc(hidden)]
+    /// Called by generated code, do not call directly.
+    /// # Safety
+    /// This function is unsafe because it interacts with the C API.
+    pub unsafe fn handle_call_context(&mut self, _args: *mut *mut i8, _count: libc::c_int) {}
 
     #[must_use]
     /// Get a context for interacting with Arma
@@ -155,7 +172,8 @@ impl Extension {
             self.callback_channel.0.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             GroupContext::new(self.group.state.clone()),
-            self.arma_ctx.borrow().clone(),
+            #[cfg(feature = "call-context")]
+            self.call_ctx.borrow().clone(),
         )
     }
 
@@ -338,7 +356,8 @@ impl ExtensionBuilder {
             callback: None,
             callback_channel: unbounded(),
             callback_thread: None,
-            arma_ctx: RefCell::new(None),
+            #[cfg(feature = "call-context")]
+            call_ctx: RefCell::new(ArmaCallContext::default()),
         }
     }
 }

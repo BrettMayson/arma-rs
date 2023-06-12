@@ -1,6 +1,6 @@
 use arma_rs::{arma, Extension, Group};
 
-mod arma_context;
+mod call_context;
 mod counter;
 mod timer;
 
@@ -24,7 +24,7 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
-        .group("context", arma_context::group())
+        .group("call_context", call_context::group())
         .group("counter", counter::group())
         .group("timer", timer::group());
     #[cfg(not(miri))]

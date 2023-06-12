@@ -1,10 +1,35 @@
 use std::path::Path;
 
+#[derive(Clone, Default)]
+pub(crate) struct ArmaCallContext {
+    pub(super) caller: Caller,
+    pub(super) source: Source,
+    pub(super) mission: Mission,
+    pub(super) server: Server,
+}
+
+impl ArmaCallContext {
+    pub(crate) const fn new(
+        caller: Caller,
+        source: Source,
+        mission: Mission,
+        server: Server,
+    ) -> Self {
+        Self {
+            caller,
+            source,
+            mission,
+            server,
+        }
+    }
+}
+
 /// Identification of the player calling your extension.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Caller {
     /// The player's steamID64.
     Steam(u64),
+    #[default]
     /// Unable to determine.
     Unknown,
 }
@@ -20,7 +45,7 @@ impl From<&str> for Caller {
 }
 
 /// Source of the extension call.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Source {
     /// Absolute path of the file on the players system.
     /// For example on windows: `C:\Users\user\Documents\Arma 3\missions\test.VR\fn_armaContext.sqf`.
@@ -28,6 +53,7 @@ pub enum Source {
     /// Path inside of a pbo.
     /// For example: `z\test\addons\main\fn_armaContext.sqf`.
     Pbo(String),
+    #[default]
     /// Debug console.
     Console,
 }
@@ -45,10 +71,11 @@ impl From<&str> for Source {
 }
 
 /// Current mission.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Mission {
     /// Mission name.
     Mission(String),
+    #[default]
     /// Not in a mission.
     None,
 }
@@ -64,10 +91,11 @@ impl From<&str> for Mission {
 }
 
 /// Current server.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Server {
     /// Server name
     Multiplayer(String),
+    #[default]
     /// Singleplayer or no mission
     Singleplayer,
 }
@@ -79,56 +107,6 @@ impl From<&str> for Server {
         } else {
             Self::Multiplayer(s.to_string())
         }
-    }
-}
-
-/// Context automatically provided by Arma on extension call. Supported since Arma version 2.11.
-#[derive(Clone)]
-pub struct ArmaContext {
-    caller: Caller,
-    source: Source,
-    mission: Mission,
-    server: Server,
-}
-
-impl ArmaContext {
-    #[must_use]
-    /// Create a new [`ArmaContext`]. Mainly for use with [`crate::testing`].
-    pub const fn new(caller: Caller, source: Source, mission: Mission, server: Server) -> Self {
-        Self {
-            caller,
-            source,
-            mission,
-            server,
-        }
-    }
-
-    #[must_use]
-    /// Player that called the extension. Could be [`Caller::Unknown`] when the player's steamID64 is unavailable
-    /// # Note
-    /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
-    pub const fn caller(&self) -> &Caller {
-        &self.caller
-    }
-
-    #[must_use]
-    /// Source from where the extension was called.
-    pub const fn source(&self) -> &Source {
-        &self.source
-    }
-
-    #[must_use]
-    /// Current mission's name.
-    /// # Note
-    /// Could result in [`Mission::None`] in missions prior to Arma v2.02.
-    pub const fn mission(&self) -> &Mission {
-        &self.mission
-    }
-
-    #[must_use]
-    /// Current server's name
-    pub const fn server(&self) -> &Server {
-        &self.server
     }
 }
 
