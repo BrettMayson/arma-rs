@@ -185,7 +185,7 @@ use arma_rs::{Context, ContextState, Extension};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 pub fn increment(ctx: Context) -> Result<(), ()> {
-    let Some(counter) = ctx.global().get::<AtomicU32>() else {
+    let Some(counter) = ctx.group().get::<AtomicU32>() else {
         return Err(());
     };
     counter.fetch_add(1, Ordering::SeqCst);
