@@ -12,12 +12,14 @@ type HandlerFunc = Box<
     ) -> libc::c_int,
 >;
 
+#[doc(hidden)]
 /// A wrapper for `HandlerFunc`
 pub struct Handler {
     /// The function to call
     pub handler: HandlerFunc,
 }
 
+#[doc(hidden)]
 /// Create a new handler from a Factory
 pub fn fn_handler<C, I, R>(command: C) -> Handler
 where
@@ -37,6 +39,7 @@ where
     }
 }
 
+#[doc(hidden)]
 /// Execute a command
 pub trait Executor: 'static {
     /// # Safety
@@ -51,6 +54,7 @@ pub trait Executor: 'static {
     );
 }
 
+#[doc(hidden)]
 /// A factory for creating a command handler.
 /// Creates a handler from any function that optionally takes a context and up to 12 arguments.
 /// The arguments must implement `FromArma`
@@ -69,9 +73,9 @@ pub trait Factory<A, R> {
 }
 
 macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
-    impl<$($param,)* O> Executor for dyn Factory<($($param,)*), O>
+    impl<$($param,)* ER> Executor for dyn Factory<($($param,)*), ER>
     where
-        O: 'static,
+        ER: 'static,
         $($param: FromArma + 'static,)*
     {
         unsafe fn call(
@@ -86,117 +90,17 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // No context without return
-    impl<Func, $($param,)*> Factory<($($param,)*), ()> for Func
+    // No context
+    impl<Func, $($param,)* ER> Factory<($($param,)*), ER> for Func
     where
-        Func: Fn($($param),*),
-        $($param: FromArma,)*
-    {
-        #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
-            let count = count.unwrap_or_else(|| 0);
-            if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<libc::c_int>().unwrap();
-            }
-            if $c == 0 {
-                (self)($($param::from_arma("".to_string()).unwrap(),)*);
-                0
-            } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                    let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
-                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
-                (self)($(
-                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                        c += 1;
-                        val
-                    } else {
-                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                    },
-                )*);
-                0
-            }
-        }
-    }
-
-    // Context without return
-    impl<Func, $($param,)*> Factory<(Context, $($param,)*), ()> for Func
-    where
-        Func: Fn(Context, $($param),*),
-        $($param: FromArma,)*
-    {
-        #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, _output: *mut libc::c_char, _size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int{
-            let count = count.unwrap_or_else(|| 0);
-            if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
-                return format!("2{}", count).parse::<libc::c_int>().unwrap();
-            }
-            if $c == 0 {
-                (self)(context, $($param::from_arma("".to_string()).unwrap(),)*);
-                0
-            } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
-                    let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
-                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
-                let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
-                (self)(context,
-                $(
-                    if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
-                        c += 1;
-                        val
-                    } else {
-                        return format!("3{}", c).parse::<libc::c_int>().unwrap()
-                    },
-                )*);
-                0
-            }
-        }
-    }
-
-    // No context with input and return
-    impl<Func, $($param,)* R> Factory<($($param,)*), R> for Func
-    where
-        R: IntoExtResult + 'static,
-        Func: Fn($($param),*) -> R,
+        ER: IntoExtResult + 'static,
+        Func: Fn($($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -224,7 +128,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)($(
@@ -243,18 +147,17 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 
-    // Context with input and return
-    impl<Func, $($param,)* R> Factory<(Context, $($param,)*), R> for Func
+    // Context
+    impl<Func, $($param,)* ER> Factory<(Context, $($param,)*), ER> for Func
     where
-        R: IntoExtResult + 'static,
-        Func: Fn(Context, $($param),*) -> R,
+        ER: IntoExtResult + 'static,
+        Func: Fn(Context, $($param),*) -> ER,
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
-                println!("Invalid number of arguments: expected {}, got {}", $c, count);
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
@@ -282,7 +185,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
-                #[allow(unused_assignments, clippy::eval_order_dependence)]
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 handle_output_and_return(
                     {
                         (self)(context, $(
@@ -348,3 +251,17 @@ factory_tuple! { 9, A B C D E F G H I }
 factory_tuple! { 10, A B C D E F G H I J }
 factory_tuple! { 11, A B C D E F G H I J K }
 factory_tuple! { 12, A B C D E F G H I J K L }
+factory_tuple! { 13, A B C D E F G H I J K L M }
+factory_tuple! { 14, A B C D E F G H I J K L M N }
+factory_tuple! { 15, A B C D E F G H I J K L M N O }
+factory_tuple! { 16, A B C D E F G H I J K L M N O P }
+factory_tuple! { 17, A B C D E F G H I J K L M N O P Q }
+factory_tuple! { 18, A B C D E F G H I J K L M N O P Q R }
+factory_tuple! { 19, A B C D E F G H I J K L M N O P Q R S }
+factory_tuple! { 20, A B C D E F G H I J K L M N O P Q R S T }
+factory_tuple! { 21, A B C D E F G H I J K L M N O P Q R S T U }
+factory_tuple! { 22, A B C D E F G H I J K L M N O P Q R S T U V }
+factory_tuple! { 23, A B C D E F G H I J K L M N O P Q R S T U V W }
+factory_tuple! { 24, A B C D E F G H I J K L M N O P Q R S T U V W X }
+factory_tuple! { 25, A B C D E F G H I J K L M N O P Q R S T U V W X Y }
+factory_tuple! { 26, A B C D E F G H I J K L M N O P Q R S T U V W X Y Z }

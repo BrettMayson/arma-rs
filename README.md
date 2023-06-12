@@ -9,12 +9,16 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.7.0"
+arma-rs = "1.9.2"
+
+[lib]
+name = "my_extension"
+crate-type = ["cdylib"]
 ```
 
 ### Hello World
 
-```rust
+```rust,skt-call-init
 use arma_rs::{arma, Extension};
 
 #[arma]
@@ -43,11 +47,8 @@ pub fn welcome(name: String) -> String {
 
 Commands can be grouped together, making your large projects much easier to manage.
 
-```rust
+```rust,skt-call-init
 use arma_rs::{arma, Extension, Group};
-
-mod system_info;
-mod timer;
 
 #[arma]
 fn init() -> Extension {
@@ -103,13 +104,13 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
-```rust
+```rust,skt-group
 use arma_rs::Context;
 
 pub fn sleep(ctx: Context, duration: u64, id: String) {
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_secs(duration));
-        ctx.callback("example_timer", "done", Some(id));
+        ctx.callback_data("example_timer", "done", Some(id));
     });
 }
 
@@ -118,11 +119,89 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
+## Call Context
+
+Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
+
+```rust,skt-group
+use arma_rs::Context;
+
+pub fn call_context(ctx: Context) -> String {
+    format!(
+        "{:?},{:?},{:?},{:?}",
+        ctx.caller(),
+        ctx.source(),
+        ctx.mission(),
+        ctx.server()
+    )
+}
+
+pub fn group() -> arma_rs::Group {
+    arma_rs::Group::new().command("call_context", call_context)
+}
+```
+
+Support for this context can be can be toggled using the `call-context` feature flag, which is enabled by default.
+
+## Persistent State
+
+Both the extension and command groups allow for type based persistent state values with at most one instance per type. These state values can then be accessed through the optional `Context` argument.
+
+### Global State
+
+Extension state is accessible from any command handler.
+
+```rust,skt-call-init
+use arma_rs::{arma, Context, ContextState, Extension};
+
+use std::sync::atomic::{AtomicU32, Ordering};
+
+#[arma]
+fn init() -> Extension {
+    Extension::build()
+        .command("counter_increment", increment)
+        .state(AtomicU32::new(0))
+        .finish()
+}
+
+pub fn increment(ctx: Context) -> Result<(), ()> {
+    let Some(counter) = ctx.global().get::<AtomicU32>() else {
+        return Err(());
+    };
+    counter.fetch_add(1, Ordering::SeqCst);
+    Ok(())
+}
+```
+
+### Group State
+
+Command group state is only accessible from command handlers within the same group.
+
+```rust,skt-group
+use arma_rs::{Context, ContextState, Extension};
+
+use std::sync::atomic::{AtomicU32, Ordering};
+
+pub fn increment(ctx: Context) -> Result<(), ()> {
+    let Some(counter) = ctx.group().get::<AtomicU32>() else {
+        return Err(());
+    };
+    counter.fetch_add(1, Ordering::SeqCst);
+    Ok(())
+}
+
+pub fn group() -> arma_rs::Group {
+    arma_rs::Group::new()
+        .command("increment", increment)
+        .state(AtomicU32::new(0))
+}
+```
+
 ## Custom Return Types
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
 
-```rust
+```rust,skt-empty
 #[derive(Default)]
 pub struct MemoryReport {
     total: u64,
@@ -131,8 +210,8 @@ pub struct MemoryReport {
 }
 
 impl IntoArma for MemoryReport {
-    fn to_arma(&self) -> ArmaValue {
-        ArmaValue::Array(
+    fn to_arma(&self) -> Value {
+        Value::Array(
             vec![self.total, self.free, self.avail]
                 .into_iter()
                 .map(|v| v.to_string().to_arma())
@@ -164,7 +243,7 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 
 ### Error Examples
 
-```rust
+```rust,no_run,skt-empty
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -175,9 +254,9 @@ pub fn overflow(ctx: Context) -> String {
 
 pub fn should_error(error: bool) -> Result<String, String> {
   if error {
-    Err(String::from("told to error")
+    Err(String::from("told to error"))
   } else {
-    Ok(String::from("told to succeed")
+    Ok(String::from("told to succeed"))
   }
 }
 ```
@@ -196,8 +275,7 @@ pub fn should_error(error: bool) -> Result<String, String> {
 
 Tests can be created utilizing the `extension.call()` method.
 
-```rust
-#[cfg(test)]
+```rust,skt-test
 mod tests {
     use super::init;
 
@@ -246,13 +324,37 @@ mod tests {
 }
 ```
 
+## Unit Loadout Array
+
+arma-rs includes a [loadout module](https://docs.rs/arma-rs/latest/arma_rs/loadout/index.html) to assist with the handling of [Arma's Unit Loadout Array](https://community.bistudio.com/wiki/Unit_Loadout_Array).
+
+```rust,skt-main
+let l = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
+let mut loadout = Loadout::from_arma(l.to_string()).unwrap();
+loadout.set_secondary({
+    let mut weapon = Weapon::new("launch_B_Titan_short_F".to_string());
+    weapon.set_primary_magazine(Magazine::new("Titan_AT".to_string(), 1));
+    weapon
+});
+loadout.set_primary({
+    let mut weapon = Weapon::new("arifle_MXC_F".to_string());
+    weapon.set_optic("optic_Holosight".to_string());
+    weapon
+});
+let uniform = loadout.uniform_mut();
+uniform.set_class("U_B_CombatUniform_mcam".to_string());
+let uniform_items = uniform.items_mut().unwrap();
+uniform_items.push(InventoryItem::new_item("FirstAidKit".to_string(), 3));
+uniform_items.push(InventoryItem::new_magazine("30Rnd_65x39_caseless_mag".to_string(), 5, 30));
+```
+
 ## Common Rust Libraries
 
 arma-rs supports some common Rust libraries.
 You can enable their support by adding their name to the features of arma-rs.
 
 ```toml
-arma-rs = { version = "1.7.0", features = ["chrono"] }
+arma-rs = { version = "1.8.0", features = ["chrono"] }
 ```
 
 Please create an issue first if you would like to add support for a new library.
@@ -285,6 +387,13 @@ The timezone will always be converted to UTC.
 #### serde_json - Convert To Arma
 
 Any variant of [`serde_json::Value`](https://docs.serde.rs/serde_json/enum.Value.html) will be converted to the appropriate Arma type.
+
+## Building for x86 (32 Bit)
+
+```sh
+rustup toolchain install stable-i686-pc-windows-msvc
+cargo +stable-i686-pc-windows-msvc build
+```
 
 ## Contributing
 

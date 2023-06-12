@@ -1,12 +1,16 @@
 use arma_rs::{arma, Extension, Group};
 
+mod call_context;
+mod counter;
 mod derive;
-mod system_info;
 mod timer;
+
+#[cfg(not(miri))]
+mod system_info;
 
 #[arma]
 fn init() -> Extension {
-    Extension::build()
+    let mut ext = Extension::build()
         .group(
             "hello",
             Group::new()
@@ -21,9 +25,14 @@ fn init() -> Extension {
                 .command("french", welcome::french)
                 .command("spanish", welcome::spanish),
         )
-        .group("system", system_info::group())
-        .group("timer", timer::group())
-        .finish()
+        .group("call_context", call_context::group())
+        .group("counter", counter::group())
+        .group("timer", timer::group());
+    #[cfg(not(miri))]
+    {
+        ext = ext.group("system", system_info::group());
+    }
+    ext.finish()
 }
 
 mod hello {
@@ -42,15 +51,15 @@ mod hello {
 
 mod welcome {
     pub fn english(name: String) -> String {
-        format!("Welcome {}", name)
+        format!("Welcome {name}")
     }
 
     pub fn french(name: String) -> String {
-        format!("Bienvenue {}", name)
+        format!("Bienvenue {name}")
     }
 
     pub fn spanish(name: String) -> String {
-        format!("Bienvenido {}", name)
+        format!("Bienvenido {name}")
     }
 }
 

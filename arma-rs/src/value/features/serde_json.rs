@@ -26,3 +26,18 @@ impl IntoArma for serde_json::Value {
         }
     }
 }
+
+impl Value {
+    /// Convert a Value to a serde_json::Value
+    pub fn to_json(&self) -> serde_json::Value {
+        match self {
+            Value::Null => serde_json::Value::Null,
+            Value::Boolean(b) => serde_json::Value::Bool(*b),
+            Value::Number(n) => {
+                serde_json::Value::Number(serde_json::Number::from_f64(*n).unwrap())
+            }
+            Value::String(s) => serde_json::Value::String(s.to_owned()),
+            Value::Array(v) => serde_json::Value::Array(v.iter().map(|v| v.to_json()).collect()),
+        }
+    }
+}
