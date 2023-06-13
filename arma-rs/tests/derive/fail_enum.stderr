@@ -1,0 +1,5 @@
+error: expected `struct`
+ --> tests/derive/fail_enum.rs:4:5
+  |
+4 | pub enum DeriveTest {
+  |     ^^^^

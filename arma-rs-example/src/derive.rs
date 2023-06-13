@@ -1,62 +1,53 @@
-use arma_rs::{arma_rs_proc, FromArma, IntoArma};
+use arma_rs::{arma_rs_proc::Arma, Group};
 
-#[derive(arma_rs_proc::IntoArma, arma_rs_proc::FromArma)]
-struct MyUnnamedStruct(i32, String);
-
-#[test]
-fn test_unnamed_struct_into() {
-    let my_unnamed_struct = MyUnnamedStruct(1, "hello".to_string());
-    assert_eq!(
-        my_unnamed_struct.to_arma().to_string(),
-        r#"[1,"hello"]"#.to_string()
-    );
+#[derive(Arma)]
+pub struct DamagedPart {
+    name: String,
+    damage: u32,
 }
 
-#[test]
-fn test_unnamed_struct_from() {
-    let my_unnamed_struct = MyUnnamedStruct::from_arma(r#"[1, "hello"]"#.to_string()).unwrap();
-    assert_eq!(my_unnamed_struct.0, 1);
-    assert_eq!(my_unnamed_struct.1, "hello".to_string());
+pub fn half_damage(part: DamagedPart) -> DamagedPart {
+    DamagedPart {
+        damage: part.damage / 2,
+        ..part
+    }
 }
 
-#[derive(arma_rs_proc::IntoArma, arma_rs_proc::FromArma)]
-struct MySingleStruct(i32);
-
-#[test]
-fn test_single_struct_into() {
-    let my_single_struct = MySingleStruct(42);
-    assert_eq!(my_single_struct.to_arma().to_string(), r#"42"#.to_string());
+pub fn group() -> Group {
+    Group::new().command("half_damage", half_damage)
 }
 
-#[test]
-fn test_single_struct_from() {
-    let my_single_struct = MySingleStruct::from_arma(r#"42"#.to_string()).unwrap();
-    assert_eq!(my_single_struct.0, 42);
-}
+#[cfg(test)]
+mod tests {
+    use arma_rs::{Extension, FromArma, IntoArma};
 
-#[derive(arma_rs_proc::IntoArma, arma_rs_proc::FromArma)]
-struct MyNamedStruct {
-    id: i32,
-    message: String,
-}
+    use crate::derive::DamagedPart;
 
-#[test]
-fn test_named_struct_into() {
-    let my_named_struct = MyNamedStruct {
-        id: 1,
-        message: "hello".to_string(),
-    };
-    let result = my_named_struct.to_arma().to_string();
-    assert!(
-        result == r#"[["id",1],["message","hello"]]"#
-            || result == r#"[["message","hello"],["id",1]]"#
-    );
-}
+    #[test]
+    fn test_half_damage() {
+        let extension = Extension::build()
+            .group("derive", super::group())
+            .finish()
+            .testing();
 
-#[test]
-fn test_named_struct_from() {
-    let my_named_struct =
-        MyNamedStruct::from_arma(r#"[["id",1],["message","hello"]]"#.to_string()).unwrap();
-    assert_eq!(my_named_struct.id, 1);
-    assert_eq!(my_named_struct.message, "hello".to_string());
+        let damaged_part = super::DamagedPart {
+            name: "engine".to_string(),
+            damage: 100,
+        };
+        let (result, code) = unsafe {
+            extension.call(
+                "derive:half_damage",
+                Some(vec![damaged_part.to_arma().to_string()]),
+            )
+        };
+        assert_eq!(code, 0);
+        assert!(
+            result == r#"[["name","engine"],["damage",50]]"#
+                || result == r#"[["damage",50],["name","engine"]]"#
+        );
+
+        let damaged_part = DamagedPart::from_arma(result).unwrap();
+        assert_eq!(damaged_part.name, "engine");
+        assert_eq!(damaged_part.damage, 50);
+    }
 }

@@ -27,6 +27,7 @@ fn init() -> Extension {
         )
         .group("call_context", call_context::group())
         .group("counter", counter::group())
+        .group("derive", derive::group())
         .group("timer", timer::group());
     #[cfg(not(miri))]
     {

@@ -34,3 +34,4 @@ skeptic = "0.13.7"
 
 [dev-dependencies]
 skeptic = "0.13.7"
+trybuild = "1.0.8"
