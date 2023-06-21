@@ -1,12 +1,12 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{DeriveInput, Error, Fields, Ident};
+use syn::{Data, DeriveInput, Error, Fields, Ident, Index, Result};
 
-pub fn generate_into_arma(input: DeriveInput) -> syn::Result<TokenStream> {
+pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
     let ident = &input.ident;
     match input.data {
-        syn::Data::Enum(_) => Err(Error::new(Span::call_site(), "Enums aren't supported")),
-        syn::Data::Struct(data) => {
+        Data::Enum(_) => Err(Error::new(Span::call_site(), "Enums aren't supported")),
+        Data::Struct(data) => {
             let body = struct_into_arma(&data.fields)?;
             Ok(quote! {
                 #[automatically_derived]
@@ -17,11 +17,11 @@ pub fn generate_into_arma(input: DeriveInput) -> syn::Result<TokenStream> {
                 }
             })
         }
-        syn::Data::Union(_) => Err(Error::new(Span::call_site(), "Unions aren't supported")),
+        Data::Union(_) => Err(Error::new(Span::call_site(), "Unions aren't supported")),
     }
 }
 
-fn struct_into_arma(fields: &Fields) -> syn::Result<TokenStream> {
+fn struct_into_arma(fields: &Fields) -> Result<TokenStream> {
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
@@ -41,7 +41,7 @@ fn struct_into_arma(fields: &Fields) -> syn::Result<TokenStream> {
         }
         Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
-            let field_indices: Vec<_> = (0..count).map(syn::Index::from).collect();
+            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
             match count {
                 0 => Err(Error::new(
                     Span::call_site(),
@@ -60,11 +60,11 @@ fn struct_into_arma(fields: &Fields) -> syn::Result<TokenStream> {
     }
 }
 
-pub fn generate_from_arma(input: DeriveInput) -> syn::Result<TokenStream> {
+pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     let ident = &input.ident;
     match input.data {
-        syn::Data::Enum(_) => Err(Error::new(Span::call_site(), "Enums aren't supported")),
-        syn::Data::Struct(data) => {
+        Data::Enum(_) => Err(Error::new(Span::call_site(), "Enums aren't supported")),
+        Data::Struct(data) => {
             let body = struct_from_arma_body(ident, &data.fields)?;
             Ok(quote! {
                 #[automatically_derived]
@@ -75,11 +75,11 @@ pub fn generate_from_arma(input: DeriveInput) -> syn::Result<TokenStream> {
                 }
             })
         }
-        syn::Data::Union(_) => Err(Error::new(Span::call_site(), "Unions aren't supported")),
+        Data::Union(_) => Err(Error::new(Span::call_site(), "Unions aren't supported")),
     }
 }
 
-fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> syn::Result<TokenStream> {
+fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> {
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
@@ -100,7 +100,7 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> syn::Result<TokenStr
         }
         Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
-            let field_indices: Vec<_> = (0..count).map(syn::Index::from).collect();
+            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
             let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
             match count {
                 0 => Err(Error::new(
