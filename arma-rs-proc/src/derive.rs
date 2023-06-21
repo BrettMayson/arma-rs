@@ -94,7 +94,8 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
                 .map(|f| f.as_ref().unwrap().to_string())
                 .collect();
             Ok(quote! {
-                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source).map_err(|e| format!("{}: {}", #name, e))?;
+                let values: std::collections::HashMap<String, String> =
+                    arma_rs::FromArma::from_arma(source).map_err(|e| format!("{}: {}", #name, e))?;
                 if values.len() != #count {
                     Err(format!("{}: expected {} fields, got {}", #name, #count, values.len()))
                 } else {
