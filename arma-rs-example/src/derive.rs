@@ -1,6 +1,9 @@
-use arma_rs::{arma_rs_proc::Arma, Group};
+use arma_rs::{
+    arma_rs_proc::{FromArma, IntoArma},
+    Group,
+};
 
-#[derive(Arma)]
+#[derive(IntoArma, FromArma)]
 pub struct DamagedPart {
     name: String,
     damage: u32,

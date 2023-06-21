@@ -1,7 +1,7 @@
 use arma_rs::{FromArma, IntoArma, Value};
-use arma_rs_proc::Arma;
+use arma_rs_proc::{FromArma, IntoArma};
 
-#[derive(Arma, Debug, PartialEq)]
+#[derive(IntoArma, FromArma, Debug, PartialEq)]
 pub struct DeriveTest {
     name: String,
 }

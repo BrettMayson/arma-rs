@@ -1,7 +1,9 @@
+mod derive;
+
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::{ItemFn, ItemStruct};
+use syn::{DeriveInput, Error, ItemFn};
 
 #[proc_macro_attribute]
 /// Used to generate the necessary boilerplate for an Arma extension.
@@ -101,84 +103,26 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     })
 }
 
-#[proc_macro_derive(Arma)]
-/// Derive macro generating implementations of `IntoArma` and `FromArma` for a struct.
-/// - Structs with named fields are converted to a hashmap.
-/// - Structs with multiple unnamed fields are converted to an array.
-/// - Structs with a single unnamed field directly use the field's `IntoArma` and `FromArma` implementations.
-/// - Unit structs and structs with no fields are not supported.
-pub fn derive_arma(item: TokenStream) -> TokenStream {
-    let ast = syn::parse_macro_input!(item as ItemStruct);
-    let ident = &ast.ident;
+/// Derive implementation of `IntoArma`, currently only supports structs.
+/// - Named fields are converted to a hashmap.
+/// - Multiple unnamed fields are converted to an array.
+/// - Single unnamed field directly use's the fields `IntoArma` implementation.
+#[proc_macro_derive(IntoArma)]
+pub fn derive_into_arma(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as DeriveInput);
+    derive::generate_into_arma(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
+}
 
-    let tokens = match &ast.fields {
-        syn::Fields::Named(fields) => {
-            let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
-            let field_names: Vec<_> = field_idents
-                .iter()
-                .map(|f| f.as_ref().unwrap().to_string())
-                .collect();
-            quote! {
-                impl arma_rs::IntoArma for #ident {
-                    fn to_arma(&self) -> arma_rs::Value {
-                        std::collections::HashMap::from([#(
-                            (#field_names.to_string(), self.#field_idents.to_arma()),
-                        )*]).to_arma()
-                    }
-                }
-                impl arma_rs::FromArma for #ident {
-                    fn from_arma(source: String) -> Result<Self, String> {
-                        let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-                        Ok(#ident {#(
-                            #field_idents: arma_rs::FromArma::from_arma(values[#field_names].clone())?,
-                        )*})
-                    }
-                }
-            }
-        }
-        syn::Fields::Unnamed(fields) => {
-            let count = fields.unnamed.len();
-            let field_indices: Vec<_> = (0..count).map(syn::Index::from).collect();
-            let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
-            match count {
-                0 => syn::Error::new(Span::call_site(), "Structs with no fields aren't supported")
-                    .to_compile_error(),
-                1 => quote! {
-                    impl arma_rs::IntoArma for #ident {
-                        fn to_arma(&self) -> arma_rs::Value {
-                            self.0.to_arma()
-                        }
-                    }
-                    impl arma_rs::FromArma for #ident {
-                        fn from_arma(source: String) -> Result<Self, String> {
-                            Ok(#ident (<#(#field_types)*>::from_arma(source)?))
-                        }
-                    }
-                },
-                _ => quote! {
-                    impl arma_rs::IntoArma for #ident {
-                        fn to_arma(&self) -> arma_rs::Value {
-                            vec![#(
-                                self.#field_indices.to_arma(),
-                            )*].to_arma()
-                        }
-                    }
-                    impl arma_rs::FromArma for #ident {
-                        fn from_arma(source: String) -> Result<Self, String> {
-                            let values: (#(
-                                #field_types,
-                            )*) = arma_rs::FromArma::from_arma(source)?;
-                            Ok(#ident {#(
-                                #field_indices: values.#field_indices,
-                            )*})
-                        }
-                    }
-                },
-            }
-        }
-        syn::Fields::Unit => {
-            syn::Error::new(Span::call_site(), "Unit structs aren't supported").to_compile_error()
-        }
-    };
-    TokenStream::from(tokens)
+/// Derive implementation of `FromArma`, currently only supports structs.
+/// - Named fields are converted from a hashmap.
+/// - Multiple unnamed fields are converted from an array.
+/// - Single unnamed field directly use's the fields `FromArma` implementation.
+#[proc_macro_derive(FromArma)]
+pub fn derive_from_arma(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as DeriveInput);
+    derive::generate_from_arma(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
 }
