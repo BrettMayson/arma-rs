@@ -80,12 +80,14 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> {
+    let name = ident.to_string();
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
             "Unit structs aren't supported",
         )),
         Fields::Named(fields) => {
+            let count = fields.named.len();
             let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
             let field_names: Vec<_> = field_idents
                 .iter()
@@ -93,9 +95,13 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
                 .collect();
             Ok(quote! {
                 let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-                Ok(#ident {#(
-                    #field_idents: arma_rs::FromArma::from_arma(values[#field_names].clone())?,
-                )*})
+                if values.len() != #count {
+                    Err(format!("{}: expected {} fields, got {}", #name, #count, values.len()))
+                } else {
+                    Ok(#ident {#(
+                        #field_idents: arma_rs::FromArma::from_arma(values[#field_names].clone())?,
+                    )*})
+                }
             })
         }
         Fields::Unnamed(fields) => {
@@ -113,7 +119,7 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
                 _ => Ok(quote! {
                     let values: (#(
                         #field_types,
-                    )*) = arma_rs::FromArma::from_arma(source)?;
+                    )*) = arma_rs::FromArma::from_arma(source).map_err(|e| format!("{}: {}", #name, e))?;
                     Ok(#ident (#(
                         values.#field_indices,
                     )*))
