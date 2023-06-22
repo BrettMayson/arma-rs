@@ -33,10 +33,8 @@ pub enum FromArmaError {
     /// Missing exponent in exponential notation
     NumberMissingExponent,
 
-    /// Missing start bracket
-    ArrayMissingStartBracket,
-    /// Missing end bracket
-    ArrayMissingEndBracket,
+    /// Missing array/tuple bracket
+    ArrayMissingBracket(bool),
     /// Collection size mismatch
     SizeMismatch {
         /// Expected size
@@ -56,8 +54,10 @@ impl ToString for FromArmaError {
             Self::PrimitiveParseError(s) => format!("error parsing primitive: {s}"),
             Self::NumberMissingBase => String::from("missing base in exponential notation"),
             Self::NumberMissingExponent => String::from("missing exponent in exponential notation"),
-            Self::ArrayMissingStartBracket => String::from("missing '[' at start of vec"),
-            Self::ArrayMissingEndBracket => String::from("missing ']' at end of vec"),
+            Self::ArrayMissingBracket(start) => match *start {
+                true => String::from("missing '[' at start of array"),
+                false => String::from("missing ']' at end of array"),
+            },
             Self::SizeMismatch { expected, actual } => {
                 format!("expected {expected} elements, got {actual}")
             }
@@ -135,9 +135,9 @@ macro_rules! impl_from_arma_tuple {
             fn from_arma(s: String) -> Result<Self, FromArmaError> {
                 let source = s
                     .strip_prefix('[')
-                    .ok_or(FromArmaError::ArrayMissingStartBracket)?
+                    .ok_or(FromArmaError::ArrayMissingBracket(true))?
                     .strip_suffix(']')
-                    .ok_or(FromArmaError::ArrayMissingEndBracket)?;
+                    .ok_or(FromArmaError::ArrayMissingBracket(false))?;
                 let parts = split_array(&source);
                 let len = parts.len();
                 if len != $c {
@@ -188,9 +188,9 @@ where
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let source = s
             .strip_prefix('[')
-            .ok_or(FromArmaError::ArrayMissingStartBracket)?
+            .ok_or(FromArmaError::ArrayMissingBracket(true))?
             .strip_suffix(']')
-            .ok_or(FromArmaError::ArrayMissingEndBracket)?;
+            .ok_or(FromArmaError::ArrayMissingBracket(false))?;
         let parts = split_array(source);
         if parts.len() == 1 && parts[0].is_empty() {
             return Ok(Self::new());
