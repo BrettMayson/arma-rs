@@ -103,10 +103,11 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     })
 }
 
-/// Derive implementation of `IntoArma`, currently only supports structs.
-/// - Named fields are converted to a hashmap.
-/// - Multiple unnamed fields are converted to an array.
-/// - Single unnamed field directly use's the fields `IntoArma` implementation.
+/// Derive implementation of `IntoArma`, only supports structs.
+/// - Structs with named fields are converted to a hashmap.
+/// - Tuple structs are converted to an array.
+/// - New type structs directly use's the value's `IntoArma` implementation.
+/// - Unit-like structs are not supported.
 #[proc_macro_derive(IntoArma)]
 pub fn derive_into_arma(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
@@ -115,10 +116,11 @@ pub fn derive_into_arma(item: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive implementation of `FromArma`, currently only supports structs.
-/// - Named fields are converted from a hashmap.
-/// - Multiple unnamed fields are converted from an array.
-/// - Single unnamed field directly use's the fields `FromArma` implementation.
+/// Derive implementation of `FromArma`, only supports structs.
+/// - Structs with named fields are converted from a hashmap.
+/// - Tuple structs are converted from an array.
+/// - New type structs directly use's the value's `FromArma` implementation.
+/// - Unit-like structs are not supported.
 #[proc_macro_derive(FromArma)]
 pub fn derive_from_arma(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);

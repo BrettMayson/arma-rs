@@ -25,7 +25,7 @@ fn struct_into_arma(fields: &Fields) -> Result<TokenStream> {
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
-            "Unit structs aren't supported",
+            "Unit struct's aren't supported",
         )),
         Fields::Named(fields) => {
             let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
@@ -45,7 +45,7 @@ fn struct_into_arma(fields: &Fields) -> Result<TokenStream> {
             match count {
                 0 => Err(Error::new(
                     Span::call_site(),
-                    "Unnamed structs with no fields aren't supported",
+                    "Unit struct's aren't supported",
                 )),
                 1 => Ok(quote! {
                     self.0.to_arma()
@@ -83,7 +83,7 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
-            "Unit structs aren't supported",
+            "Unit struct's aren't supported",
         )),
         Fields::Named(fields) => {
             let count = fields.named.len();
@@ -113,7 +113,7 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
             match count {
                 0 => Err(Error::new(
                     Span::call_site(),
-                    "Unnamed structs with no fields aren't supported",
+                    "Unit struct's aren't supported",
                 )),
                 1 => Ok(quote! {
                     Ok(#ident (<#(#field_types)*>::from_arma(source)?))
