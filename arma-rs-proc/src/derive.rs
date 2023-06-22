@@ -28,6 +28,14 @@ fn struct_into_arma(fields: &Fields) -> Result<TokenStream> {
             "Unit struct's aren't supported",
         )),
         Fields::Named(fields) => {
+            let count = fields.named.len();
+            if count == 0 {
+                return Err(Error::new(
+                    Span::call_site(),
+                    "Unit struct's aren't supported",
+                ));
+            }
+
             let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
             let field_names: Vec<_> = field_idents
                 .iter()
@@ -41,20 +49,24 @@ fn struct_into_arma(fields: &Fields) -> Result<TokenStream> {
         }
         Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
-            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
-            match count {
-                0 => Err(Error::new(
+            if count == 0 {
+                return Err(Error::new(
                     Span::call_site(),
                     "Unit struct's aren't supported",
-                )),
-                1 => Ok(quote! {
+                ));
+            }
+
+            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
+            if count == 1 {
+                Ok(quote! {
                     self.0.to_arma()
-                }),
-                _ => Ok(quote! {
+                })
+            } else {
+                Ok(quote! {
                     Vec::<arma_rs::Value>::from([#(
                         self.#field_indices.to_arma(),
                     )*]).to_arma()
-                }),
+                })
             }
         }
     }
@@ -87,6 +99,13 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
         )),
         Fields::Named(fields) => {
             let count = fields.named.len();
+            if count == 0 {
+                return Err(Error::new(
+                    Span::call_site(),
+                    "Unit struct's aren't supported",
+                ));
+            }
+
             let field_idents: Vec<_> = fields.named.iter().map(|f| &f.ident).collect();
             let field_names: Vec<_> = field_idents
                 .iter()
@@ -108,24 +127,28 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
         }
         Fields::Unnamed(fields) => {
             let count = fields.unnamed.len();
-            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
-            let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
-            match count {
-                0 => Err(Error::new(
+            if count == 0 {
+                return Err(Error::new(
                     Span::call_site(),
                     "Unit struct's aren't supported",
-                )),
-                1 => Ok(quote! {
+                ));
+            }
+
+            let field_indices: Vec<_> = (0..count).map(Index::from).collect();
+            let field_types: Vec<_> = fields.unnamed.iter().map(|f| &f.ty).collect();
+            if count == 1 {
+                Ok(quote! {
                     Ok(#ident (<#(#field_types)*>::from_arma(source)?))
-                }),
-                _ => Ok(quote! {
+                })
+            } else {
+                Ok(quote! {
                     let values: (#(
                         #field_types,
                     )*) = arma_rs::FromArma::from_arma(source)?;
                     Ok(#ident (#(
                         values.#field_indices,
                     )*))
-                }),
+                })
             }
         }
     }

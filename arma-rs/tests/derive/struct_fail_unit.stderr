@@ -29,3 +29,19 @@ error: Unit struct's aren't supported
   |                    ^^^^^^^^
   |
   = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Unit struct's aren't supported
+ --> tests/derive/struct_fail_unit.rs:9:10
+  |
+9 | #[derive(IntoArma, FromArma)]
+  |          ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: Unit struct's aren't supported
+ --> tests/derive/struct_fail_unit.rs:9:20
+  |
+9 | #[derive(IntoArma, FromArma)]
+  |                    ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
