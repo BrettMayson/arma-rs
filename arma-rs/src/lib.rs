@@ -29,7 +29,7 @@ pub use link_args;
 extern crate log;
 
 mod value;
-pub use value::{loadout, FromArma, IntoArma, Value};
+pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
 
 #[cfg(feature = "extension")]
 mod ext_result;

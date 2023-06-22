@@ -69,7 +69,7 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
             Ok(quote! {
                 #[automatically_derived]
                 impl arma_rs::FromArma for #ident {
-                    fn from_arma(source: String) -> Result<Self, String> {
+                    fn from_arma(source: String) -> Result<Self, arma_rs::FromArmaError> {
                         #body
                     }
                 }
@@ -80,7 +80,6 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> {
-    let name = ident.to_string();
     match fields {
         Fields::Unit => Err(Error::new(
             Span::call_site(),
@@ -94,10 +93,12 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
                 .map(|f| f.as_ref().unwrap().to_string())
                 .collect();
             Ok(quote! {
-                let values: std::collections::HashMap<String, String> =
-                    arma_rs::FromArma::from_arma(source).map_err(|e| format!("{}: {}", #name, e))?;
+                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
                 if values.len() != #count {
-                    Err(format!("{}: expected {} fields, got {}", #name, #count, values.len()))
+                    Err(arma_rs::FromArmaError::SizeMismatch {
+                        expected: #count,
+                        actual: values.len(),
+                    })
                 } else {
                     Ok(#ident {#(
                         #field_idents: arma_rs::FromArma::from_arma(values[#field_names].clone())?,
@@ -120,7 +121,7 @@ fn struct_from_arma_body(ident: &Ident, fields: &Fields) -> Result<TokenStream> 
                 _ => Ok(quote! {
                     let values: (#(
                         #field_types,
-                    )*) = arma_rs::FromArma::from_arma(source).map_err(|e| format!("{}: {}", #name, e))?;
+                    )*) = arma_rs::FromArma::from_arma(source)?;
                     Ok(#ident (#(
                         values.#field_indices,
                     )*))

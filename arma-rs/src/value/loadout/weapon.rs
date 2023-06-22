@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 use super::Magazine;
 
@@ -203,7 +203,7 @@ impl Weapon {
     }
 }
 impl FromArma for Weapon {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         if s == "[]" {
             return Ok(Self(None));
         }

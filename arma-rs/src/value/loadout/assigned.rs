@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// Assigned items in the loadout
@@ -91,7 +91,7 @@ impl AssignedItems {
     }
 }
 impl FromArma for AssignedItems {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         <(String, String, String, String, String, String)>::from_arma(s).map(
             |(map, gps, radio, compass, watch, nvg)| Self(map, gps, radio, compass, watch, nvg),
         )
