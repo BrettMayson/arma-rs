@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 impl IntoArma for uuid::Uuid {
     fn to_arma(&self) -> Value {
@@ -7,7 +7,7 @@ impl IntoArma for uuid::Uuid {
 }
 
 impl FromArma for uuid::Uuid {
-    fn from_arma(s: String) -> Result<Self, String> {
-        uuid::Uuid::parse_str(&s).map_err(|e| e.to_string())
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
+        uuid::Uuid::parse_str(&s).map_err(|e| FromArmaError::custom(e.to_string()))
     }
 }

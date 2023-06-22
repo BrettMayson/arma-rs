@@ -1,6 +1,6 @@
 use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, TimeZone, Timelike};
 
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 impl IntoArma for NaiveDateTime {
     fn to_arma(&self) -> Value {
@@ -24,7 +24,7 @@ impl<T: TimeZone> IntoArma for DateTime<T> {
 }
 
 impl FromArma for NaiveDateTime {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let arma_date: [i64; 7] = FromArma::from_arma(s)?;
         Ok(NaiveDate::from_ymd(
             arma_date[0].try_into().unwrap(),
