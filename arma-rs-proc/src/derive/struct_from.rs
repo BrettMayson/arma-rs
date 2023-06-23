@@ -28,6 +28,13 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
             ));
         }
 
+        if attributes.default {
+            return Err(Error::new(
+                Span::call_site(),
+                "#[arma(transparent)] and #[arma(default)] cannot be used together",
+            ));
+        }
+
         let ident = idents[0];
         Ok(quote! {
             Ok(Self {
@@ -37,27 +44,46 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
     } else {
         let names = fields.names();
 
-        Ok(quote! {
-            let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+        if attributes.default {
+            Ok(quote! {
+                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
 
-            let len = values.len();
-            if len != #count {
-                return Err(arma_rs::FromArmaError::SizeMismatch {
-                    expected: #count,
-                    actual: len,
+                let mut result = Self::default();
+                #(if let Some(value) = values.get(#names) {
+                    result.#idents = arma_rs::FromArma::from_arma(value.clone())?;
+                })*
+                Ok(result)
+            })
+        } else {
+            Ok(quote! {
+                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+
+                let len = values.len();
+                if len != #count {
+                    return Err(arma_rs::FromArmaError::SizeMismatch {
+                        expected: #count,
+                        actual: len,
+                    })
+                }
+
+                Ok(Self {
+                    #(#idents: arma_rs::FromArma::from_arma(values[#names].clone())?),*
                 })
-            }
-
-            Ok(Self {#(
-                #idents: arma_rs::FromArma::from_arma(values[#names].clone())?,
-            )*})
-        })
+            })
+        }
     }
 }
 
-fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> Result<TokenStream> {
+fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
     let indexes = fields.indexes();
     let types = fields.types();
+
+    if attributes.default {
+        return Err(Error::new(
+            Span::call_site(),
+            "#[arma(default)] can only be used on structs with named fields",
+        ));
+    }
 
     Ok(quote! {
         let values: (#(
@@ -69,7 +95,14 @@ fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> R
     })
 }
 
-fn newtype_struct(_field: &FieldUnnamed, _attributes: &ContainerAttributes) -> Result<TokenStream> {
+fn newtype_struct(_field: &FieldUnnamed, attributes: &ContainerAttributes) -> Result<TokenStream> {
+    if attributes.default {
+        return Err(Error::new(
+            Span::call_site(),
+            "#[arma(default)] can only be used on structs with named fields",
+        ));
+    }
+
     Ok(quote! {
         Ok(Self (arma_rs::FromArma::from_arma(source)?))
     })

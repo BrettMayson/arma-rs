@@ -5,26 +5,43 @@ use syn::{Error, Result};
 #[derive(PartialEq, Eq)]
 pub struct ContainerAttributes {
     pub transparent: bool,
+    pub default: bool,
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for ContainerAttributes {
+    fn default() -> Self {
+        Self {
+            transparent: false,
+            default: false,
+        }
+    }
 }
 
 impl ContainerAttributes {
     pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut transparent = false;
+        let nested_metas = combine_attrs(attrs)?;
+        Self::default().update_from_metas(&nested_metas)
+    }
 
-        for meta in combine_attrs(attrs)? {
+    fn update_from_metas(mut self, metas: &[syn::Meta]) -> Result<Self> {
+        for meta in metas {
             match path_to_string(meta.path()).as_str() {
                 "transparent" => {
-                    transparent = true;
+                    self.transparent = true;
                 }
-                _ => {
+                "default" => {
+                    self.default = true;
+                }
+                unknown => {
                     return Err(Error::new_spanned(
-                        &meta,
-                        format!("unknown attribute `{}`", path_to_string(meta.path())),
+                        meta,
+                        format!("unknown attribute `{unknown}`"),
                     ))
                 }
             }
         }
-        Ok(Self { transparent })
+        Ok(self)
     }
 }
 
