@@ -91,10 +91,11 @@ fn struct_from_arma_body(data: &DataStruct) -> Result<TokenStream> {
             let count = fields.len();
             Ok(quote! {
                 let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-                if values.len() != #count {
+                let len = values.len();
+                if len != #count {
                     return Err(arma_rs::FromArmaError::SizeMismatch {
                         expected: #count,
-                        actual: values.len(),
+                        actual: len,
                     })
                 }
                 Ok(Self {#(
@@ -106,12 +107,12 @@ fn struct_from_arma_body(data: &DataStruct) -> Result<TokenStream> {
             let indexes = fields.indexes();
             let types = fields.types();
             Ok(quote! {
-                    let values: (#(
-                        #types,
-                    )*) = arma_rs::FromArma::from_arma(source)?;
-                    Ok(Self (#(
-                        values.#indexes,
-                    )*))
+                let values: (#(
+                    #types,
+                )*) = arma_rs::FromArma::from_arma(source)?;
+                Ok(Self (#(
+                    values.#indexes,
+                )*))
             })
         }
         DataStruct::NewType(_) => Ok(quote! {
