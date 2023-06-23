@@ -101,7 +101,7 @@ pub trait FieldNamedUtil {
     fn types(&self) -> Vec<&syn::Type>;
 }
 
-impl FieldNamedUtil for Vec<FieldNamed> {
+impl FieldNamedUtil for [FieldNamed] {
     fn idents(&self) -> Vec<&syn::Ident> {
         self.iter().map(|f| &f.ident).collect()
     }
@@ -120,7 +120,7 @@ pub trait FieldUnnamedUtil {
     fn types(&self) -> Vec<&syn::Type>;
 }
 
-impl FieldUnnamedUtil for Vec<FieldUnnamed> {
+impl FieldUnnamedUtil for [FieldUnnamed] {
     fn indexes(&self) -> Vec<&syn::Index> {
         self.iter().map(|f| &f.index).collect()
     }
