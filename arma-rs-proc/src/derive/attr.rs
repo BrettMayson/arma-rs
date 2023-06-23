@@ -2,7 +2,10 @@ use std::collections::HashSet;
 
 use syn::{Error, Result};
 
-pub enum ContainerAttribute {}
+#[derive(PartialEq, Eq)]
+pub enum ContainerAttribute {
+    Transparent,
+}
 
 pub trait ParseAttrMeta {
     fn parse_attr_meta(meta: syn::Meta) -> Result<Self>
@@ -18,6 +21,7 @@ impl ParseAttrMeta for ContainerAttribute {
         meta.path()
             .get_ident()
             .and_then(|ident| match ident.to_string().as_str() {
+                "transparent" => Some(Self::Transparent),
                 _ => None,
             })
             .ok_or_else(|| {

@@ -14,7 +14,7 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
             let ident = input.ident;
-            let body = struct_into_arma(&data)?;
+            let body = struct_into_arma(&data, &input.attrs)?;
             let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
@@ -35,7 +35,7 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
             let ident = input.ident;
-            let body = struct_from_arma_body(&data)?;
+            let body = struct_from_arma_body(&data, &input.attrs)?;
             let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
@@ -50,7 +50,10 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     }
 }
 
-fn struct_into_arma(data: &DataStruct) -> Result<TokenStream> {
+fn struct_into_arma(
+    data: &DataStruct,
+    container_attrs: &[ContainerAttribute],
+) -> Result<TokenStream> {
     match &data {
         DataStruct::Unit => Err(Error::new(
             Span::call_site(),
@@ -58,12 +61,26 @@ fn struct_into_arma(data: &DataStruct) -> Result<TokenStream> {
         )),
         DataStruct::Map(fields) => {
             let idents = fields.idents();
-            let names = fields.names();
-            Ok(quote! {
-                std::collections::HashMap::<String, arma_rs::Value>::from([#(
-                    (#names.to_string(), self.#idents.to_arma() ),
-                )*]).to_arma()
-            })
+            if container_attrs.contains(&ContainerAttribute::Transparent) {
+                if fields.len() > 1 {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "#[arma(transparent)] structs must have exactly one field",
+                    ));
+                }
+
+                let ident = idents[0];
+                Ok(quote! {
+                    self.#ident.to_arma()
+                })
+            } else {
+                let names = fields.names();
+                Ok(quote! {
+                    std::collections::HashMap::<String, arma_rs::Value>::from([#(
+                        (#names.to_string(), self.#idents.to_arma()),
+                    )*]).to_arma()
+                })
+            }
         }
         DataStruct::Tuple(fields) => {
             let indices: Vec<_> = fields.iter().map(|f| &f.index).collect();
@@ -79,7 +96,10 @@ fn struct_into_arma(data: &DataStruct) -> Result<TokenStream> {
     }
 }
 
-fn struct_from_arma_body(data: &DataStruct) -> Result<TokenStream> {
+fn struct_from_arma_body(
+    data: &DataStruct,
+    container_attrs: &[ContainerAttribute],
+) -> Result<TokenStream> {
     match &data {
         DataStruct::Unit => Err(Error::new(
             Span::call_site(),
@@ -87,21 +107,37 @@ fn struct_from_arma_body(data: &DataStruct) -> Result<TokenStream> {
         )),
         DataStruct::Map(fields) => {
             let idents = fields.idents();
-            let names = fields.names();
             let count = fields.len();
-            Ok(quote! {
-                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-                let len = values.len();
-                if len != #count {
-                    return Err(arma_rs::FromArmaError::SizeMismatch {
-                        expected: #count,
-                        actual: len,
-                    })
+            if container_attrs.contains(&ContainerAttribute::Transparent) {
+                if count > 1 {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "#[arma(transparent)] structs must have exactly one field",
+                    ));
                 }
-                Ok(Self {#(
-                    #idents: arma_rs::FromArma::from_arma(values[#names].clone())?,
-                )*})
-            })
+
+                let ident = idents[0];
+                Ok(quote! {
+                    Ok(Self {
+                        #ident: arma_rs::FromArma::from_arma(source)?,
+                    })
+                })
+            } else {
+                let names = fields.names();
+                Ok(quote! {
+                    let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+                    let len = values.len();
+                    if len != #count {
+                        return Err(arma_rs::FromArmaError::SizeMismatch {
+                            expected: #count,
+                            actual: len,
+                        })
+                    }
+                    Ok(Self {#(
+                        #idents: arma_rs::FromArma::from_arma(values[#names].clone())?,
+                    )*})
+                })
+            }
         }
         DataStruct::Tuple(fields) => {
             let indexes = fields.indexes();
