@@ -1,13 +1,15 @@
+mod attr;
 mod data;
 
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{DeriveInput, Error, Result};
 
+use attr::*;
 use data::*;
 
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
-    let input = ContainerData::from(input);
+    let input = ContainerData::from_input(input)?;
     match input.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
@@ -28,7 +30,7 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
-    let input = ContainerData::from(input);
+    let input = ContainerData::from_input(input)?;
     match input.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {

@@ -108,7 +108,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// - Tuple structs are converted to an array.
 /// - New type structs directly use's the value's `IntoArma` implementation.
 /// - Unit-like structs are not supported.
-#[proc_macro_derive(IntoArma)]
+#[proc_macro_derive(IntoArma, attributes(arma))]
 pub fn derive_into_arma(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
     derive::generate_into_arma(input)
@@ -121,7 +121,7 @@ pub fn derive_into_arma(item: TokenStream) -> TokenStream {
 /// - Tuple structs are converted from an array.
 /// - New type structs directly use's the value's `FromArma` implementation.
 /// - Unit-like structs are not supported.
-#[proc_macro_derive(FromArma)]
+#[proc_macro_derive(FromArma, attributes(arma))]
 pub fn derive_from_arma(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
     derive::generate_from_arma(input)

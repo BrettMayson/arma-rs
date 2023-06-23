@@ -1,4 +1,9 @@
+use syn::Result;
+
+use super::{parse_attrs, ContainerAttribute};
+
 pub struct ContainerData {
+    pub attrs: Vec<ContainerAttribute>,
     pub ident: syn::Ident,
     pub generics: syn::Generics,
     pub data: Data,
@@ -28,8 +33,9 @@ pub struct FieldUnnamed {
     pub ty: syn::Type,
 }
 
-impl From<syn::DeriveInput> for ContainerData {
-    fn from(input: syn::DeriveInput) -> Self {
+impl ContainerData {
+    pub fn from_input(input: syn::DeriveInput) -> Result<Self> {
+        let attrs: Vec<ContainerAttribute> = parse_attrs(&input.attrs)?;
         let ident = input.ident;
         let generics = input.generics;
         let data = match input.data {
@@ -37,11 +43,12 @@ impl From<syn::DeriveInput> for ContainerData {
             syn::Data::Enum(_) => Data::Enum,
             syn::Data::Union(_) => Data::Union,
         };
-        Self {
+        Ok(Self {
+            attrs,
             ident,
             data,
             generics,
-        }
+        })
     }
 }
 
