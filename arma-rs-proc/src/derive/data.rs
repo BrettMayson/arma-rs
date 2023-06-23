@@ -1,9 +1,6 @@
 use syn::Result;
 
-use super::{parse_attrs, ContainerAttribute};
-
 pub struct ContainerData {
-    pub attrs: Vec<ContainerAttribute>,
     pub ident: syn::Ident,
     pub generics: syn::Generics,
     pub data: Data,
@@ -34,17 +31,15 @@ pub struct FieldUnnamed {
 }
 
 impl ContainerData {
-    pub fn from_input(input: syn::DeriveInput) -> Result<Self> {
-        let attrs: Vec<ContainerAttribute> = parse_attrs(&input.attrs)?;
-        let ident = input.ident;
-        let generics = input.generics;
-        let data = match input.data {
+    pub fn from_input(input: &syn::DeriveInput) -> Result<Self> {
+        let ident = input.ident.clone();
+        let generics = input.generics.clone();
+        let data = match input.data.clone() {
             syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)),
             syn::Data::Enum(_) => Data::Enum,
             syn::Data::Union(_) => Data::Union,
         };
         Ok(Self {
-            attrs,
             ident,
             data,
             generics,

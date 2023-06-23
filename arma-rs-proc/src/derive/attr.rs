@@ -3,44 +3,29 @@ use std::collections::HashSet;
 use syn::{Error, Result};
 
 #[derive(PartialEq, Eq)]
-pub enum ContainerAttribute {
-    Transparent,
+pub struct ContainerAttributes {
+    pub transparent: bool,
 }
 
-pub trait ParseAttrMeta {
-    fn parse_attr_meta(meta: syn::Meta) -> Result<Self>
-    where
-        Self: Sized;
-}
+impl ContainerAttributes {
+    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+        let mut transparent = false;
 
-impl ParseAttrMeta for ContainerAttribute {
-    fn parse_attr_meta(meta: syn::Meta) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        meta.path()
-            .get_ident()
-            .and_then(|ident| match ident.to_string().as_str() {
-                "transparent" => Some(Self::Transparent),
-                _ => None,
-            })
-            .ok_or_else(|| {
-                Error::new_spanned(
-                    &meta,
-                    format!("unknown attribute `{}`", path_to_string(meta.path())),
-                )
-            })
+        for meta in combine_attrs(attrs)? {
+            match path_to_string(meta.path()).as_str() {
+                "transparent" => {
+                    transparent = true;
+                }
+                _ => {
+                    return Err(Error::new_spanned(
+                        &meta,
+                        format!("unknown attribute `{}`", path_to_string(meta.path())),
+                    ))
+                }
+            }
+        }
+        Ok(Self { transparent })
     }
-}
-
-pub fn parse_attrs<T>(attrs: &[syn::Attribute]) -> Result<Vec<T>>
-where
-    T: ParseAttrMeta,
-{
-    combine_attrs(attrs)?
-        .into_iter()
-        .map(ParseAttrMeta::parse_attr_meta)
-        .collect()
 }
 
 fn combine_attrs(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {

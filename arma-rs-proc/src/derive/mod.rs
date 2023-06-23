@@ -9,13 +9,14 @@ use attr::*;
 use data::*;
 
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
-    let input = ContainerData::from_input(input)?;
-    match input.data {
+    let container = ContainerData::from_input(&input)?;
+    let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
+    match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
-            let ident = input.ident;
-            let body = struct_into_arma(&data, &input.attrs)?;
-            let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+            let ident = container.ident;
+            let body = struct_into_arma(&data, &attributes)?;
+            let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
                 impl #impl_generics arma_rs::IntoArma for #ident #ty_generics #where_clause {
@@ -30,13 +31,14 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
-    let input = ContainerData::from_input(input)?;
-    match input.data {
+    let container = ContainerData::from_input(&input)?;
+    let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
+    match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
-            let ident = input.ident;
-            let body = struct_from_arma_body(&data, &input.attrs)?;
-            let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+            let ident = container.ident;
+            let body = struct_from_arma_body(&data, &attributes)?;
+            let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
                 impl #impl_generics arma_rs::FromArma for #ident #ty_generics #where_clause {
@@ -50,10 +52,7 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     }
 }
 
-fn struct_into_arma(
-    data: &DataStruct,
-    container_attrs: &[ContainerAttribute],
-) -> Result<TokenStream> {
+fn struct_into_arma(data: &DataStruct, attributes: &ContainerAttributes) -> Result<TokenStream> {
     match &data {
         DataStruct::Unit => Err(Error::new(
             Span::call_site(),
@@ -61,7 +60,7 @@ fn struct_into_arma(
         )),
         DataStruct::Map(fields) => {
             let idents = fields.idents();
-            if container_attrs.contains(&ContainerAttribute::Transparent) {
+            if attributes.transparent {
                 if fields.len() > 1 {
                     return Err(Error::new(
                         Span::call_site(),
@@ -98,7 +97,7 @@ fn struct_into_arma(
 
 fn struct_from_arma_body(
     data: &DataStruct,
-    container_attrs: &[ContainerAttribute],
+    attributes: &ContainerAttributes,
 ) -> Result<TokenStream> {
     match &data {
         DataStruct::Unit => Err(Error::new(
@@ -108,7 +107,7 @@ fn struct_from_arma_body(
         DataStruct::Map(fields) => {
             let idents = fields.idents();
             let count = fields.len();
-            if container_attrs.contains(&ContainerAttribute::Transparent) {
+            if attributes.transparent {
                 if count > 1 {
                     return Err(Error::new(
                         Span::call_site(),
