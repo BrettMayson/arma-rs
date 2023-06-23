@@ -1,5 +1,6 @@
 pub struct ContainerData {
     pub ident: syn::Ident,
+    pub generics: syn::Generics,
     pub data: Data,
 }
 
@@ -30,12 +31,17 @@ pub struct FieldUnnamed {
 impl From<syn::DeriveInput> for ContainerData {
     fn from(input: syn::DeriveInput) -> Self {
         let ident = input.ident;
+        let generics = input.generics;
         let data = match input.data {
             syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)),
             syn::Data::Enum(_) => Data::Enum,
             syn::Data::Union(_) => Data::Union,
         };
-        Self { ident, data }
+        Self {
+            ident,
+            data,
+            generics,
+        }
     }
 }
 

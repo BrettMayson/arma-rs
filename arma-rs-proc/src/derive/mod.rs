@@ -6,9 +6,6 @@ use syn::{DeriveInput, Error, Result};
 
 use data::*;
 
-// Todo: add support for enums
-// Todo: add support for params; transparent, default, from, try_from, into
-
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
     let input = ContainerData::from(input);
     match input.data {
@@ -16,9 +13,10 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
         Data::Struct(data) => {
             let ident = input.ident;
             let body = struct_into_arma(&data)?;
+            let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
-                impl arma_rs::IntoArma for #ident {
+                impl #impl_generics arma_rs::IntoArma for #ident #ty_generics #where_clause {
                     fn to_arma(&self) -> arma_rs::Value {
                         #body
                     }
@@ -36,9 +34,10 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
         Data::Struct(data) => {
             let ident = input.ident;
             let body = struct_from_arma_body(&data)?;
+            let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
             Ok(quote! {
                 #[automatically_derived]
-                impl arma_rs::FromArma for #ident {
+                impl #impl_generics arma_rs::FromArma for #ident #ty_generics #where_clause {
                     fn from_arma(source: String) -> Result<Self, arma_rs::FromArmaError> {
                         #body
                     }
