@@ -21,7 +21,8 @@ pub struct UnknownPath;
 pub struct Duplicate;
 
 #[derive(IntoArma, FromArma)]
-#[arma(duplicate::path, duplicate::path)]
+#[arma(duplicate::path)]
+#[arma(duplicate::path)]
 pub struct DuplicatePath;
 
 pub fn main() {}

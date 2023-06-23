@@ -50,6 +50,17 @@ fn combine_attrs(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
     for attr in filter_attrs(attrs) {
         combined.extend(parse_nested_meta(attr)?);
     }
+
+    let mut unique_attr_paths = HashSet::new();
+    for nested in &combined {
+        let path = path_to_string(nested.path());
+        if !unique_attr_paths.insert(path.clone()) {
+            return Err(Error::new_spanned(
+                nested,
+                format!("duplicate attribute `{path}`"),
+            ));
+        }
+    }
     Ok(combined)
 }
 
@@ -68,23 +79,10 @@ fn parse_nested_meta(meta: &syn::Attribute) -> Result<Vec<syn::Meta>> {
         }
     }
 
-    let nested_metas: Vec<_> = match meta.parse_meta()? {
+    match meta.parse_meta()? {
         syn::Meta::List(list) => list.nested.into_iter().map(nested_meta).collect(),
         meta => Err(Error::new_spanned(meta, "expected #[arma(...)]")),
-    }?;
-
-    let mut attr_paths = HashSet::new();
-    for nested in &nested_metas {
-        let path = path_to_string(nested.path());
-        if !attr_paths.insert(path.clone()) {
-            return Err(Error::new_spanned(
-                nested,
-                format!("duplicate attribute `{path}`"),
-            ));
-        }
     }
-
-    Ok(nested_metas)
 }
 
 fn path_to_string(path: &syn::Path) -> String {

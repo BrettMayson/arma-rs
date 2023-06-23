@@ -29,7 +29,7 @@ error: duplicate attribute `duplicate`
    |                   ^^^^^^^^^
 
 error: duplicate attribute `duplicate::path`
-  --> tests/derive/struct_fail_attr.rs:24:25
+  --> tests/derive/struct_fail_attr.rs:25:8
    |
-24 | #[arma(duplicate::path, duplicate::path)]
-   |                         ^^^^^^^^^^^^^^^
+25 | #[arma(duplicate::path)]
+   |        ^^^^^^^^^^^^^^^
