@@ -1,11 +1,11 @@
 use arma_rs_proc::{FromArma, IntoArma};
 
-pub struct MyType;
+struct MyType;
 
 #[derive(IntoArma, FromArma)]
-pub struct DeriveTest(MyType);
+struct DeriveTest(MyType);
 
 #[derive(IntoArma, FromArma)]
-pub struct Unit<T>(T);
+struct Unit<T>(T);
 
-pub fn main() {}
+fn main() {}

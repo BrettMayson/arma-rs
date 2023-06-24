@@ -2,12 +2,12 @@ use arma_rs::{FromArma, IntoArma, Value};
 use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma, Debug, PartialEq)]
-pub struct DeriveTest {
+struct DeriveTest {
     first: String,
     second: String,
 }
 
-pub fn main() {
+fn main() {
     let serialized = DeriveTest {
         first: String::from("hello"),
         second: String::from("world"),

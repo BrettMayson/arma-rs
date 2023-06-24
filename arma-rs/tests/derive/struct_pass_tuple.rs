@@ -2,9 +2,9 @@ use arma_rs::{FromArma, IntoArma, Value};
 use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma, Debug, PartialEq)]
-pub struct DeriveTest(String, u32, f32);
+struct DeriveTest(String, u32, f32);
 
-pub fn main() {
+fn main() {
     let serialized = DeriveTest(String::from("test"), 1, 2.0);
     let deserialized = Value::Array(vec![
         Value::String(String::from("test")),

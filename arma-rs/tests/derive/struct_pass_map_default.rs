@@ -3,7 +3,7 @@ use arma_rs_proc::FromArma;
 
 #[derive(FromArma, Debug, PartialEq)]
 #[arma(default)]
-pub struct DeriveTest {
+struct DeriveTest {
     first: String,
     second: u32,
 }
@@ -17,7 +17,7 @@ impl Default for DeriveTest {
     }
 }
 
-pub fn main() {
+fn main() {
     let input = Value::Array(vec![]);
     assert_eq!(
         DeriveTest::from_arma(input.to_string()).unwrap(),

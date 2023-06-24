@@ -3,11 +3,11 @@ use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma, Debug, PartialEq)]
 #[arma(transparent)]
-pub struct DeriveTest {
+struct DeriveTest {
     name: String,
 }
 
-pub fn main() {
+fn main() {
     let serialized = DeriveTest {
         name: String::from("test"),
     };

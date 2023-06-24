@@ -2,7 +2,7 @@ use arma_rs::{IntoArma, Value};
 use arma_rs_proc::FromArma;
 
 #[derive(FromArma)]
-pub struct DeriveTest(u32);
+struct DeriveTest(u32);
 
 impl IntoArma for DeriveTest {
     fn to_arma(&self) -> Value {
@@ -10,4 +10,4 @@ impl IntoArma for DeriveTest {
     }
 }
 
-pub fn main() {}
+fn main() {}

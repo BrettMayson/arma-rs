@@ -1,12 +1,12 @@
 use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma)]
-pub struct Unit;
+struct Unit;
 
 #[derive(IntoArma, FromArma)]
-pub struct Empty {}
+struct Empty {}
 
 #[derive(IntoArma, FromArma)]
-pub struct EmptyTuple();
+struct EmptyTuple();
 
-pub fn main() {}
+fn main() {}
