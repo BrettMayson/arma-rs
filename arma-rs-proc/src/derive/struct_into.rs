@@ -16,7 +16,10 @@ pub fn into_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> Re
     }
 }
 
-fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
+fn map_struct(
+    fields: &Fields<FieldNamed>,
+    attributes: &ContainerAttributes,
+) -> Result<TokenStream> {
     let idents = fields.idents();
 
     if attributes.transparent {
@@ -42,12 +45,15 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
     }
 }
 
-fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> Result<TokenStream> {
-    let indices: Vec<_> = fields.iter().map(|f| &f.index).collect();
+fn tuple_struct(
+    fields: &Fields<FieldUnnamed>,
+    _attributes: &ContainerAttributes,
+) -> Result<TokenStream> {
+    let indexes = fields.indexes();
 
     Ok(quote! {
         Vec::<arma_rs::Value>::from([#(
-            self.#indices.to_arma(),
+            self.#indexes.to_arma(),
         )*]).to_arma()
     })
 }

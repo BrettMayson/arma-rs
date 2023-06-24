@@ -16,7 +16,10 @@ pub fn from_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> Re
     }
 }
 
-fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
+fn map_struct(
+    fields: &Fields<FieldNamed>,
+    attributes: &ContainerAttributes,
+) -> Result<TokenStream> {
     let idents = fields.idents();
     let count = fields.len();
 
@@ -74,7 +77,10 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
     }
 }
 
-fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
+fn tuple_struct(
+    fields: &Fields<FieldUnnamed>,
+    attributes: &ContainerAttributes,
+) -> Result<TokenStream> {
     let indexes = fields.indexes();
     let types = fields.types();
 

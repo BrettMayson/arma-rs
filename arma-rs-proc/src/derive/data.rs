@@ -16,11 +16,13 @@ pub enum Data {
 }
 
 pub enum DataStruct {
-    Map(Vec<FieldNamed>),
-    Tuple(Vec<FieldUnnamed>),
+    Map(Fields<FieldNamed>),
+    Tuple(Fields<FieldUnnamed>),
     NewType(FieldUnnamed),
     Unit,
 }
+
+pub struct Fields<T>(Vec<T>);
 
 pub struct FieldNamed {
     pub ident: syn::Ident,
@@ -58,7 +60,9 @@ impl DataStruct {
                     return Self::Unit;
                 }
 
-                Self::Map(fields.named.into_iter().map(FieldNamed::new).collect())
+                Self::Map(Fields(
+                    fields.named.into_iter().map(FieldNamed::new).collect(),
+                ))
             }
             syn::Fields::Unnamed(fields) => {
                 match fields.unnamed.len() {
@@ -67,14 +71,14 @@ impl DataStruct {
                     _ => (),
                 }
 
-                Self::Tuple(
+                Self::Tuple(Fields(
                     fields
                         .unnamed
                         .into_iter()
                         .enumerate()
                         .map(|(i, f)| FieldUnnamed::new(f, i))
                         .collect(),
-                )
+                ))
             }
         }
     }
@@ -97,37 +101,32 @@ impl FieldUnnamed {
     }
 }
 
-pub trait FieldNamedUtil {
-    fn idents(&self) -> Vec<&syn::Ident>;
-    fn names(&self) -> Vec<&str>;
-    fn types(&self) -> Vec<&syn::Type>;
-}
-
-impl FieldNamedUtil for [FieldNamed] {
-    fn idents(&self) -> Vec<&syn::Ident> {
-        self.iter().map(|f| &f.ident).collect()
-    }
-
-    fn names(&self) -> Vec<&str> {
-        self.iter().map(|f| &f.name[..]).collect()
-    }
-
-    fn types(&self) -> Vec<&syn::Type> {
-        self.iter().map(|f| &f.ty).collect()
+impl<T> Fields<T> {
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
 
-pub trait FieldUnnamedUtil {
-    fn indexes(&self) -> Vec<&syn::Index>;
-    fn types(&self) -> Vec<&syn::Type>;
-}
-
-impl FieldUnnamedUtil for [FieldUnnamed] {
-    fn indexes(&self) -> Vec<&syn::Index> {
-        self.iter().map(|f| &f.index).collect()
+impl Fields<FieldNamed> {
+    pub fn idents(&self) -> Vec<&syn::Ident> {
+        self.0.iter().map(|f| &f.ident).collect()
     }
 
-    fn types(&self) -> Vec<&syn::Type> {
-        self.iter().map(|f| &f.ty).collect()
+    pub fn names(&self) -> Vec<&str> {
+        self.0.iter().map(|f| &f.name[..]).collect()
+    }
+
+    // pub fn types(&self) -> Vec<&syn::Type> {
+    //     self.0.iter().map(|f| &f.ty).collect()
+    // }
+}
+
+impl Fields<FieldUnnamed> {
+    pub fn indexes(&self) -> Vec<&syn::Index> {
+        self.0.iter().map(|f| &f.index).collect()
+    }
+
+    pub fn types(&self) -> Vec<&syn::Type> {
+        self.0.iter().map(|f| &f.ty).collect()
     }
 }
