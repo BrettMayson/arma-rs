@@ -140,10 +140,10 @@ pub enum CallbackError {
     ChannelClosed,
 }
 
-impl ToString for CallbackError {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for CallbackError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ChannelClosed => "Callback channel closed".to_string(),
+            CallbackError::ChannelClosed => write!(f, "Callback channel closed"),
         }
     }
 }

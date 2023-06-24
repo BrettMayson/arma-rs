@@ -48,13 +48,12 @@ fn check_duplicate_metas(attrs: &[syn::Meta]) -> Result<()> {
     attrs.iter().try_for_each(|attr| {
         let path = path_to_string(attr.path());
         if !seen.insert(path.clone()) {
-            Err(Error::new_spanned(
+            return Err(Error::new_spanned(
                 attr,
                 format!("duplicate attribute `{path}`"),
-            ))
-        } else {
-            Ok(())
+            ));
         }
+        Ok(())
     })
 }
 

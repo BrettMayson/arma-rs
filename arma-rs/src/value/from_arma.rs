@@ -54,23 +54,23 @@ pub enum FromArmaError {
     Custom(String),
 }
 
-impl ToString for FromArmaError {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for FromArmaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ValueInvalid(s) => format!("invalid value: {s}"),
-            Self::PrimitiveParseError(s) => format!("error parsing primitive: {s}"),
-            Self::NumberMissingBase => String::from("missing base in exponential notation"),
-            Self::NumberMissingExponent => String::from("missing exponent in exponential notation"),
+            Self::ValueInvalid(s) => write!(f, "invalid value: {s}"),
+            Self::PrimitiveParseError(s) => write!(f, "error parsing primitive: {s}"),
+            Self::NumberMissingBase => write!(f, "missing base in exponential notation"),
+            Self::NumberMissingExponent => write!(f, "missing exponent in exponential notation"),
             Self::ArrayMissingBracket(start) => match *start {
-                true => String::from("missing '[' at start of array"),
-                false => String::from("missing ']' at end of array"),
+                true => write!(f, "missing '[' at start of array"),
+                false => write!(f, "missing ']' at end of array"),
             },
             Self::SizeMismatch { expected, actual } => {
-                format!("expected {expected} elements, got {actual}")
+                write!(f, "expected {expected} elements, got {actual}")
             }
-            Self::MapMissingField(s) => format!("missing field: {s}"),
-            Self::MapUnknownField(s) => format!("unknown field: {s}"),
-            Self::Custom(s) => s.clone(),
+            Self::MapMissingField(s) => write!(f, "missing field: {s}"),
+            Self::MapUnknownField(s) => write!(f, "unknown field: {s}"),
+            Self::Custom(s) => f.write_str(s),
         }
     }
 }
@@ -154,7 +154,7 @@ macro_rules! impl_from_arma_tuple {
                     .ok_or(FromArmaError::ArrayMissingBracket(true))?
                     .strip_suffix(']')
                     .ok_or(FromArmaError::ArrayMissingBracket(false))?;
-                let parts = split_array(&source);
+                let parts = split_array(source);
                 let len = parts.len();
                 if len != $c {
                     return Err(FromArmaError::SizeMismatch {
