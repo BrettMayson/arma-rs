@@ -1,6 +1,9 @@
 use syn::Result;
 
+use super::ContainerAttributes;
+
 pub struct ContainerData {
+    pub attributes: ContainerAttributes,
     pub ident: syn::Ident,
     pub generics: syn::Generics,
     pub data: Data,
@@ -32,17 +35,16 @@ pub struct FieldUnnamed {
 
 impl ContainerData {
     pub fn from_input(input: &syn::DeriveInput) -> Result<Self> {
-        let ident = input.ident.clone();
-        let generics = input.generics.clone();
         let data = match input.data.clone() {
             syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)),
             syn::Data::Enum(_) => Data::Enum,
             syn::Data::Union(_) => Data::Union,
         };
         Ok(Self {
-            ident,
+            attributes: ContainerAttributes::from_attrs(&input.attrs)?,
+            ident: input.ident.clone(),
             data,
-            generics,
+            generics: input.generics.clone(),
         })
     }
 }

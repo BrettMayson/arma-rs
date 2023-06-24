@@ -14,13 +14,11 @@ use struct_into::into_impl_body;
 
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
     let container = ContainerData::from_input(&input)?;
-    let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
-
     match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
             let ident = container.ident;
-            let body = into_impl_body(&data, &attributes)?;
+            let body = into_impl_body(&data, &container.attributes)?;
             let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
 
             Ok(quote! {
@@ -38,13 +36,11 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     let container = ContainerData::from_input(&input)?;
-    let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
-
     match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => {
             let ident = container.ident;
-            let body = from_impl_body(&data, &attributes)?;
+            let body = from_impl_body(&data, &container.attributes)?;
             let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
 
             Ok(quote! {
