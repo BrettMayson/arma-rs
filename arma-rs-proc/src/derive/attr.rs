@@ -8,20 +8,17 @@ pub struct ContainerAttributes {
     pub default: bool,
 }
 
-#[allow(clippy::derivable_impls)]
-impl Default for ContainerAttributes {
+impl ContainerAttributes {
+    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+        let nested_metas = combine_attrs(attrs)?;
+        Self::default().update_from_metas(&nested_metas)
+    }
+
     fn default() -> Self {
         Self {
             transparent: false,
             default: false,
         }
-    }
-}
-
-impl ContainerAttributes {
-    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let nested_metas = combine_attrs(attrs)?;
-        Self::default().update_from_metas(&nested_metas)
     }
 
     fn update_from_metas(mut self, metas: &[syn::Meta]) -> Result<Self> {
