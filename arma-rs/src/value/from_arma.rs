@@ -114,14 +114,21 @@ macro_rules! impl_from_arma_number {
         $(
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, FromArmaError> {
+                    fn string_to_option(s: &str) -> Option<&str> {
+                        match s.is_empty() {
+                            true => None,
+                            _ => Some(s),
+                        }
+                    }
+
                     if s.contains("e") {
                         // parse exponential notation
                         let mut parts = s.split('e');
-                        let base = match parts.next() {
+                        let base = match string_to_option(parts.next().unwrap()) {
                             Some(s) => s.parse::<f64>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))?,
                             None => return Err(FromArmaError::NumberMissingBase),
                         };
-                        let exp = match parts.next() {
+                        let exp = match string_to_option(parts.next().unwrap()) {
                             Some(s) => s.parse::<i32>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))?,
                             None => return Err(FromArmaError::NumberMissingExponent),
                         };
@@ -253,14 +260,43 @@ mod tests {
             (String::from("hello"), String::from("world")),
             <(String, String)>::from_arma(r#"[hello, "world"]"#.to_string()).unwrap()
         );
-        assert_eq!(
-            (String::from("hello"), String::from("world]")),
-            <(String, String)>::from_arma(r#"[hello, "world]"]"#.to_string()).unwrap()
-        );
-        assert!(<(String, i32)>::from_arma(r#"["hello", 123"#.to_string()).is_err());
-        assert!(<(String, i32)>::from_arma(r#""hello", 123"#.to_string()).is_err());
-        assert!(<(String, i32)>::from_arma(r#"["hello"]"#.to_string()).is_err());
-        assert!(<(String, i32)>::from_arma(r#"["hello", 123, 456]"#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_tuple_size_errors() {
+        assert!(matches!(
+            <(String, i32)>::from_arma(r#"[]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 0
+            })
+        ));
+        assert!(matches!(
+            <(String, i32)>::from_arma(r#"["hello"]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 1
+            })
+        ));
+        assert!(matches!(
+            <(String, i32)>::from_arma(r#"["hello", 123, 456]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 3
+            })
+        ));
+    }
+
+    #[test]
+    fn parse_tuple_bracket_errors() {
+        assert!(matches!(
+            <(String, i32)>::from_arma(r#"["hello", 123"#.to_string()),
+            Err(FromArmaError::ArrayMissingBracket(false))
+        ));
+        assert!(matches!(
+            <(String, i32)>::from_arma(r#""hello", 123"#.to_string()),
+            Err(FromArmaError::ArrayMissingBracket(true))
+        ));
     }
 
     #[test]
@@ -358,15 +394,6 @@ mod tests {
     }
 
     #[test]
-    fn parse_vec_tuple() {
-        assert_eq!(
-            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
-            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
-                .unwrap()
-        );
-    }
-
-    #[test]
     fn parse_vec() {
         assert_eq!(
             vec![String::from("hello"), String::from("bye"),],
@@ -376,8 +403,27 @@ mod tests {
             vec![String::from("hello"), String::from("world")],
             <Vec<String>>::from_arma(r#"[hello, "world"]"#.to_string()).unwrap()
         );
-        assert!(<Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()).is_err());
-        assert!(<Vec<String>>::from_arma(r#"["hello","bye""#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_vec_bracket_errors() {
+        assert!(matches!(
+            <Vec<String>>::from_arma(r#"["hello","bye""#.to_string()),
+            Err(FromArmaError::ArrayMissingBracket(false))
+        ));
+        assert!(matches!(
+            <Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()),
+            Err(FromArmaError::ArrayMissingBracket(true))
+        ));
+    }
+
+    #[test]
+    fn parse_vec_tuple() {
+        assert_eq!(
+            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
+            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
+                .unwrap()
+        );
     }
 
     #[test]
@@ -386,8 +432,31 @@ mod tests {
             vec![String::from("hello"), String::from("bye"),],
             <[String; 2]>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
         );
-        assert!(<[String; 2]>::from_arma(r#"["hello"]"#.to_string()).is_err());
-        assert!(<[String; 2]>::from_arma(r#"["hello","bye","world"]"#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_slice_size_errors() {
+        assert!(matches!(
+            <[String; 2]>::from_arma(r#"[]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 0
+            })
+        ));
+        assert!(matches!(
+            <[String; 2]>::from_arma(r#"["hello"]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 1
+            })
+        ));
+        assert!(matches!(
+            <[String; 2]>::from_arma(r#"["hello","bye","world"]"#.to_string()),
+            Err(FromArmaError::SizeMismatch {
+                expected: 2,
+                actual: 3
+            })
+        ));
     }
 
     #[test]
@@ -410,8 +479,18 @@ mod tests {
             1_227_700,
             <u32>::from_arma(r#"1.2277e+006"#.to_string()).unwrap()
         );
-        assert!(<u32>::from_arma(r#"e-10"#.to_string()).is_err());
-        assert!(<u32>::from_arma(r#"1.0e"#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_exponential_errors() {
+        assert!(matches!(
+            <u32>::from_arma(r#"e-10"#.to_string()),
+            Err(FromArmaError::NumberMissingBase)
+        ));
+        assert!(matches!(
+            <u32>::from_arma(r#"1.0e"#.to_string()),
+            Err(FromArmaError::NumberMissingExponent)
+        ));
     }
 
     #[test]
