@@ -16,7 +16,10 @@ fn split_array(s: &str) -> Vec<String> {
             part.push(c);
         }
     }
-    parts.push(part.trim().to_string());
+    let part = part.trim().to_string();
+    if !part.is_empty() {
+        parts.push(part);
+    }
     parts
 }
 
@@ -154,7 +157,7 @@ macro_rules! impl_from_arma_tuple {
                 }
                 let mut parts_iter = parts.iter();
                 Ok(($(
-                    $t::from_arma(parts_iter.next().unwrap().trim().to_string())?
+                    $t::from_arma(parts_iter.next().unwrap().to_string())?
                 ),*))
             }
         }
@@ -198,15 +201,10 @@ where
             .strip_suffix(']')
             .ok_or(FromArmaError::ArrayMissingBracket(false))?;
         let parts = split_array(source);
-        if parts.len() == 1 && parts[0].is_empty() {
-            return Ok(Self::new());
-        }
-        let parts_iter = parts.iter();
-        let mut ret = Self::new();
-        for n in parts_iter {
-            ret.push(T::from_arma(n.trim().to_string())?);
-        }
-        Ok(ret)
+        parts.iter().try_fold(Self::new(), |mut acc, p| {
+            acc.push(T::from_arma(p.to_string())?);
+            Ok(acc)
+        })
     }
 }
 
