@@ -35,6 +35,10 @@ pub enum FromArmaError {
 
     /// Missing array/tuple bracket
     ArrayMissingBracket(bool),
+    /// Missing field in map
+    MapMissingField(String),
+    /// Unknown field in map
+    MapUnknownField(String),
     /// Collection size mismatch
     SizeMismatch {
         /// Expected size
@@ -42,8 +46,6 @@ pub enum FromArmaError {
         /// Actual size
         actual: usize,
     },
-    /// Missing field in map
-    MapMissingField(String),
 
     /// Custom error message
     Custom(String),
@@ -64,6 +66,7 @@ impl ToString for FromArmaError {
                 format!("expected {expected} elements, got {actual}")
             }
             Self::MapMissingField(s) => format!("missing field: {s}"),
+            Self::MapUnknownField(s) => format!("unknown field: {s}"),
             Self::Custom(s) => s.clone(),
         }
     }

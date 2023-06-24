@@ -46,39 +46,38 @@ fn map_struct(
         })
     } else {
         let names = fields.names();
-
-        if attributes.default {
-            Ok(quote! {
-                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-
-                let mut result = Self::default();
-                #(if let Some(value) = values.get(#names) {
-                    result.#idents = arma_rs::FromArma::from_arma(value.clone())?;
-                })*
-                Ok(result)
-            })
-        } else {
-            Ok(quote! {
-                let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-
-                let len = values.len();
-                if len != #count {
-                    return Err(arma_rs::FromArmaError::SizeMismatch {
-                        expected: #count,
-                        actual: len,
-                    })
+        let values = quote! {
+            let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+            for value in values.keys() {
+                if ![#(#names),*].contains(&value.as_str()) {
+                    return Err(arma_rs::FromArmaError::MapUnknownField(value.clone()));
                 }
+            }
+        };
+
+        Ok(match attributes.default {
+            true => quote! {
+                #values
+
+                let default = Self::default();
+                Ok(Self {
+                    #(#idents: match values.get(#names) {
+                        Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
+                        None => default.#idents,
+                    }),*
+                })
+            },
+            false => quote! {
+                #values
 
                 Ok(Self {
                     #(#idents: match values.get(#names) {
                         Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
-                        None => return Err(arma_rs::FromArmaError::MapMissingField(
-                            format!("Missing field: {}", #names)
-                        )),
+                        None => return Err(arma_rs::FromArmaError::MapMissingField(#names.to_string())),
                     }),*
                 })
-            })
-        }
+            },
+        })
     }
 }
 
