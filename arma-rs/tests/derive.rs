@@ -55,7 +55,7 @@ mod derive_errors {
     }
 
     #[test]
-    fn map_key_name() {
+    fn map_field_name() {
         #[derive(FromArma, Debug, PartialEq)]
         pub struct DeriveTest {
             name: String,
