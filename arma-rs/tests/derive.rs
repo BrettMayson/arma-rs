@@ -1,5 +1,4 @@
 #[test]
-#[ignore]
 fn derive_compile() {
     let tests = trybuild::TestCases::new();
     tests.compile_fail("tests/derive/*fail*.rs");

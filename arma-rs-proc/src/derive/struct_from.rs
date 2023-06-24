@@ -21,6 +21,7 @@ fn map_struct(
     attributes: &ContainerAttributes,
 ) -> Result<TokenStream> {
     let idents = fields.idents();
+    let names = fields.names();
     let count = fields.len();
 
     if attributes.transparent {
@@ -39,46 +40,44 @@ fn map_struct(
         }
 
         let ident = idents[0];
-        Ok(quote! {
+        return Ok(quote! {
             Ok(Self {
                 #ident: arma_rs::FromArma::from_arma(source)?,
             })
-        })
-    } else {
-        let names = fields.names();
-        let values = quote! {
-            let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-            for value in values.keys() {
-                if ![#(#names),*].contains(&value.as_str()) {
-                    return Err(arma_rs::FromArmaError::MapUnknownField(value.clone()));
-                }
-            }
-        };
-
-        Ok(match attributes.default {
-            true => quote! {
-                #values
-
-                let default = Self::default();
-                Ok(Self {
-                    #(#idents: match values.get(#names) {
-                        Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
-                        None => default.#idents,
-                    }),*
-                })
-            },
-            false => quote! {
-                #values
-
-                Ok(Self {
-                    #(#idents: match values.get(#names) {
-                        Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
-                        None => return Err(arma_rs::FromArmaError::MapMissingField(#names.to_string())),
-                    }),*
-                })
-            },
-        })
+        });
     }
+
+    let values = quote! {
+        let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
+        for value in values.keys() {
+            if ![#(#names),*].contains(&value.as_str()) {
+                return Err(arma_rs::FromArmaError::MapUnknownField(value.clone()));
+            }
+        }
+    };
+    Ok(match attributes.default {
+        true => quote! {
+            #values
+
+            let default = Self::default();
+            Ok(Self {
+                #(#idents: match values.get(#names) {
+                    Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
+                    None => default.#idents,
+                }),*
+            })
+        },
+        false => quote! {
+            #values
+
+            Ok(Self {
+                #(#idents: match values.get(#names) {
+                    Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
+                    None => return Err(arma_rs::FromArmaError::MapMissingField(#names.to_string())),
+                }),*
+            })
+        },
+    })
 }
 
 fn tuple_struct(
