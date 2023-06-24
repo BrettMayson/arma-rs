@@ -10,7 +10,7 @@ mod derive_errors {
     use arma_rs_proc::FromArma;
 
     #[test]
-    fn map() {
+    fn map_input_size() {
         #[derive(FromArma, Debug, PartialEq)]
         pub struct DeriveTest {
             name: String,
@@ -55,7 +55,26 @@ mod derive_errors {
     }
 
     #[test]
-    fn tuple() {
+    fn map_key_name() {
+        #[derive(FromArma, Debug, PartialEq)]
+        pub struct DeriveTest {
+            name: String,
+        }
+
+        let deserialized = Value::Array(vec![Value::Array(vec![
+            Value::String(String::from("wrong-name")),
+            Value::String(String::from("test")),
+        ])]);
+        let result = DeriveTest::from_arma(deserialized.to_string());
+        assert!(
+            matches!(result, Err(FromArmaError::MapMissingField(_))),
+            "Expected MapMissingField error, got {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn tuple_input_size() {
         #[derive(FromArma, Debug, PartialEq)]
         pub struct DeriveTest(String, u32);
 

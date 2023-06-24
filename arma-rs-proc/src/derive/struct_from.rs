@@ -70,7 +70,12 @@ fn map_struct(
                 }
 
                 Ok(Self {
-                    #(#idents: arma_rs::FromArma::from_arma(values[#names].clone())?),*
+                    #(#idents: match values.get(#names) {
+                        Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
+                        None => return Err(arma_rs::FromArmaError::MapMissingField(
+                            format!("Missing field: {}", #names)
+                        )),
+                    }),*
                 })
             })
         }

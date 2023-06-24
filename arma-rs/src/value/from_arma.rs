@@ -42,6 +42,8 @@ pub enum FromArmaError {
         /// Actual size
         actual: usize,
     },
+    /// Missing field in map
+    MapMissingField(String),
 
     /// Custom error message
     Custom(String),
@@ -61,6 +63,7 @@ impl ToString for FromArmaError {
             Self::SizeMismatch { expected, actual } => {
                 format!("expected {expected} elements, got {actual}")
             }
+            Self::MapMissingField(s) => format!("missing field: {s}"),
             Self::Custom(s) => s.clone(),
         }
     }
