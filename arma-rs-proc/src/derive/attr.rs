@@ -10,7 +10,8 @@ pub struct ContainerAttributes {
 
 impl ContainerAttributes {
     pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let nested_metas = combine_attrs(attrs)?;
+        let nested_metas = collect_nested_metas(attrs)?;
+        check_duplicate_metas(&nested_metas)?;
         Self::default().update_from_metas(&nested_metas)
     }
 
@@ -42,23 +43,27 @@ impl ContainerAttributes {
     }
 }
 
-fn combine_attrs(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
-    let mut combined = Vec::new();
-    for attr in filter_attrs(attrs) {
-        combined.extend(parse_nested_meta(attr)?);
-    }
-
-    let mut unique_attr_paths = HashSet::new();
-    for nested in &combined {
-        let path = path_to_string(nested.path());
-        if !unique_attr_paths.insert(path.clone()) {
-            return Err(Error::new_spanned(
-                nested,
+fn check_duplicate_metas(attrs: &[syn::Meta]) -> Result<()> {
+    let mut seen = HashSet::new();
+    attrs.iter().try_for_each(|attr| {
+        let path = path_to_string(attr.path());
+        if !seen.insert(path.clone()) {
+            Err(Error::new_spanned(
+                attr,
                 format!("duplicate attribute `{path}`"),
-            ));
+            ))
+        } else {
+            Ok(())
         }
-    }
-    Ok(combined)
+    })
+}
+
+fn collect_nested_metas(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
+    filter_attrs(attrs).try_fold(Vec::new(), |mut acc, attr| {
+        let nested_metas = parse_nested_meta(attr)?;
+        acc.extend(nested_metas);
+        Ok(acc)
+    })
 }
 
 fn filter_attrs(attrs: &[syn::Attribute]) -> impl Iterator<Item = &syn::Attribute> {
