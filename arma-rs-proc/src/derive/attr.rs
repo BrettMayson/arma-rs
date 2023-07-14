@@ -2,34 +2,35 @@ use std::collections::HashSet;
 
 use syn::{Error, Result};
 
-#[derive(PartialEq, Eq)]
+pub trait FromMetas: Sized {
+    fn parse_meta(metas: &[syn::Meta]) -> Result<Self>;
+}
+
+pub fn parse_attributes<T: FromMetas>(attrs: &[syn::Attribute]) -> Result<T> {
+    let nested_metas = collect_nested_metas(attrs)?;
+    check_duplicate_metas(&nested_metas)?;
+    T::parse_meta(&nested_metas)
+}
+
 pub struct ContainerAttributes {
     pub transparent: bool,
     pub default: bool,
 }
 
-impl ContainerAttributes {
-    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let nested_metas = collect_nested_metas(attrs)?;
-        check_duplicate_metas(&nested_metas)?;
-        Self::default().update_from_metas(&nested_metas)
-    }
-
-    fn default() -> Self {
-        Self {
+impl FromMetas for ContainerAttributes {
+    fn parse_meta(metas: &[syn::Meta]) -> Result<Self> {
+        let mut result = Self {
             transparent: false,
             default: false,
-        }
-    }
+        };
 
-    fn update_from_metas(mut self, metas: &[syn::Meta]) -> Result<Self> {
         for meta in metas {
             match path_to_string(meta.path()).as_str() {
                 "transparent" => {
-                    self.transparent = true;
+                    result.transparent = true;
                 }
                 "default" => {
-                    self.default = true;
+                    result.default = true;
                 }
                 unknown => {
                     return Err(Error::new_spanned(
@@ -39,7 +40,32 @@ impl ContainerAttributes {
                 }
             }
         }
-        Ok(self)
+        Ok(result)
+    }
+}
+
+pub struct FieldAttributes {
+    pub default: bool,
+}
+
+impl FromMetas for FieldAttributes {
+    fn parse_meta(metas: &[syn::Meta]) -> Result<Self> {
+        let mut result = Self { default: false };
+
+        for meta in metas {
+            match path_to_string(meta.path()).as_str() {
+                "default" => {
+                    result.default = true;
+                }
+                unknown => {
+                    return Err(Error::new_spanned(
+                        meta,
+                        format!("unknown attribute `{unknown}`"),
+                    ))
+                }
+            }
+        }
+        Ok(result)
     }
 }
 
@@ -58,15 +84,14 @@ fn check_duplicate_metas(attrs: &[syn::Meta]) -> Result<()> {
 }
 
 fn collect_nested_metas(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
-    filter_attrs(attrs).try_fold(Vec::new(), |mut acc, attr| {
-        let nested_metas = parse_nested_meta(attr)?;
-        acc.extend(nested_metas);
-        Ok(acc)
-    })
-}
-
-fn filter_attrs(attrs: &[syn::Attribute]) -> impl Iterator<Item = &syn::Attribute> {
-    attrs.iter().filter(move |attr| attr.path.is_ident("arma"))
+    attrs
+        .iter()
+        .filter(move |attr| attr.path.is_ident("arma"))
+        .try_fold(Vec::new(), |mut acc, attr| {
+            let nested_metas = parse_nested_meta(attr)?;
+            acc.extend(nested_metas);
+            Ok(acc)
+        })
 }
 
 fn parse_nested_meta(meta: &syn::Attribute) -> Result<Vec<syn::Meta>> {

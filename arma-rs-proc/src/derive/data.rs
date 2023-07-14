@@ -1,6 +1,6 @@
 use syn::Result;
 
-use super::ContainerAttributes;
+use super::{parse_attributes, ContainerAttributes, FieldAttributes};
 
 pub struct ContainerData {
     pub attributes: ContainerAttributes,
@@ -25,12 +25,14 @@ pub enum DataStruct {
 pub struct Fields<T>(Vec<T>);
 
 pub struct FieldNamed {
+    pub attributes: FieldAttributes,
     pub ident: syn::Ident,
     pub name: String,
     pub ty: syn::Type,
 }
 
 pub struct FieldUnnamed {
+    pub attributes: FieldAttributes,
     pub index: syn::Index,
     pub ty: syn::Type,
 }
@@ -38,12 +40,12 @@ pub struct FieldUnnamed {
 impl ContainerData {
     pub fn from_input(input: &syn::DeriveInput) -> Result<Self> {
         let data = match input.data.clone() {
-            syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)),
+            syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)?),
             syn::Data::Enum(_) => Data::Enum,
             syn::Data::Union(_) => Data::Union,
         };
         Ok(Self {
-            attributes: ContainerAttributes::from_attrs(&input.attrs)?,
+            attributes: parse_attributes(&input.attrs)?,
             ident: input.ident.clone(),
             data,
             generics: input.generics.clone(),
@@ -52,52 +54,63 @@ impl ContainerData {
 }
 
 impl DataStruct {
-    fn new(data: syn::DataStruct) -> Self {
+    fn new(data: syn::DataStruct) -> Result<Self> {
         match data.fields {
-            syn::Fields::Unit => Self::Unit,
+            syn::Fields::Unit => Ok(Self::Unit),
             syn::Fields::Named(fields) => {
                 if fields.named.is_empty() {
-                    return Self::Unit;
+                    return Ok(Self::Unit);
                 }
 
-                Self::Map(Fields(
-                    fields.named.into_iter().map(FieldNamed::new).collect(),
-                ))
+                let fields = fields
+                    .named
+                    .into_iter()
+                    .map(FieldNamed::new)
+                    .collect::<Result<_>>()?;
+                Ok(Self::Map(Fields(fields)))
             }
             syn::Fields::Unnamed(fields) => {
-                match fields.unnamed.len() {
-                    0 => return Self::Unit,
-                    1 => return Self::NewType(FieldUnnamed::new(fields.unnamed[0].clone(), 0)),
-                    _ => (),
+                if fields.unnamed.is_empty() {
+                    return Ok(Self::Unit);
                 }
 
-                Self::Tuple(Fields(
-                    fields
+                if fields.unnamed.len() == 1 {
+                    let field = FieldUnnamed::new(fields.unnamed[0].clone(), 0)?;
+                    Ok(Self::NewType(field))
+                } else {
+                    let fields = fields
                         .unnamed
                         .into_iter()
                         .enumerate()
                         .map(|(i, f)| FieldUnnamed::new(f, i))
-                        .collect(),
-                ))
+                        .collect::<Result<_>>()?;
+                    Ok(Self::Tuple(Fields(fields)))
+                }
             }
         }
     }
 }
 
 impl FieldNamed {
-    fn new(field: syn::Field) -> Self {
+    fn new(field: syn::Field) -> Result<Self> {
         let ident = field.ident.unwrap();
         let name = ident.to_string();
-        let ty = field.ty;
-        Self { ident, name, ty }
+        Ok(Self {
+            attributes: parse_attributes(&field.attrs)?,
+            ident,
+            name,
+            ty: field.ty,
+        })
     }
 }
 
 impl FieldUnnamed {
-    fn new(field: syn::Field, index: usize) -> Self {
-        let index = syn::Index::from(index);
-        let ty = field.ty;
-        Self { index, ty }
+    fn new(field: syn::Field, index: usize) -> Result<Self> {
+        Ok(Self {
+            attributes: parse_attributes(&field.attrs)?,
+            index: syn::Index::from(index),
+            ty: field.ty,
+        })
     }
 }
 
