@@ -6,6 +6,6 @@ struct MyType;
 struct DeriveTest(MyType);
 
 #[derive(IntoArma, FromArma)]
-struct Unit<T>(T);
+struct Generic<T>(T);
 
 fn main() {}

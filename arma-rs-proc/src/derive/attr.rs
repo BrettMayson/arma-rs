@@ -114,7 +114,7 @@ fn parse_nested_meta(meta: &syn::Attribute) -> Result<Vec<syn::Meta>> {
 fn path_to_string(path: &syn::Path) -> String {
     path.segments
         .iter()
-        .map(|segment| segment.ident.to_string())
+        .map(|s| s.ident.to_string())
         .collect::<Vec<_>>()
         .join("::")
 }

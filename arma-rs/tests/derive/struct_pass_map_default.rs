@@ -3,12 +3,12 @@ use arma_rs_proc::FromArma;
 
 #[derive(FromArma, Debug, PartialEq)]
 #[arma(default)]
-struct DeriveTest {
+struct Container {
     first: String,
     second: u32,
 }
 
-impl Default for DeriveTest {
+impl Default for Container {
     fn default() -> Self {
         Self {
             first: String::from("hello"),
@@ -17,11 +17,18 @@ impl Default for DeriveTest {
     }
 }
 
+#[derive(FromArma, Debug, PartialEq)]
+struct Field {
+    first: String,
+    #[arma(default)]
+    second: u32,
+}
+
 fn main() {
     let input = Value::Array(vec![]);
     assert_eq!(
-        DeriveTest::from_arma(input.to_string()).unwrap(),
-        DeriveTest::default()
+        Container::from_arma(input.to_string()).unwrap(),
+        Container::default()
     );
 
     let input = Value::Array(vec![Value::Array(vec![
@@ -29,10 +36,22 @@ fn main() {
         Value::String(String::from("bye")),
     ])]);
     assert_eq!(
-        DeriveTest::from_arma(input.to_string()).unwrap(),
-        DeriveTest {
+        Container::from_arma(input.to_string()).unwrap(),
+        Container {
             first: String::from("bye"),
             ..Default::default()
+        }
+    );
+
+    let input = Value::Array(vec![Value::Array(vec![
+        Value::String(String::from("first")),
+        Value::String(String::from("bye")),
+    ])]);
+    assert_eq!(
+        Field::from_arma(input.to_string()).unwrap(),
+        Field {
+            first: String::from("bye"),
+            second: Default::default(),
         }
     );
 }

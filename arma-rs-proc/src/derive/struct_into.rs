@@ -16,12 +16,7 @@ pub fn into_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> Re
     }
 }
 
-fn map_struct(
-    fields: &Fields<FieldNamed>,
-    attributes: &ContainerAttributes,
-) -> Result<TokenStream> {
-    let idents = fields.idents();
-
+fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
     if attributes.transparent {
         if fields.len() > 1 {
             return Err(Error::new(
@@ -30,27 +25,22 @@ fn map_struct(
             ));
         }
 
-        let ident = idents[0];
-        Ok(quote! {
+        let ident = &fields.first().unwrap().ident;
+        return Ok(quote! {
             self.#ident.to_arma()
-        })
-    } else {
-        let names = fields.names();
-
-        Ok(quote! {
-            std::collections::HashMap::<String, arma_rs::Value>::from([#(
-                (#names.to_string(), self.#idents.to_arma()),
-            )*]).to_arma()
-        })
+        });
     }
+
+    let (idents, names): (Vec<_>, Vec<_>) = fields.iter().map(|f| (&f.ident, &f.name)).unzip();
+    Ok(quote! {
+        std::collections::HashMap::<String, arma_rs::Value>::from([#(
+            (#names.to_string(), self.#idents.to_arma()),
+        )*]).to_arma()
+    })
 }
 
-fn tuple_struct(
-    fields: &Fields<FieldUnnamed>,
-    _attributes: &ContainerAttributes,
-) -> Result<TokenStream> {
-    let indexes = fields.indexes();
-
+fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> Result<TokenStream> {
+    let indexes = fields.iter().map(|f| &f.index);
     Ok(quote! {
         Vec::<arma_rs::Value>::from([#(
             self.#indexes.to_arma(),

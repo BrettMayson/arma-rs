@@ -16,30 +16,24 @@ pub fn from_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> Re
     }
 }
 
-fn map_struct(
-    fields: &Fields<FieldNamed>,
-    attributes: &ContainerAttributes,
-) -> Result<TokenStream> {
-    let idents = fields.idents();
-    let names = fields.names();
-    let count = fields.len();
-
+fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
     if attributes.transparent {
-        if count > 1 {
+        if fields.len() > 1 {
             return Err(Error::new(
                 Span::call_site(),
                 "#[arma(transparent)] structs must have exactly one field",
             ));
         }
 
-        if attributes.default {
+        let field = fields.first().unwrap();
+        if attributes.default || field.attributes.default {
             return Err(Error::new(
                 Span::call_site(),
                 "#[arma(transparent)] and #[arma(default)] cannot be used together",
             ));
         }
 
-        let ident = idents[0];
+        let ident = &field.ident;
         return Ok(quote! {
             Ok(Self {
                 #ident: arma_rs::FromArma::from_arma(source)?,
@@ -47,53 +41,60 @@ fn map_struct(
         });
     }
 
-    let values = quote! {
-        let values: std::collections::HashMap<String, String> = arma_rs::FromArma::from_arma(source)?;
-        for value in values.keys() {
-            if ![#(#names),*].contains(&value.as_str()) {
-                return Err(arma_rs::FromArmaError::MapUnknownField(value.clone()));
+    let mut setup = TokenStream::new();
+    setup.extend(quote! {
+        let mut passed_values: std::collections::HashMap<String, String> =
+            arma_rs::FromArma::from_arma(source)?;
+    });
+    if attributes.default {
+        setup.extend(quote! {
+            let container_default = Self::default();
+        });
+    };
+
+    let field_assignments = fields.iter().map(|field| {
+        let (ident, name, ty) = (&field.ident, &field.name, &field.ty);
+        let none_match = if field.attributes.default {
+            quote!(#ty::default())
+        } else if attributes.default {
+            quote!(container_default.#ident)
+        } else {
+            quote!(return Err(arma_rs::FromArmaError::MapMissingField(#name.to_string())))
+        };
+
+        quote! {
+            #ident: match passed_values.remove(#name) {
+                Some(value) => arma_rs::FromArma::from_arma(value)?,
+                None => #none_match,
             }
         }
+    });
+
+    let check_unknown = quote! {
+        if let Some(unknown) = passed_values.keys().next() {
+            return Err(arma_rs::FromArmaError::MapUnknownField(unknown.clone()));
+        }
     };
-    Ok(match attributes.default {
-        true => quote! {
-            #values
+    Ok(quote! {
+        #setup
+        let result = Self {
+            #(#field_assignments),*
+        };
 
-            let default = Self::default();
-            Ok(Self {
-                #(#idents: match values.get(#names) {
-                    Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
-                    None => default.#idents,
-                }),*
-            })
-        },
-        false => quote! {
-            #values
-
-            Ok(Self {
-                #(#idents: match values.get(#names) {
-                    Some(value) => arma_rs::FromArma::from_arma(value.clone())?,
-                    None => return Err(arma_rs::FromArmaError::MapMissingField(#names.to_string())),
-                }),*
-            })
-        },
+        #check_unknown
+        Ok(result)
     })
 }
 
-fn tuple_struct(
-    fields: &Fields<FieldUnnamed>,
-    attributes: &ContainerAttributes,
-) -> Result<TokenStream> {
-    let indexes = fields.indexes();
-    let types = fields.types();
-
-    if attributes.default {
+fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> Result<TokenStream> {
+    if attributes.default || fields.iter().any(|f| f.attributes.default) {
         return Err(Error::new(
             Span::call_site(),
             "#[arma(default)] can only be used on structs with named fields",
         ));
     }
 
+    let (indexes, types): (Vec<_>, Vec<_>) = fields.iter().map(|f| (&f.index, &f.ty)).unzip();
     Ok(quote! {
         let values: (#(
             #types,
@@ -104,8 +105,8 @@ fn tuple_struct(
     })
 }
 
-fn newtype_struct(_field: &FieldUnnamed, attributes: &ContainerAttributes) -> Result<TokenStream> {
-    if attributes.default {
+fn newtype_struct(field: &FieldUnnamed, attributes: &ContainerAttributes) -> Result<TokenStream> {
+    if attributes.default || field.attributes.default {
         return Err(Error::new(
             Span::call_site(),
             "#[arma(default)] can only be used on structs with named fields",

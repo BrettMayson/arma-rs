@@ -33,3 +33,9 @@ error: duplicate attribute `duplicate::path`
    |
 25 | #[arma(duplicate::path)]
    |        ^^^^^^^^^^^^^^^
+
+error: duplicate attribute `duplicate`
+  --> tests/derive/struct_fail_attr.rs:30:23
+   |
+30 |     #[arma(duplicate, duplicate)]
+   |                       ^^^^^^^^^

@@ -11,7 +11,7 @@ use attr::*;
 use data::*;
 
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
-    let container = ContainerData::from_input(&input)?;
+    let container = ContainerData::from_input(input)?;
     let body = match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => struct_into::into_impl_body(&data, &container.attributes),
@@ -31,7 +31,7 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
-    let container = ContainerData::from_input(&input)?;
+    let container = ContainerData::from_input(input)?;
     let body = match container.data {
         Data::Enum => Err(Error::new(Span::call_site(), "Enums aren't supported")),
         Data::Struct(data) => struct_from::from_impl_body(&data, &container.attributes),

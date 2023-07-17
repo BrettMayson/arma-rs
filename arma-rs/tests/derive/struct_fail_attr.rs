@@ -25,4 +25,10 @@ struct Duplicate;
 #[arma(duplicate::path)]
 struct DuplicatePath;
 
+#[derive(IntoArma, FromArma)]
+struct FieldDuplicate {
+    #[arma(duplicate, duplicate)]
+    test: u32,
+}
+
 fn main() {}

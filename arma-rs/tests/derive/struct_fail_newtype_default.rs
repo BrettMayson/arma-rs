@@ -2,6 +2,9 @@ use arma_rs_proc::FromArma;
 
 #[derive(FromArma)]
 #[arma(default)]
-struct DeriveTest(u32);
+struct Container(u32);
+
+#[derive(FromArma)]
+struct Field(#[arma(default)] u32);
 
 fn main() {}
