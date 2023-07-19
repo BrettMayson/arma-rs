@@ -1,9 +1,6 @@
 use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma)]
-enum DeriveTest {
-    A,
-    B,
-}
+enum DeriveTest {}
 
 fn main() {}

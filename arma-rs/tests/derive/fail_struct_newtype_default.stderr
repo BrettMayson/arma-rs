@@ -1,15 +1,15 @@
-error: #[arma(transparent)] and #[arma(default)] cannot be used together
- --> tests/derive/struct_fail_map_transparent_default.rs:3:10
+error: #[arma(default)] can only be used on structs with named fields
+ --> tests/derive/fail_struct_newtype_default.rs:3:10
   |
 3 | #[derive(FromArma)]
   |          ^^^^^^^^
   |
   = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error: #[arma(transparent)] and #[arma(default)] cannot be used together
- --> tests/derive/struct_fail_map_transparent_default.rs:9:10
+error: #[arma(default)] can only be used on structs with named fields
+ --> tests/derive/fail_struct_newtype_default.rs:7:10
   |
-9 | #[derive(FromArma)]
+7 | #[derive(FromArma)]
   |          ^^^^^^^^
   |
   = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)

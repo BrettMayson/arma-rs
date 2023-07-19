@@ -24,7 +24,7 @@ fn split_array(s: &str) -> Vec<String> {
 }
 
 /// Error type for [`FromArma`]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum FromArmaError {
     /// Invalid [`crate::Value`]
     ValueInvalid(String),
@@ -35,7 +35,6 @@ pub enum FromArmaError {
     NumberMissingBase,
     /// Missing exponent in exponential notation
     NumberMissingExponent,
-
     /// Missing array/tuple bracket
     ArrayMissingBracket(bool),
     /// Missing field in map

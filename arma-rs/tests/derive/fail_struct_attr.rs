@@ -21,9 +21,10 @@ struct UnknownPath;
 struct Duplicate;
 
 #[derive(IntoArma, FromArma)]
-#[arma(duplicate::path)]
-#[arma(duplicate::path)]
-struct DuplicatePath;
+struct FieldUnknown {
+    #[arma(unknown)]
+    test: u32,
+}
 
 #[derive(IntoArma, FromArma)]
 struct FieldDuplicate {

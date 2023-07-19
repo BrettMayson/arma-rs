@@ -1,16 +1,16 @@
 use arma_rs_proc::FromArma;
 
 #[derive(FromArma)]
-#[arma(default, transparent)]
+#[arma(transparent, default)]
 struct Container {
-    name: String,
+    first: String,
 }
 
 #[derive(FromArma)]
 #[arma(transparent)]
 struct Field {
     #[arma(default)]
-    name: String,
+    first: String,
 }
 
 fn main() {}

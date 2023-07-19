@@ -1,80 +1,203 @@
-#[test]
-fn derive_compile() {
-    let tests = trybuild::TestCases::new();
-    tests.compile_fail("tests/derive/*fail*.rs");
-    tests.pass("tests/derive/*pass*.rs");
-}
-
-mod derive_errors {
-    use arma_rs::{FromArma, FromArmaError, Value};
-    use arma_rs_proc::FromArma;
+mod derive {
+    use arma_rs::{FromArma, FromArmaError, IntoArma, Value};
+    use arma_rs_proc::{FromArma, IntoArma};
 
     #[test]
-    fn map_missing_field() {
-        #[derive(FromArma, Debug, PartialEq)]
-        pub struct DeriveTest {
-            pub test: String,
-        }
-
-        let input = Value::Array(vec![]);
-        let result = DeriveTest::from_arma(input.to_string());
-        assert!(
-            matches!(
-                result,
-                Err(FromArmaError::MapMissingField(ref field)) if field == "test"
-            ),
-            "Expected MapMissingField error, got {:?}",
-            result
-        );
+    fn compile() {
+        let tests = trybuild::TestCases::new();
+        tests.compile_fail("tests/derive/*fail*.rs");
+        tests.pass("tests/derive/*pass*.rs");
     }
 
-    #[test]
-    fn map_unknown_field() {
-        #[derive(FromArma, Debug, PartialEq)]
-        pub struct DeriveTest {
-            pub test: String,
+    mod map {
+        use super::*;
+
+        #[test]
+        fn transparent() {
+            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+            #[arma(transparent)]
+            struct DeriveTest {
+                expected: String,
+            }
+
+            let serialized = DeriveTest {
+                expected: "expected".to_string(),
+            };
+            let deserialized = Value::String("expected".to_string());
+            assert_eq!(serialized.to_arma(), deserialized);
+            assert_eq!(
+                DeriveTest::from_arma(deserialized.to_string()),
+                Ok(serialized)
+            );
         }
 
-        let input = Value::Array(vec![Value::Array(vec![
-            Value::String(String::from("unknown")),
-            Value::String(String::from("blabla")),
-        ])]);
-        let result = DeriveTest::from_arma(input.to_string());
-        assert!(
-            matches!(
-                result,
-                Err(FromArmaError::MapUnknownField(ref field)) if field == "unknown"
-            ),
-            "Expected MapUnknownField error, got {:?}",
-            result
-        );
-    }
+        #[test]
+        fn default() {
+            #[derive(FromArma, Default, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest {
+                first: String,
+                second: String,
+            }
 
-    #[test]
-    fn map_default_unknown_field() {
-        #[derive(FromArma, Default, Debug, PartialEq)]
-        pub struct DeriveTest {
-            pub test: String,
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest::default())
+            );
+
+            let input = Value::Array(vec![Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::String("first".to_string()),
+            ])]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    first: "first".to_string(),
+                    ..Default::default()
+                })
+            );
+
+            let input = Value::Array(vec![Value::Array(vec![
+                Value::String("second".to_string()),
+                Value::String("second".to_string()),
+            ])]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    second: "second".to_string(),
+                    ..Default::default()
+                })
+            );
+
+            let input = Value::Array(vec![
+                Value::Array(vec![
+                    Value::String("first".to_string()),
+                    Value::String("first".to_string()),
+                ]),
+                Value::Array(vec![
+                    Value::String("second".to_string()),
+                    Value::String("second".to_string()),
+                ]),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    first: "first".to_string(),
+                    second: "second".to_string()
+                })
+            );
         }
 
-        let input = Value::Array(vec![
-            Value::Array(vec![
-                Value::String(String::from("test")),
-                Value::String(String::from("expected")),
-            ]),
-            Value::Array(vec![
-                Value::String(String::from("unknown")),
-                Value::String(String::from("blabla")),
-            ]),
-        ]);
-        let result = DeriveTest::from_arma(input.to_string());
-        assert!(
-            matches!(
-                result,
-                Err(FromArmaError::MapUnknownField(ref field)) if field == "unknown"
-            ),
-            "Expected MapUnknownField error, got {:?}",
-            result
-        );
+        #[test]
+        fn default_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                first: String,
+                #[arma(default)]
+                second: String,
+            }
+
+            let input = Value::Array(vec![Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::String("first".to_string()),
+            ])]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    first: "first".to_string(),
+                    second: Default::default()
+                })
+            );
+
+            let input = Value::Array(vec![
+                Value::Array(vec![
+                    Value::String("first".to_string()),
+                    Value::String("first".to_string()),
+                ]),
+                Value::Array(vec![
+                    Value::String("second".to_string()),
+                    Value::String("second".to_string()),
+                ]),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    first: "first".to_string(),
+                    second: "second".to_string()
+                })
+            );
+        }
+
+        #[test]
+        fn error_missing() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                _expected: String,
+            }
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(FromArmaError::MapMissingField("_expected".to_string()))
+            );
+        }
+
+        #[test]
+        fn error_unknown() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                _expected: String,
+            }
+
+            let input = Value::Array(vec![
+                Value::Array(vec![
+                    Value::String("_expected".to_string()),
+                    Value::String("_expected".to_string()),
+                ]),
+                Value::Array(vec![
+                    Value::String("unknown".to_string()),
+                    Value::String("unknown".to_string()),
+                ]),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(FromArmaError::MapUnknownField("unknown".to_string()))
+            );
+        }
+
+        #[test]
+        fn default_error_unknown() {
+            #[derive(FromArma, Default, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest {
+                _expected: String,
+            }
+
+            let input = Value::Array(vec![Value::Array(vec![
+                Value::String("unknown".to_string()),
+                Value::String("unknown".to_string()),
+            ])]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(FromArmaError::MapUnknownField("unknown".to_string()))
+            );
+        }
+
+        #[test]
+        fn default_field_error_missing() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                _expected: String,
+                #[arma(default)]
+                _default: String,
+            }
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(FromArmaError::MapMissingField("_expected".to_string()))
+            );
+        }
     }
 }

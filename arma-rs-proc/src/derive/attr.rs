@@ -98,10 +98,9 @@ fn parse_nested_meta(meta: &syn::Attribute) -> Result<Vec<syn::Meta>> {
     fn nested_meta(nested: syn::NestedMeta) -> Result<syn::Meta> {
         match nested {
             syn::NestedMeta::Meta(meta) => Ok(meta),
-            syn::NestedMeta::Lit(_) => Err(Error::new_spanned(
-                nested,
-                "unexpected literal in nested attribute",
-            )),
+            syn::NestedMeta::Lit(_) => {
+                Err(Error::new_spanned(nested, "unexpected literal attribute"))
+            }
         }
     }
 
