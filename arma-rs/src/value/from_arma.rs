@@ -161,10 +161,10 @@ macro_rules! impl_from_arma_tuple {
                         actual: len,
                     });
                 }
-                let mut parts_iter = parts.iter();
-                Ok(($(
-                    $t::from_arma(parts_iter.next().unwrap().to_string())?
-                ),*))
+                let mut parts_iter = parts.into_iter();
+                Ok((
+                    $($t::from_arma(parts_iter.next().unwrap())?),*
+                ))
             }
         }
     };

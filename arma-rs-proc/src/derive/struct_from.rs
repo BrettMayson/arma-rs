@@ -36,15 +36,15 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
         let ident = &field.ident;
         return Ok(quote! {
             Ok(Self {
-                #ident: arma_rs::FromArma::from_arma(source)?,
+                #ident: arma_rs::FromArma::from_arma(input_string)?,
             })
         });
     }
 
     let mut setup = TokenStream::new();
     setup.extend(quote! {
-        let mut passed_values: std::collections::HashMap<String, String> =
-            arma_rs::FromArma::from_arma(source)?;
+        let mut input_values: std::collections::HashMap<String, String> =
+            arma_rs::FromArma::from_arma(input_string)?;
     });
     if attributes.default {
         setup.extend(quote! {
@@ -63,7 +63,7 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
         };
 
         quote! {
-            #ident: match passed_values.remove(#name) {
+            #ident: match input_values.remove(#name) {
                 Some(value) => arma_rs::FromArma::from_arma(value)?,
                 None => #none_match,
             }
@@ -71,7 +71,7 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> Result
     });
 
     let check_unknown = quote! {
-        if let Some(unknown) = passed_values.keys().next() {
+        if let Some(unknown) = input_values.keys().next() {
             return Err(arma_rs::FromArmaError::MapUnknownField(unknown.clone()));
         }
     };
@@ -96,9 +96,9 @@ fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> Re
 
     let (indexes, types): (Vec<_>, Vec<_>) = fields.iter().map(|f| (&f.index, &f.ty)).unzip();
     Ok(quote! {
-        let values: (#(
-            #types,
-        )*) = arma_rs::FromArma::from_arma(source)?;
+        let values: (
+            #(#types),*
+        ) = arma_rs::FromArma::from_arma(input_string)?;
         Ok(Self (#(
             values.#indexes,
         )*))
@@ -114,6 +114,6 @@ fn newtype_struct(field: &FieldUnnamed, attributes: &ContainerAttributes) -> Res
     }
 
     Ok(quote! {
-        Ok(Self (arma_rs::FromArma::from_arma(source)?))
+        Ok(Self (arma_rs::FromArma::from_arma(input_string)?))
     })
 }

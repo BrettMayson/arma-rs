@@ -43,7 +43,7 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     Ok(quote! {
         #[automatically_derived]
         impl #impl_generics arma_rs::FromArma for #ident #ty_generics #where_clause {
-            fn from_arma(source: String) -> Result<Self, arma_rs::FromArmaError> {
+            fn from_arma(input_string: String) -> Result<Self, arma_rs::FromArmaError> {
                 #body
             }
         }
