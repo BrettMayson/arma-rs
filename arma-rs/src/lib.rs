@@ -72,8 +72,8 @@ enum CallbackMessage {
 }
 
 #[cfg(feature = "extension")]
-/// State container that can hold at most one value per type key.
-pub type State = state::Container![Send + Sync];
+/// State TypeMap that can hold at most one value per type key.
+pub type State = state::TypeMap![Send + Sync];
 
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
