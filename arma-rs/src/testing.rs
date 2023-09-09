@@ -168,22 +168,14 @@ impl Extension {
 // Annoying to exist, but necessary to prevent duplicate code in the readme
 #[doc(hidden)]
 pub mod test {
-    use crate::{arma, Extension, Group};
     use crate as arma_rs;
+    use crate::{arma, Extension, Group};
 
     #[arma]
     pub fn init() -> Extension {
         Extension::build()
-            .group(
-                "hello",
-                Group::new()
-                    .command("english", hello::english)
-            )
-            .group(
-                "welcome",
-                Group::new()
-                    .command("english", welcome::english)
-            )
+            .group("hello", Group::new().command("english", hello::english))
+            .group("welcome", Group::new().command("english", welcome::english))
             .group("timer", timer::group())
             .finish()
     }
@@ -201,8 +193,8 @@ pub mod test {
     }
 
     mod timer {
-        use std::{thread, time::Duration};
         use crate::{Context, Group};
+        use std::{thread, time::Duration};
 
         pub fn sleep(ctx: Context, duration: u64, id: String) {
             thread::spawn(move || {

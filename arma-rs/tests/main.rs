@@ -1,5 +1,4 @@
 #[cfg(all(feature = "extension", feature = "call-context"))]
-
 #[cfg(feature = "extension")]
 mod extension {
     use arma_rs::{Context, ContextState, Extension, Group};

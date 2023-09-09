@@ -1,6 +1,5 @@
 #![warn(missing_docs, nonstandard_style)]
-
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
