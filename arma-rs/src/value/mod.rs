@@ -53,12 +53,12 @@ impl Display for Value {
 
 impl FromArma for Value {
     fn from_arma(s: String) -> Result<Self, String> {
-        match s.chars().next().unwrap() {
-            'n' => Ok(Self::Null),
-            't' | 'f' => Ok(Value::Boolean(<bool>::from_arma(s)?)),
-            '0'..='9' | '-' => Ok(Value::Number(<f64>::from_arma(s)?)),
-            '[' => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
-            '"' => Ok(Value::String(<String>::from_arma(s)?)),
+        match s.chars().next() {
+            Some('n') => Ok(Self::Null),
+            Some('t') | Some('f') => Ok(Value::Boolean(<bool>::from_arma(s)?)),
+            Some('0'..='9') | Some('-') => Ok(Value::Number(<f64>::from_arma(s)?)),
+            Some('[') => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
+            Some('"') => Ok(Value::String(<String>::from_arma(s)?)),
             _ => Err(format!("Invalid value: {s}")),
         }
     }

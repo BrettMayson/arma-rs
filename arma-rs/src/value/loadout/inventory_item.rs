@@ -153,12 +153,12 @@ mod tests {
 
     #[test]
     fn from_arma() {
-        let item = InventoryItem::from_arma("[test,1]".to_owned()).unwrap();
+        let item = InventoryItem::from_arma("[\"test\",1]".to_owned()).unwrap();
         assert_eq!(item.class(), "test");
         assert_eq!(item.count(), 1);
         assert_eq!(item.ammo(), None);
         assert!(!item.is_magazine());
-        let item = InventoryItem::from_arma("[test,1,1]".to_owned()).unwrap();
+        let item = InventoryItem::from_arma("[\"test\",1,1]".to_owned()).unwrap();
         assert_eq!(item.class(), "test");
         assert_eq!(item.count(), 1);
         assert_eq!(item.ammo(), Some(1));
