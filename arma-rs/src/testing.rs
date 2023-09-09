@@ -164,3 +164,55 @@ impl Extension {
         }
     }
 }
+
+// Annoying to exist, but necessary to prevent duplicate code in the readme
+#[doc(hidden)]
+pub mod test {
+    use crate::{arma, Extension, Group};
+    use crate as arma_rs;
+
+    #[arma]
+    pub fn init() -> Extension {
+        Extension::build()
+            .group(
+                "hello",
+                Group::new()
+                    .command("english", hello::english)
+            )
+            .group(
+                "welcome",
+                Group::new()
+                    .command("english", welcome::english)
+            )
+            .group("timer", timer::group())
+            .finish()
+    }
+
+    mod hello {
+        pub fn english() -> &'static str {
+            "hello"
+        }
+    }
+
+    mod welcome {
+        pub fn english(name: String) -> String {
+            format!("Welcome {name}")
+        }
+    }
+
+    mod timer {
+        use std::{thread, time::Duration};
+        use crate::{Context, Group};
+
+        pub fn sleep(ctx: Context, duration: u64, id: String) {
+            thread::spawn(move || {
+                thread::sleep(Duration::from_secs(duration));
+                let _ = ctx.callback_data("timer:sleep", "done", Some(id));
+            });
+        }
+
+        pub fn group() -> Group {
+            Group::new().command("sleep", sleep)
+        }
+    }
+}

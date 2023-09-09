@@ -18,7 +18,7 @@ crate-type = ["cdylib"]
 
 ### Hello World
 
-```rust,skt-call-init
+```rust
 use arma_rs::{arma, Extension};
 
 #[arma]
@@ -47,7 +47,7 @@ pub fn welcome(name: String) -> String {
 
 Commands can be grouped together, making your large projects much easier to manage.
 
-```rust,skt-call-init
+```rust
 use arma_rs::{arma, Extension, Group};
 
 #[arma]
@@ -104,7 +104,7 @@ Commands groups are called by using the format `group:command`. You can nest gro
 
 Extension callbacks can be invoked anywhere in the extension by adding a variable of type `Context` to the start of a handler.
 
-```rust,skt-group
+```rust
 use arma_rs::Context;
 
 pub fn sleep(ctx: Context, duration: u64, id: String) {
@@ -123,7 +123,7 @@ pub fn group() -> arma_rs::Group {
 
 Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
 
-```rust,skt-group
+```rust
 use arma_rs::Context;
 
 pub fn call_context(ctx: Context) -> String {
@@ -151,7 +151,7 @@ Both the extension and command groups allow for type based persistent state valu
 
 Extension state is accessible from any command handler.
 
-```rust,skt-call-init
+```rust
 use arma_rs::{arma, Context, ContextState, Extension};
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -177,7 +177,7 @@ pub fn increment(ctx: Context) -> Result<(), ()> {
 
 Command group state is only accessible from command handlers within the same group.
 
-```rust,skt-group
+```rust
 use arma_rs::{Context, ContextState, Extension};
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -201,7 +201,9 @@ pub fn group() -> arma_rs::Group {
 
 If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
 
-```rust,skt-empty
+```rust
+use arma_rs::{IntoArma, Value};
+
 #[derive(Default)]
 pub struct MemoryReport {
     total: u64,
@@ -243,7 +245,9 @@ This behvaiour can be changed by calling `.allow_no_args()` when building the ex
 
 ### Error Examples
 
-```rust,no_run,skt-empty
+```rust
+use arma_rs::Context;
+
 pub fn add(a: i32, b: i32) -> i32 {
     a + b
 }
@@ -275,9 +279,9 @@ pub fn should_error(error: bool) -> Result<String, String> {
 
 Tests can be created utilizing the `extension.call()` method.
 
-```rust,skt-test
+```rust
 mod tests {
-    use super::init;
+    use arma_rs::testing::test::init;
 
     #[test]
     fn hello() {
@@ -328,7 +332,9 @@ mod tests {
 
 arma-rs includes a [loadout module](https://docs.rs/arma-rs/latest/arma_rs/loadout/index.html) to assist with the handling of [Arma's Unit Loadout Array](https://community.bistudio.com/wiki/Unit_Loadout_Array).
 
-```rust,skt-main
+```rust
+use arma_rs::{FromArma, loadout::{Loadout, InventoryItem, Weapon, Magazine}};
+
 let l = r#"[[],[],[],["U_Marshal",[]],[],[],"H_Cap_headphones","G_Aviator",[],["ItemMap","ItemGPS","","ItemCompass","ItemWatch",""]]"#;
 let mut loadout = Loadout::from_arma(l.to_string()).unwrap();
 loadout.set_secondary({

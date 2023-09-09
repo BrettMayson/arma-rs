@@ -29,9 +29,3 @@ link_args = "0.6.0"
 default = ["extension", "call-context"]
 extension = ["libc", "crossbeam-channel"]
 call-context = ["extension"]
-
-[build-dependencies]
-skeptic = "0.13.7"
-
-[dev-dependencies]
-skeptic = "0.13.7"
