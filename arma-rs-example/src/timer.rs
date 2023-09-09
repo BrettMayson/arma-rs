@@ -16,7 +16,8 @@ pub fn group() -> Group {
 #[cfg(test)]
 mod tests {
     use arma_rs::{Extension, Result, Value};
-    use std::time::Duration;
+    use std::{thread, time::Duration};
+
     #[test]
     fn sleep_1sec() {
         let extension = Extension::build()
@@ -54,7 +55,7 @@ mod tests {
         let (_, code) = unsafe {
             extension.call(
                 "timer:sleep",
-                Some(vec!["600".to_string(), "test".to_string()]), // 10 minute sleep causes callback to timeout
+                Some(vec!["3".to_string(), "test".to_string()]), // 3 second sleep causes callback to timeout
             )
         };
         assert_eq!(code, 0);
@@ -71,5 +72,9 @@ mod tests {
             Duration::from_secs(2),
         );
         assert!(result == Result::Timeout);
+
+        // Ignore this for the example, only required so that ci (miri) doesn't complain.
+        // Wait for background thread to finish, combined with the 2 second timeout, this should be enough.
+        thread::sleep(Duration::from_secs(2));
     }
 }
