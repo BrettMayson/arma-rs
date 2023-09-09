@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.10.2"
+arma-rs = "1.10.3"
 
 [lib]
 name = "my_extension"
@@ -279,10 +279,8 @@ pub fn should_error(error: bool) -> Result<String, String> {
 
 Tests can be created utilizing the `extension.call()` method.
 
-```rust
+```rust,ignore
 mod tests {
-    use arma_rs::testing::test::init;
-
     #[test]
     fn hello() {
         let extension = init().testing();
