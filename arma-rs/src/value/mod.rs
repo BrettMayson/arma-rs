@@ -9,6 +9,7 @@ pub use from_arma::FromArma;
 pub use into_arma::IntoArma;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 /// A value that can be converted to and from Arma types.
 pub enum Value {
     /// Arma's `nil` value.
