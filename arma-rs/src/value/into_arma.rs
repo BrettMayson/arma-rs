@@ -93,7 +93,11 @@ where
 #[cfg(test)]
 #[test]
 fn test_vec() {
-    assert_eq!(String::from("[1,2,3]"), vec![1, 2, 3].to_arma().to_string())
+    assert_eq!(String::from("[1,2,3]"), vec![1, 2, 3].to_arma().to_string());
+    assert_eq!(
+        String::from(r#"["hello","world"]"#),
+        vec!["hello", "world"].to_arma().to_string()
+    );
 }
 
 impl<T> IntoArma for &[T]
@@ -126,7 +130,11 @@ fn test_string() {
     assert_eq!(
         String::from("\"hello\""),
         String::from("hello").to_arma().to_string()
-    )
+    );
+    assert_eq!(
+        String::from(r#""hello ""john"".""#),
+        String::from(r#"hello "john"."#).to_arma().to_string()
+    );
 }
 
 impl IntoArma for &'static str {
@@ -436,11 +444,8 @@ mod tests {
 
     #[test]
     fn as_vec() {
-        let arr = Value::Array(vec![Value::String("hello".into())]);
-        let v = arr.as_vec().unwrap();
-        let first_value = v.get(0).unwrap();
-        assert!(first_value.is_string());
-        assert_eq!(first_value.to_string(), String::from("\"hello\""));
+        let array = Value::Array(vec![Value::String("hello".into())]);
+        assert_eq!(array.to_string(), r#"["hello"]"#.to_string());
     }
 
     #[test]

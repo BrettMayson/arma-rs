@@ -33,7 +33,11 @@ pub trait FromArma: Sized {
 
 impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, String> {
-        Ok(s.trim_start_matches('"').trim_end_matches('"').to_string())
+        let s = match s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+            Some(unquoted) => unquoted,
+            None => &s, // Allowed for ease of writing tests, argument strings from Arma are always quoted
+        };
+        Ok(s.replace("\"\"", "\""))
     }
 }
 
@@ -280,22 +284,50 @@ mod tests {
     }
 
     #[test]
-    fn parse_vec_tuple() {
+    fn parse_string() {
         assert_eq!(
-            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
-            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
-                .unwrap()
+            String::from(""),
+            <String>::from_arma("\"\"".to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from("hello"),
+            <String>::from_arma("hello".to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from("hello"),
+            <String>::from_arma(r#""hello""#.to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from("\"hello\""),
+            <String>::from_arma(r#"""hello"""#.to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from(r#"hello "john"."#),
+            <String>::from_arma(r#""hello ""john"".""#.to_string()).unwrap()
         );
     }
 
     #[test]
     fn parse_vec() {
         assert_eq!(
+            vec![String::from(" ")],
+            <Vec<String>>::from_arma(r#"[" "]"#.to_string()).unwrap()
+        );
+        assert_eq!(
             vec![String::from("hello"), String::from("bye"),],
             <Vec<String>>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
         );
         assert!(<Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()).is_err());
         assert!(<Vec<String>>::from_arma(r#"["hello","bye""#.to_string()).is_err());
+    }
+
+    #[test]
+    fn parse_vec_tuple() {
+        assert_eq!(
+            (vec![(String::from("hello"), 123), (String::from("bye"), 321),]),
+            <Vec<(String, i32)>>::from_arma(r#"[["hello", 123],["bye", 321]]"#.to_string())
+                .unwrap()
+        );
     }
 
     #[test]
