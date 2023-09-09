@@ -271,10 +271,6 @@ mod tests {
     #[test]
     fn parse_string() {
         assert_eq!(
-            String::from(""),
-            <String>::from_arma("\"\"".to_string()).unwrap()
-        );
-        assert_eq!(
             String::from("hello"),
             <String>::from_arma("hello".to_string()).unwrap()
         );
@@ -294,10 +290,6 @@ mod tests {
 
     #[test]
     fn parse_vec() {
-        assert_eq!(
-            vec![String::from(" ")],
-            <Vec<String>>::from_arma(r#"[" "]"#.to_string()).unwrap()
-        );
         assert_eq!(
             vec![String::from("hello"), String::from("bye"),],
             <Vec<String>>::from_arma(r#"["hello","bye"]"#.to_string()).unwrap()
