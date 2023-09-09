@@ -1,3 +1,5 @@
+use crate::Value;
+
 fn split_array(s: &str) -> Vec<String> {
     let mut nest = 0;
     let mut parts = Vec::new();
@@ -80,64 +82,47 @@ macro_rules! impl_from_arma_number {
 impl_from_arma_number!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
 
 macro_rules! impl_from_arma_tuple {
-    ($($t:ident),*) => {
+    { $c: expr, $($t:ident)* } => {
         impl<$($t),*> FromArma for ($($t),*)
         where
             $($t: FromArma),*
         {
-            #[allow(unused_assignments)]
-            #[allow(clippy::mixed_read_write_in_expression)]
             fn from_arma(s: String) -> Result<Self, String> {
-                let source = s
-                    .strip_prefix('[')
-                    .ok_or_else(|| String::from("missing '[' at start of vec"))?
-                    .strip_suffix(']')
-                    .ok_or_else(|| String::from("missing ']' at end of vec"))?;
-                let mut parts_iter = split_array(&source).into_iter();
-                let ret = (
-                    $(
-                        {
-                            let Some(n) = parts_iter.next() else {
-                                return Err(String::from("missing value in tuple"));
-                            };
-                            $t::from_arma(n.to_string().trim().to_string())?
-                        }
-                    ),*
-                );
-                if parts_iter.next().is_some() {
-                    return Err(String::from("too many values in tuple"))
-                }
-                Ok(ret)
+                let v: [Value; $c] = FromArma::from_arma(s)?;
+                let mut iter = v.iter();
+                Ok((
+                    $($t::from_arma(iter.next().unwrap().to_string())?),*
+                ))
             }
         }
     };
 }
 
-impl_from_arma_tuple!(A, B);
-impl_from_arma_tuple!(A, B, C);
-impl_from_arma_tuple!(A, B, C, D);
-impl_from_arma_tuple!(A, B, C, D, E);
-impl_from_arma_tuple!(A, B, C, D, E, F);
-impl_from_arma_tuple!(A, B, C, D, E, F, G);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y);
-impl_from_arma_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z);
+impl_from_arma_tuple! { 2, A B }
+impl_from_arma_tuple! { 3, A B C }
+impl_from_arma_tuple! { 4, A B C D }
+impl_from_arma_tuple! { 5, A B C D E }
+impl_from_arma_tuple! { 6, A B C D E F }
+impl_from_arma_tuple! { 7, A B C D E F G }
+impl_from_arma_tuple! { 8, A B C D E F G H }
+impl_from_arma_tuple! { 9, A B C D E F G H I }
+impl_from_arma_tuple! { 10, A B C D E F G H I J }
+impl_from_arma_tuple! { 11, A B C D E F G H I J K }
+impl_from_arma_tuple! { 12, A B C D E F G H I J K L }
+impl_from_arma_tuple! { 13, A B C D E F G H I J K L M }
+impl_from_arma_tuple! { 14, A B C D E F G H I J K L M N }
+impl_from_arma_tuple! { 15, A B C D E F G H I J K L M N O }
+impl_from_arma_tuple! { 16, A B C D E F G H I J K L M N O P }
+impl_from_arma_tuple! { 17, A B C D E F G H I J K L M N O P Q }
+impl_from_arma_tuple! { 18, A B C D E F G H I J K L M N O P Q R }
+impl_from_arma_tuple! { 19, A B C D E F G H I J K L M N O P Q R S }
+impl_from_arma_tuple! { 20, A B C D E F G H I J K L M N O P Q R S T }
+impl_from_arma_tuple! { 21, A B C D E F G H I J K L M N O P Q R S T U }
+impl_from_arma_tuple! { 22, A B C D E F G H I J K L M N O P Q R S T U V }
+impl_from_arma_tuple! { 23, A B C D E F G H I J K L M N O P Q R S T U V W }
+impl_from_arma_tuple! { 24, A B C D E F G H I J K L M N O P Q R S T U V W X }
+impl_from_arma_tuple! { 25, A B C D E F G H I J K L M N O P Q R S T U V W X Y }
+impl_from_arma_tuple! { 26, A B C D E F G H I J K L M N O P Q R S T U V W X Y Z }
 
 impl<T> FromArma for Vec<T>
 where
