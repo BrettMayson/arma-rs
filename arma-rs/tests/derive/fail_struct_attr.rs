@@ -17,7 +17,7 @@ struct Unknown;
 struct UnknownPath;
 
 #[derive(IntoArma, FromArma)]
-#[arma(duplicate, duplicate)]
+#[arma(default, default)]
 struct Duplicate;
 
 #[derive(IntoArma, FromArma)]
@@ -28,7 +28,7 @@ struct FieldUnknown {
 
 #[derive(IntoArma, FromArma)]
 struct FieldDuplicate {
-    #[arma(duplicate, duplicate)]
+    #[arma(default, default)]
     test: u32,
 }
 

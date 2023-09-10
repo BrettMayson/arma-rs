@@ -22,14 +22,12 @@ impl IntoArma for () {
 }
 
 macro_rules! impl_into_arma_tuple {
-    ($c:expr, $($t:ident),*) => {
+    { $c: expr, $($t:ident)* } => {
         seq_macro::seq!(N in 0..$c {
             impl<$($t),*> IntoArma for ($($t),*)
             where
                 $($t: IntoArma),*
             {
-                #[allow(unused_assignments)]
-                #[allow(clippy::mixed_read_write_in_expression)]
                 fn to_arma(&self) -> Value {
                     Value::Array(vec![
                         #(
@@ -41,29 +39,32 @@ macro_rules! impl_into_arma_tuple {
         });
     };
 }
-impl_into_arma_tuple!(2, A, B);
-impl_into_arma_tuple!(3, A, B, C);
-impl_into_arma_tuple!(4, A, B, C, D);
-impl_into_arma_tuple!(5, A, B, C, D, E);
-impl_into_arma_tuple!(6, A, B, C, D, E, F);
-impl_into_arma_tuple!(7, A, B, C, D, E, F, G);
-impl_into_arma_tuple!(8, A, B, C, D, E, F, G, H);
-impl_into_arma_tuple!(9, A, B, C, D, E, F, G, H, I);
-impl_into_arma_tuple!(10, A, B, C, D, E, F, G, H, I, J);
-impl_into_arma_tuple!(11, A, B, C, D, E, F, G, H, I, J, K);
-impl_into_arma_tuple!(12, A, B, C, D, E, F, G, H, I, J, K, L);
-impl_into_arma_tuple!(13, A, B, C, D, E, F, G, H, I, J, K, L, M);
-impl_into_arma_tuple!(14, A, B, C, D, E, F, G, H, I, J, K, L, M, N);
-impl_into_arma_tuple!(15, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O);
-impl_into_arma_tuple!(16, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P);
-impl_into_arma_tuple!(17, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q);
-impl_into_arma_tuple!(18, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R);
-impl_into_arma_tuple!(19, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S);
-impl_into_arma_tuple!(20, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T);
-impl_into_arma_tuple!(21, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U);
-impl_into_arma_tuple!(22, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V);
-impl_into_arma_tuple!(23, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W);
-impl_into_arma_tuple!(24, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X);
+
+impl_into_arma_tuple! { 2, A B }
+impl_into_arma_tuple! { 3, A B C }
+impl_into_arma_tuple! { 4, A B C D }
+impl_into_arma_tuple! { 5, A B C D E }
+impl_into_arma_tuple! { 6, A B C D E F }
+impl_into_arma_tuple! { 7, A B C D E F G }
+impl_into_arma_tuple! { 8, A B C D E F G H }
+impl_into_arma_tuple! { 9, A B C D E F G H I }
+impl_into_arma_tuple! { 10, A B C D E F G H I J }
+impl_into_arma_tuple! { 11, A B C D E F G H I J K }
+impl_into_arma_tuple! { 12, A B C D E F G H I J K L }
+impl_into_arma_tuple! { 13, A B C D E F G H I J K L M }
+impl_into_arma_tuple! { 14, A B C D E F G H I J K L M N }
+impl_into_arma_tuple! { 15, A B C D E F G H I J K L M N O }
+impl_into_arma_tuple! { 16, A B C D E F G H I J K L M N O P }
+impl_into_arma_tuple! { 17, A B C D E F G H I J K L M N O P Q }
+impl_into_arma_tuple! { 18, A B C D E F G H I J K L M N O P Q R }
+impl_into_arma_tuple! { 19, A B C D E F G H I J K L M N O P Q R S }
+impl_into_arma_tuple! { 20, A B C D E F G H I J K L M N O P Q R S T }
+impl_into_arma_tuple! { 21, A B C D E F G H I J K L M N O P Q R S T U }
+impl_into_arma_tuple! { 22, A B C D E F G H I J K L M N O P Q R S T U V }
+impl_into_arma_tuple! { 23, A B C D E F G H I J K L M N O P Q R S T U V W }
+impl_into_arma_tuple! { 24, A B C D E F G H I J K L M N O P Q R S T U V W X }
+impl_into_arma_tuple! { 25, A B C D E F G H I J K L M N O P Q R S T U V W X Y }
+impl_into_arma_tuple! { 26, A B C D E F G H I J K L M N O P Q R S T U V W X Y Z }
 
 #[cfg(test)]
 #[test]
@@ -93,7 +94,11 @@ where
 #[cfg(test)]
 #[test]
 fn test_vec() {
-    assert_eq!(String::from("[1,2,3]"), vec![1, 2, 3].to_arma().to_string())
+    assert_eq!(String::from("[1,2,3]"), vec![1, 2, 3].to_arma().to_string());
+    assert_eq!(
+        String::from(r#"["hello","world"]"#),
+        vec!["hello", "world"].to_arma().to_string()
+    );
 }
 
 impl<T> IntoArma for &[T]
@@ -126,7 +131,11 @@ fn test_string() {
     assert_eq!(
         String::from("\"hello\""),
         String::from("hello").to_arma().to_string()
-    )
+    );
+    assert_eq!(
+        String::from(r#""hello ""john"".""#),
+        String::from(r#"hello "john"."#).to_arma().to_string()
+    );
 }
 
 impl IntoArma for &'static str {
@@ -445,11 +454,8 @@ mod tests {
 
     #[test]
     fn as_vec() {
-        let arr = Value::Array(vec![Value::String("hello".into())]);
-        let v = arr.as_vec().unwrap();
-        let first_value = v.get(0).unwrap();
-        assert!(first_value.is_string());
-        assert_eq!(first_value.to_string(), String::from("\"hello\""));
+        let array = Value::Array(vec![Value::String("hello".into())]);
+        assert_eq!(array.to_string(), r#"["hello"]"#.to_string());
     }
 
     #[test]

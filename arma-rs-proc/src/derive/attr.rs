@@ -1,15 +1,28 @@
-use std::collections::HashSet;
+use syn::Result;
 
-use syn::{Error, Result};
-
-pub trait FromMetas: Sized {
-    fn parse_meta(metas: &[syn::Meta]) -> Result<Self>;
+struct AttrValue<T> {
+    value: Option<T>,
 }
 
-pub fn parse_attributes<T: FromMetas>(attrs: &[syn::Attribute]) -> Result<T> {
-    let nested_metas = collect_nested_metas(attrs)?;
-    check_duplicate_metas(&nested_metas)?;
-    T::parse_meta(&nested_metas)
+impl<T> AttrValue<T> {
+    fn none() -> Self {
+        Self { value: None }
+    }
+
+    fn set(&mut self, meta: syn::meta::ParseNestedMeta, value: T) -> Result<()> {
+        if self.value.is_some() {
+            return Err(meta.error(format!(
+                "duplicate arma-rs attribute `{}`",
+                path_to_string(&meta.path)
+            )));
+        }
+        self.value = Some(value);
+        Ok(())
+    }
+
+    fn get(&self) -> &Option<T> {
+        &self.value
+    }
 }
 
 pub struct ContainerAttributes {
@@ -17,30 +30,38 @@ pub struct ContainerAttributes {
     pub default: bool,
 }
 
-impl FromMetas for ContainerAttributes {
-    fn parse_meta(metas: &[syn::Meta]) -> Result<Self> {
-        let mut result = Self {
-            transparent: false,
-            default: false,
-        };
+impl ContainerAttributes {
+    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+        let mut transparent = AttrValue::none();
+        let mut default = AttrValue::none();
 
-        for meta in metas {
-            match path_to_string(meta.path()).as_str() {
-                "transparent" => {
-                    result.transparent = true;
-                }
-                "default" => {
-                    result.default = true;
-                }
-                unknown => {
-                    return Err(Error::new_spanned(
-                        meta,
-                        format!("unknown attribute `{unknown}`"),
-                    ))
-                }
+        for attr in attrs {
+            if !attr.path().is_ident("arma") {
+                continue;
             }
+
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("transparent") {
+                    transparent.set(meta, true)?;
+                    return Ok(());
+                }
+
+                if meta.path.is_ident("default") {
+                    default.set(meta, true)?;
+                    return Ok(());
+                }
+
+                Err(meta.error(format!(
+                    "unknown arma-rs container attribute `{}`",
+                    path_to_string(&meta.path)
+                )))
+            })?;
         }
-        Ok(result)
+
+        Ok(Self {
+            transparent: transparent.get().unwrap_or(false),
+            default: default.get().unwrap_or(false),
+        })
     }
 }
 
@@ -48,65 +69,31 @@ pub struct FieldAttributes {
     pub default: bool,
 }
 
-impl FromMetas for FieldAttributes {
-    fn parse_meta(metas: &[syn::Meta]) -> Result<Self> {
-        let mut result = Self { default: false };
+impl FieldAttributes {
+    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+        let mut default = AttrValue::none();
 
-        for meta in metas {
-            match path_to_string(meta.path()).as_str() {
-                "default" => {
-                    result.default = true;
-                }
-                unknown => {
-                    return Err(Error::new_spanned(
-                        meta,
-                        format!("unknown attribute `{unknown}`"),
-                    ))
-                }
+        for attr in attrs {
+            if !attr.path().is_ident("arma") {
+                continue;
             }
-        }
-        Ok(result)
-    }
-}
 
-fn check_duplicate_metas(attrs: &[syn::Meta]) -> Result<()> {
-    let mut seen = HashSet::new();
-    attrs.iter().try_for_each(|attr| {
-        let path = path_to_string(attr.path());
-        if !seen.insert(path.clone()) {
-            return Err(Error::new_spanned(
-                attr,
-                format!("duplicate attribute `{path}`"),
-            ));
-        }
-        Ok(())
-    })
-}
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("default") {
+                    default.set(meta, true)?;
+                    return Ok(());
+                }
 
-fn collect_nested_metas(attrs: &[syn::Attribute]) -> Result<Vec<syn::Meta>> {
-    attrs
-        .iter()
-        .filter(move |attr| attr.path.is_ident("arma"))
-        .try_fold(Vec::new(), |mut acc, attr| {
-            let nested_metas = parse_nested_meta(attr)?;
-            acc.extend(nested_metas);
-            Ok(acc)
+                Err(meta.error(format!(
+                    "unknown arma-rs field attribute `{}`",
+                    path_to_string(&meta.path)
+                )))
+            })?;
+        }
+
+        Ok(Self {
+            default: default.get().unwrap_or(false),
         })
-}
-
-fn parse_nested_meta(meta: &syn::Attribute) -> Result<Vec<syn::Meta>> {
-    fn nested_meta(nested: syn::NestedMeta) -> Result<syn::Meta> {
-        match nested {
-            syn::NestedMeta::Meta(meta) => Ok(meta),
-            syn::NestedMeta::Lit(_) => {
-                Err(Error::new_spanned(nested, "unexpected literal attribute"))
-            }
-        }
-    }
-
-    match meta.parse_meta()? {
-        syn::Meta::List(list) => list.nested.into_iter().map(nested_meta).collect(),
-        meta => Err(Error::new_spanned(meta, "expected #[arma(...)]")),
     }
 }
 

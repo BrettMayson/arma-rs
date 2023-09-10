@@ -1,6 +1,6 @@
 use syn::Result;
 
-use super::{parse_attributes, ContainerAttributes, FieldAttributes};
+use super::{ContainerAttributes, FieldAttributes};
 
 pub struct ContainerData {
     pub attributes: ContainerAttributes,
@@ -43,7 +43,7 @@ impl ContainerData {
             syn::Data::Union(_) => Data::Union,
         };
         Ok(Self {
-            attributes: parse_attributes(&input.attrs)?,
+            attributes: ContainerAttributes::from_attrs(&input.attrs)?,
             ident: input.ident,
             data,
             generics: input.generics,
@@ -94,7 +94,7 @@ impl FieldNamed {
         let ident = field.ident.unwrap();
         let name = ident.to_string();
         Ok(Self {
-            attributes: parse_attributes(&field.attrs)?,
+            attributes: FieldAttributes::from_attrs(&field.attrs)?,
             ident,
             name,
             ty: field.ty,
@@ -105,7 +105,7 @@ impl FieldNamed {
 impl FieldUnnamed {
     fn new(field: syn::Field, index: usize) -> Result<Self> {
         Ok(Self {
-            attributes: parse_attributes(&field.attrs)?,
+            attributes: FieldAttributes::from_attrs(&field.attrs)?,
             index: syn::Index::from(index),
             ty: field.ty,
         })

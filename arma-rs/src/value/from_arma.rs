@@ -1,3 +1,5 @@
+use crate::Value;
+
 fn split_array(s: &str) -> Vec<String> {
     let mut nest = 0;
     let mut parts = Vec::new();
@@ -91,7 +93,11 @@ pub trait FromArma: Sized {
 
 impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
-        Ok(s.trim_start_matches('"').trim_end_matches('"').to_string())
+        let s = match s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
+            Some(unquoted) => unquoted,
+            None => &s, // Allowed for ease of writing tests, argument strings from Arma are always quoted
+        };
+        Ok(s.replace("\"\"", "\""))
     }
 }
 
@@ -148,22 +154,10 @@ macro_rules! impl_from_arma_tuple {
             $($t: FromArma),*
         {
             fn from_arma(s: String) -> Result<Self, FromArmaError> {
-                let source = s
-                    .strip_prefix('[')
-                    .ok_or(FromArmaError::ArrayMissingBracket(true))?
-                    .strip_suffix(']')
-                    .ok_or(FromArmaError::ArrayMissingBracket(false))?;
-                let parts = split_array(source);
-                let len = parts.len();
-                if len != $c {
-                    return Err(FromArmaError::SizeMismatch {
-                        expected: $c,
-                        actual: len,
-                    });
-                }
-                let mut parts_iter = parts.into_iter();
+                let v: [Value; $c] = FromArma::from_arma(s)?;
+                let mut iter = v.iter();
                 Ok((
-                    $($t::from_arma(parts_iter.next().unwrap())?),*
+                    $($t::from_arma(iter.next().unwrap().to_string())?),*
                 ))
             }
         }
@@ -255,10 +249,7 @@ mod tests {
             (String::from("hello"), 123),
             <(String, i32)>::from_arma(r#"["hello", 123]"#.to_string()).unwrap()
         );
-        assert_eq!(
-            (String::from("hello"), String::from("world")),
-            <(String, String)>::from_arma(r#"[hello, "world"]"#.to_string()).unwrap()
-        );
+        assert!(<(String, String)>::from_arma(r#"["hello", 123, "world"]"#.to_string()).is_err());
     }
 
     #[test]
@@ -389,6 +380,14 @@ mod tests {
         assert_eq!(
             String::from("hello"),
             <String>::from_arma(r#""hello""#.to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from("\"hello\""),
+            <String>::from_arma(r#"""hello"""#.to_string()).unwrap()
+        );
+        assert_eq!(
+            String::from(r#"hello "john"."#),
+            <String>::from_arma(r#""hello ""john"".""#.to_string()).unwrap()
         );
     }
 

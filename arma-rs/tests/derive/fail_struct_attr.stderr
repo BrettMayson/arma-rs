@@ -1,41 +1,41 @@
-error: expected #[arma(...)]
+error: expected attribute arguments in parentheses: #[arma(...)]
  --> tests/derive/fail_struct_attr.rs:4:3
   |
 4 | #[arma]
   |   ^^^^
 
-error: unexpected literal attribute
+error: unexpected literal in nested attribute, expected ident
  --> tests/derive/fail_struct_attr.rs:8:8
   |
 8 | #[arma("literal")]
   |        ^^^^^^^^^
 
-error: unknown attribute `unknown`
+error: unknown arma-rs container attribute `unknown`
   --> tests/derive/fail_struct_attr.rs:12:8
    |
 12 | #[arma(unknown)]
    |        ^^^^^^^
 
-error: unknown attribute `unknown::path`
+error: unknown arma-rs container attribute `unknown::path`
   --> tests/derive/fail_struct_attr.rs:16:8
    |
 16 | #[arma(unknown::path)]
    |        ^^^^^^^^^^^^^
 
-error: duplicate attribute `duplicate`
-  --> tests/derive/fail_struct_attr.rs:20:19
+error: duplicate arma-rs attribute `default`
+  --> tests/derive/fail_struct_attr.rs:20:17
    |
-20 | #[arma(duplicate, duplicate)]
-   |                   ^^^^^^^^^
+20 | #[arma(default, default)]
+   |                 ^^^^^^^
 
-error: unknown attribute `unknown`
+error: unknown arma-rs field attribute `unknown`
   --> tests/derive/fail_struct_attr.rs:25:12
    |
 25 |     #[arma(unknown)]
    |            ^^^^^^^
 
-error: duplicate attribute `duplicate`
-  --> tests/derive/fail_struct_attr.rs:31:23
+error: duplicate arma-rs attribute `default`
+  --> tests/derive/fail_struct_attr.rs:31:21
    |
-31 |     #[arma(duplicate, duplicate)]
-   |                       ^^^^^^^^^
+31 |     #[arma(default, default)]
+   |                     ^^^^^^^

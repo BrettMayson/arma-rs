@@ -1,13 +1,16 @@
+use std::path::Path;
+
 fn main() {
-    if std::env::var("SKEPTIC_SKIP").unwrap_or("0".to_string()) == "1" {
-        std::fs::File::create(
-            std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap()).join("skeptic-tests.rs"),
-        )
-        .unwrap();
-        return;
+    let mut root = Path::new("../../README.md");
+    if !root.exists() {
+        root = Path::new("../README.md");
     }
-    let path = std::path::PathBuf::from("../README.md");
-    if path.exists() {
-        skeptic::generate_doc_tests(&[path]);
+    if !root.exists() {
+        root = Path::new("README.md");
     }
+    std::fs::copy(
+        root,
+        Path::new(&format!("{}/README.md", std::env::var("OUT_DIR").unwrap())),
+    )
+    .unwrap();
 }

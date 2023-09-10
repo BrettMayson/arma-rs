@@ -1,14 +1,5 @@
 #![warn(missing_docs, nonstandard_style)]
-
-/*!
-Library for building powerful Extensions for Arma 3 easily in Rust
-
-# Feature flags
-arma-rs has a few feature flags that can be enabled or disabled to suit your needs.
-
-- **`extension`** *(enabled by default)* - Extension functionality with FFI to interface with Arma.
-- **`call-context`** *(enabled by default)* - Support for extension call context provided by Arma since version 2.11.
-*/
+#![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
@@ -73,8 +64,8 @@ enum CallbackMessage {
 }
 
 #[cfg(feature = "extension")]
-/// State container that can hold at most one value per type key.
-pub type State = state::Container![Send + Sync];
+/// State TypeMap that can hold at most one value per type key.
+pub type State = state::TypeMap![Send + Sync];
 
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma

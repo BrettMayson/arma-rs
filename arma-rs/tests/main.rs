@@ -1,6 +1,4 @@
 #[cfg(all(feature = "extension", feature = "call-context"))]
-include!(concat!(env!("OUT_DIR"), "/skeptic-tests.rs"));
-
 #[cfg(feature = "extension")]
 mod extension {
     use arma_rs::{Context, ContextState, Extension, Group};
