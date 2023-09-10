@@ -67,6 +67,10 @@ enum CallbackMessage {
 /// State TypeMap that can hold at most one value per type key.
 pub type State = state::TypeMap![Send + Sync];
 
+#[cfg(windows)]
+/// Allows a console to be allocated for the extension.
+static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
@@ -186,14 +190,23 @@ impl Extension {
         } else {
             return 1;
         };
-        self.group.handle(
-            self.context().with_buffer_size(size),
-            &function,
-            output,
-            size,
-            args,
-            count,
-        )
+        match function.as_str() {
+            #[cfg(windows)]
+            "::console" => {
+                if !CONSOLE_ALLOCATED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                    let _ = windows::Win32::System::Console::AllocConsole();
+                }
+                0
+            }
+            _ => self.group.handle(
+                self.context().with_buffer_size(size),
+                &function,
+                output,
+                size,
+                args,
+                count,
+            ),
+        }
     }
 
     #[must_use]

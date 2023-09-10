@@ -37,12 +37,10 @@ mod tests {
             name: "engine".to_string(),
             damage: 100,
         };
-        let (result, code) = unsafe {
-            extension.call(
-                "derive:half_damage",
-                Some(vec![damaged_part.to_arma().to_string()]),
-            )
-        };
+        let (result, code) = extension.call(
+            "derive:half_damage",
+            Some(vec![damaged_part.to_arma().to_string()]),
+        );
         assert_eq!(code, 0);
         assert!(
             result == r#"[["name","engine"],["damage",50]]"#

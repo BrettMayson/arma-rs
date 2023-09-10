@@ -114,15 +114,12 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
                     let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
+                        .to_vec()
+                        .into_iter()
+                        .map(|s| {
+                            std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                        })
+                        .collect::<Vec<String>>();
                     argv.reverse();
                     argv
                 };
@@ -171,15 +168,12 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 let mut argv: Vec<String> = {
                     let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
                     let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s|
-                        std::ffi::CStr::from_ptr(s)
-                        .to_string_lossy()
-                        .trim_matches('\"')
-                        .to_owned()
-                    )
-                    .collect::<Vec<String>>();
+                        .to_vec()
+                        .into_iter()
+                        .map(|s| {
+                            std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                        })
+                        .collect::<Vec<String>>();
                     argv.reverse();
                     argv
                 };

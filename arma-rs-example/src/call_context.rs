@@ -24,16 +24,14 @@ mod tests {
             .group("context", super::group())
             .finish()
             .testing();
-        let (result, code) = unsafe {
-            extension.call_with_context(
-                "context:current",
-                None,
-                Caller::Unknown,
-                Source::Console,
-                Mission::None,
-                Server::Singleplayer,
-            )
-        };
+        let (result, code) = extension.call_with_context(
+            "context:current",
+            None,
+            Caller::Unknown,
+            Source::Console,
+            Mission::None,
+            Server::Singleplayer,
+        );
         assert_eq!(code, 0);
         assert_eq!(result, "Unknown,Console,None,Singleplayer");
     }

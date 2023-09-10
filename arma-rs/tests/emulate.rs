@@ -72,7 +72,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback").unwrap().into_raw();
-                let ptr_hello = CString::new("hello").unwrap().into_raw();
+                let ptr_hello = CString::new("\"hello\"").unwrap().into_raw();
                 let code = extension.handle_call(
                     ptr,
                     output.as_mut_ptr(),
@@ -95,7 +95,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("welcome").unwrap().into_raw();
-                let ptr_john = CString::new("John").unwrap().into_raw();
+                let ptr_john = CString::new("\"John\"").unwrap().into_raw();
                 extension.handle_call(
                     ptr,
                     output.as_mut_ptr(),
