@@ -71,7 +71,7 @@ impl Extension {
     ///
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn call_with_context(
+    pub fn call_with_context(
         &self,
         function: &str,
         args: Option<Vec<String>>,
@@ -81,7 +81,7 @@ impl Extension {
         server: Server,
     ) -> (String, libc::c_int) {
         self.set_call_context(ArmaCallContext::new(caller, source, mission, server));
-        self.handle_call(function, args)
+        unsafe { self.handle_call(function, args) }
     }
 
     #[must_use]
@@ -92,10 +92,10 @@ impl Extension {
     ///
     /// # Note
     /// If the `call-context` feature is enabled, this function passes default values for each field.
-    pub unsafe fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
+    pub fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
         #[cfg(feature = "call-context")]
         self.set_call_context(ArmaCallContext::default());
-        self.handle_call(function, args)
+        unsafe { self.handle_call(function, args) }
     }
 
     #[cfg(feature = "call-context")]

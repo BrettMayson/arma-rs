@@ -102,4 +102,41 @@ mod tests {
             "[\"Hello\",\"World\"]"
         );
     }
+
+    #[test]
+    fn value_from_arma() {
+        let value = Value::from_arma("null".to_string()).unwrap();
+        assert_eq!(value, Value::Null);
+        let value = Value::from_arma("true".to_string()).unwrap();
+        assert_eq!(value, Value::Boolean(true));
+        let value = Value::from_arma("false".to_string()).unwrap();
+        assert_eq!(value, Value::Boolean(false));
+        let value = Value::from_arma("1".to_string()).unwrap();
+        assert_eq!(value, Value::Number(1.0));
+        let value = Value::from_arma("1.5".to_string()).unwrap();
+        assert_eq!(value, Value::Number(1.5));
+        let value = Value::from_arma("-1.5".to_string()).unwrap();
+        assert_eq!(value, Value::Number(-1.5));
+        let value = Value::from_arma("[1,2,3]".to_string()).unwrap();
+        assert_eq!(
+            value,
+            Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(3.0)
+            ])
+        );
+        let value = Value::from_arma("[\"Hello\",\"World\"]".to_string()).unwrap();
+        assert_eq!(
+            value,
+            Value::Array(vec![
+                Value::String("Hello".to_string()),
+                Value::String("World".to_string())
+            ])
+        );
+        let value = Value::from_arma("\"Hello\"".to_string()).unwrap();
+        assert_eq!(value, Value::String("Hello".to_string()));
+        let value = Value::from_arma("\"Hello \"\"World\"\"\"".to_string()).unwrap();
+        assert_eq!(value, Value::String("Hello \"World\"".to_string()));
+    }
 }

@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.10.3"
+arma-rs = "1.10.4"
 
 [lib]
 name = "my_extension"
@@ -284,7 +284,7 @@ mod tests {
     #[test]
     fn hello() {
         let extension = init().testing();
-        let (output, _) = unsafe { extension.call("hello:english", None) };
+        let (output, _) = extension.call("hello:english", None);
         assert_eq!(output, "hello");
     }
 
@@ -292,7 +292,7 @@ mod tests {
     fn welcome() {
         let extension = init().testing();
         let (output, _) =
-            unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
+            extension.call("welcome:english", Some(vec!["John".to_string()]));
         assert_eq!(output, "Welcome John");
     }
 
@@ -302,12 +302,10 @@ mod tests {
             .group("timer", super::group())
             .finish()
             .testing();
-        let (_, code) = unsafe {
-            extension.call(
-                "timer:sleep",
-                Some(vec!["1".to_string(), "test".to_string()]),
-            )
-        };
+        let (_, code) = extension.call(
+            "timer:sleep",
+            Some(vec!["1".to_string(), "test".to_string()]),
+        );
         assert_eq!(code, 0);
         let result = extension.callback_handler(
             |name, func, data| {

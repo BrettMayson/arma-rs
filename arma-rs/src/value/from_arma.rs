@@ -33,12 +33,24 @@ pub trait FromArma: Sized {
     fn from_arma(s: String) -> Result<Self, String>;
 }
 
+#[cfg(not(any(test, doc, debug_assertions)))]
 impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, String> {
-        let s = match s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) {
-            Some(unquoted) => unquoted,
-            None => &s, // Allowed for ease of writing tests, argument strings from Arma are always quoted
+        let Some(s) = s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) else {
+            return Err(String::from("missing '\"' at start or end of string"));
         };
+        Ok(s.replace("\"\"", "\""))
+    }
+}
+
+#[cfg(any(test, doc, debug_assertions))]
+impl FromArma for String {
+    fn from_arma(s: String) -> Result<Self, String> {
+        let s = s
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .map(|s| s.to_string())
+            .unwrap_or(s);
         Ok(s.replace("\"\"", "\""))
     }
 }
@@ -61,6 +73,8 @@ macro_rules! impl_from_arma_number {
         $(
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, String> {
+                    // Convert valid strings to numbers
+                    let s = s.trim_matches('"');
                     if s.contains("e") {
                         // parse exponential notation
                         let mut parts = s.split('e');
@@ -270,10 +284,6 @@ mod tests {
 
     #[test]
     fn parse_string() {
-        assert_eq!(
-            String::from("hello"),
-            <String>::from_arma("hello".to_string()).unwrap()
-        );
         assert_eq!(
             String::from("hello"),
             <String>::from_arma(r#""hello""#.to_string()).unwrap()

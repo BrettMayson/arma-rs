@@ -37,15 +37,15 @@ mod tests {
             .finish()
             .testing();
 
-        let (_, code) = unsafe { extension.call("counter:increment", None) };
+        let (_, code) = extension.call("counter:increment", None);
         assert_eq!(code, 0);
-        let (result, code) = unsafe { extension.call("counter:current", None) };
+        let (result, code) = extension.call("counter:current", None);
         assert_eq!(code, 0);
         assert_eq!(result, "1");
 
-        let (_, code) = unsafe { extension.call("counter:increment", None) };
+        let (_, code) = extension.call("counter:increment", None);
         assert_eq!(code, 0);
-        let (result, code) = unsafe { extension.call("counter:current", None) };
+        let (result, code) = extension.call("counter:current", None);
         assert_eq!(code, 0);
         assert_eq!(result, "2");
     }

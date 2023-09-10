@@ -9,7 +9,7 @@ mod extension {
             .command("hello", || -> &'static str { "Hello" })
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("hello", None) };
+        let (result, _) = extension.call("hello", None);
         assert_eq!(result, "Hello");
     }
 
@@ -21,14 +21,14 @@ mod extension {
             })
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
+        let (result, _) = extension.call("hello", Some(vec![String::from("John")]));
         assert_eq!(result, "Hello John");
     }
 
     #[test]
     fn root_command_no_return() {
         let extension = Extension::build().command("nop", || {}).finish().testing();
-        let (result, code) = unsafe { extension.call("nop", None) };
+        let (result, code) = extension.call("nop", None);
         assert_eq!(code, 0);
         assert_eq!(result, "null");
     }
@@ -39,7 +39,7 @@ mod extension {
             .command("nop", |_: i8| {})
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("nop", Some(vec![String::from("4")])) };
+        let (result, code) = extension.call("nop", Some(vec![String::from("4")]));
         assert_eq!(code, 0);
         assert_eq!(result, "null");
     }
@@ -53,7 +53,7 @@ mod extension {
             )
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("english:hello", None) };
+        let (result, _) = extension.call("english:hello", None);
         assert_eq!(result, "Hello");
     }
 
@@ -68,8 +68,7 @@ mod extension {
             )
             .finish()
             .testing();
-        let (result, _) =
-            unsafe { extension.call("english:hello", Some(vec![String::from("John")])) };
+        let (result, _) = extension.call("english:hello", Some(vec![String::from("John")]));
         assert_eq!(result, "Hello John");
     }
 
@@ -85,7 +84,7 @@ mod extension {
             )
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("greeting:english:hello", None) };
+        let (result, _) = extension.call("greeting:english:hello", None);
         assert_eq!(result, "Hello");
     }
 
@@ -104,7 +103,7 @@ mod extension {
             .finish()
             .testing();
         let (result, _) =
-            unsafe { extension.call("greeting:english:hello", Some(vec![String::from("John")])) };
+            extension.call("greeting:english:hello", Some(vec![String::from("John")]));
         assert_eq!(result, "Hello John");
     }
 
@@ -114,7 +113,7 @@ mod extension {
             .command("result", || -> Result<&str, &str> { Ok("Ok") })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("result", None) };
+        let (result, code) = extension.call("result", None);
         assert_eq!(code, 0);
         assert_eq!(result, "Ok");
     }
@@ -125,7 +124,7 @@ mod extension {
             .command("result", || -> Result<&str, &str> { Err("Err") })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("result", None) };
+        let (result, code) = extension.call("result", None);
         assert_eq!(code, 9);
         assert_eq!(result, "Err");
     }
@@ -136,7 +135,7 @@ mod extension {
             .command("result", || -> Result<(), &str> { Ok(()) })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("result", None) };
+        let (result, code) = extension.call("result", None);
         assert_eq!(code, 0);
         assert_eq!(result, "null");
     }
@@ -147,7 +146,7 @@ mod extension {
             .command("result", || -> Result<&str, ()> { Err(()) })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("result", None) };
+        let (result, code) = extension.call("result", None);
         assert_eq!(code, 9);
         assert_eq!(result, "null");
     }
@@ -158,7 +157,7 @@ mod extension {
             .command("result", || -> Result<(), ()> { Ok(()) })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("result", None) };
+        let (result, code) = extension.call("result", None);
         assert_eq!(code, 0);
         assert_eq!(result, "null");
     }
@@ -166,7 +165,7 @@ mod extension {
     #[test]
     fn not_found() {
         let extension = Extension::build().finish().testing();
-        let (result, code) = unsafe { extension.call("hello", None) };
+        let (result, code) = extension.call("hello", None);
         assert_eq!(code, 1);
         assert_eq!(result, "");
     }
@@ -177,7 +176,7 @@ mod extension {
             .command("hello", || -> &'static str { "Hello" })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
+        let (result, code) = extension.call("hello", Some(vec![String::from("John")]));
         assert_eq!(code, 21);
         assert_eq!(result, "");
     }
@@ -188,7 +187,7 @@ mod extension {
             .command("hello", |_: i32| -> &'static str { "Hello" })
             .finish()
             .testing();
-        let (result, code) = unsafe { extension.call("hello", Some(vec![String::from("John")])) };
+        let (result, code) = extension.call("hello", Some(vec![String::from("John")]));
         assert_eq!(code, 30);
         assert_eq!(result, "");
     }
@@ -199,12 +198,10 @@ mod extension {
             .command("hello", |_: String, _: i32| -> &'static str { "Hello" })
             .finish()
             .testing();
-        let (result, code) = unsafe {
-            extension.call(
-                "hello",
-                Some(vec![String::from("John"), String::from("John")]),
-            )
-        };
+        let (result, code) = extension.call(
+            "hello",
+            Some(vec![String::from("John"), String::from("John")]),
+        );
         assert_eq!(code, 31);
         assert_eq!(result, "");
     }
@@ -217,7 +214,7 @@ mod extension {
             })
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("hello", None) };
+        let (result, _) = extension.call("hello", None);
         assert_eq!(result.len(), extension.context().buffer_len());
     }
 
@@ -229,7 +226,7 @@ mod extension {
             })
             .finish()
             .testing();
-        let (result, _) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
+        let (result, _) = extension.call("hello", Some(vec![String::from('X')]));
         assert_eq!(result.len(), extension.context().buffer_len());
     }
 
@@ -241,7 +238,7 @@ mod extension {
             })
             .finish()
             .testing();
-        let (_, code) = unsafe { extension.call("hello", None) };
+        let (_, code) = extension.call("hello", None);
         assert_eq!(code, 4);
     }
 
@@ -253,7 +250,7 @@ mod extension {
             })
             .finish()
             .testing();
-        let (_, code) = unsafe { extension.call("hello", Some(vec![String::from('X')])) };
+        let (_, code) = extension.call("hello", Some(vec![String::from('X')]));
         assert_eq!(code, 4);
     }
 
@@ -263,7 +260,7 @@ mod extension {
             .command("hello", || -> Result<&str, &str> { Ok("Ok") })
             .finish()
             .testing();
-        let (_, code) = unsafe { extension.call("hello", None) };
+        let (_, code) = extension.call("hello", None);
         assert_eq!(code, 0);
     }
 
@@ -273,7 +270,7 @@ mod extension {
             .command("hello", || -> Result<&str, &str> { Err("Error") })
             .finish()
             .testing();
-        let (_, code) = unsafe { extension.call("hello", None) };
+        let (_, code) = extension.call("hello", None);
         assert_eq!(code, 9);
     }
 
@@ -294,7 +291,7 @@ mod extension {
             .finish()
             .testing();
 
-        let (_, _) = unsafe { extension.call("new", Some(vec![String::from("foobar")])) };
+        let (_, _) = extension.call("new", Some(vec![String::from("foobar")]));
         let value = extension.state().try_get::<String>();
         assert_eq!(value, Some(&String::from("foobar")));
     }
@@ -308,7 +305,7 @@ mod extension {
             .testing();
         assert!(extension.state().is_frozen());
 
-        let (_, _) = unsafe { extension.call("new", Some(vec![String::from("foobar")])) };
+        let (_, _) = extension.call("new", Some(vec![String::from("foobar")]));
         let value = extension.state().try_get::<String>();
         assert_eq!(value, None);
     }
@@ -328,7 +325,7 @@ mod extension {
             .finish()
             .testing();
 
-        let (_, _) = unsafe { extension.call("set", Some(vec![String::from("21")])) };
+        let (_, _) = extension.call("set", Some(vec![String::from("21")]));
         let value = extension
             .state()
             .get::<AtomicUsize>()
@@ -354,16 +351,14 @@ mod extension {
                 })
                 .finish()
                 .testing();
-            let (result, _) = unsafe {
-                extension.call_with_context(
-                    "call_ctx",
-                    None,
-                    Caller::Steam(123),
-                    Source::Pbo(String::from("pbo")),
-                    Mission::Mission(String::from("mission")),
-                    Server::Multiplayer(String::from("server")),
-                )
-            };
+            let (result, _) = extension.call_with_context(
+                "call_ctx",
+                None,
+                Caller::Steam(123),
+                Source::Pbo(String::from("pbo")),
+                Mission::Mission(String::from("mission")),
+                Server::Multiplayer(String::from("server")),
+            );
             assert_eq!(
                 result,
                 "Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")"
@@ -383,20 +378,18 @@ mod extension {
                 .command("is_call_ctx_default", is_call_ctx_default)
                 .finish()
                 .testing();
-            let (result, _) = unsafe {
-                extension.call_with_context(
-                    "is_call_ctx_default",
-                    None,
-                    Caller::Steam(123),
-                    Source::Pbo(String::from("pbo")),
-                    Mission::Mission(String::from("mission")),
-                    Server::Multiplayer(String::from("server")),
-                )
-            };
+            let (result, _) = extension.call_with_context(
+                "is_call_ctx_default",
+                None,
+                Caller::Steam(123),
+                Source::Pbo(String::from("pbo")),
+                Mission::Mission(String::from("mission")),
+                Server::Multiplayer(String::from("server")),
+            );
             assert_eq!(result, "false");
             assert!(!is_call_ctx_default(extension.context()));
 
-            let (result, _) = unsafe { extension.call("is_call_ctx_default", None) };
+            let (result, _) = extension.call("is_call_ctx_default", None);
             assert_eq!(result, "true");
             assert!(is_call_ctx_default(extension.context()));
         }

@@ -43,7 +43,7 @@ mod tests {
             .group("system", super::group())
             .finish()
             .testing();
-        let (report, code) = unsafe { extension.call("system:memory", Some(vec![])) };
+        let (report, code) = extension.call("system:memory", Some(vec![]));
         assert_eq!(code, 0);
         assert_eq!(report.chars().filter(|c| *c == ',').count(), 2);
     }

@@ -69,25 +69,22 @@ mod tests {
     #[test]
     fn hello() {
         let extension = init().testing();
-        let (output, _) = unsafe { extension.call("hello:english", None) };
+        let (output, _) = extension.call("hello:english", None);
         assert_eq!(output, "hello");
-        let (output, _) = unsafe { extension.call("hello:french", None) };
+        let (output, _) = extension.call("hello:french", None);
         assert_eq!(output, "bonjour");
-        let (output, _) = unsafe { extension.call("hello:spanish", None) };
+        let (output, _) = extension.call("hello:spanish", None);
         assert_eq!(output, "hola");
     }
 
     #[test]
     fn welcome() {
         let extension = init().testing();
-        let (output, _) =
-            unsafe { extension.call("welcome:english", Some(vec!["John".to_string()])) };
+        let (output, _) = extension.call("welcome:english", Some(vec!["John".to_string()]));
         assert_eq!(output, "Welcome John");
-        let (output, _) =
-            unsafe { extension.call("welcome:french", Some(vec!["John".to_string()])) };
+        let (output, _) = extension.call("welcome:french", Some(vec!["John".to_string()]));
         assert_eq!(output, "Bienvenue John");
-        let (output, _) =
-            unsafe { extension.call("welcome:spanish", Some(vec!["John".to_string()])) };
+        let (output, _) = extension.call("welcome:spanish", Some(vec!["John".to_string()]));
         assert_eq!(output, "Bienvenido John");
     }
 }

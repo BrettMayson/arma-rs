@@ -24,12 +24,10 @@ mod tests {
             .group("timer", super::group())
             .finish()
             .testing();
-        let (_, code) = unsafe {
-            extension.call(
-                "timer:sleep",
-                Some(vec!["1".to_string(), "test".to_string()]),
-            )
-        };
+        let (_, code) = extension.call(
+            "timer:sleep",
+            Some(vec!["1".to_string(), "test".to_string()]),
+        );
         assert_eq!(code, 0);
         let result = extension.callback_handler(
             |name, func, data| {
@@ -52,12 +50,10 @@ mod tests {
             .group("timer", super::group())
             .finish()
             .testing();
-        let (_, code) = unsafe {
-            extension.call(
-                "timer:sleep",
-                Some(vec!["3".to_string(), "test".to_string()]), // 3 second sleep causes callback to timeout
-            )
-        };
+        let (_, code) = extension.call(
+            "timer:sleep",
+            Some(vec!["3".to_string(), "test".to_string()]), // 3 second sleep causes callback to timeout
+        );
         assert_eq!(code, 0);
         let result = extension.callback_handler(
             |name, func, data| {
