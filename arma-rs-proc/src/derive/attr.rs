@@ -12,7 +12,7 @@ impl<T> AttrValue<T> {
     fn set(&mut self, meta: syn::meta::ParseNestedMeta, value: T) -> Result<()> {
         if self.value.is_some() {
             return Err(meta.error(format!(
-                "duplicate arma-rs attribute `{}`",
+                "duplicate arma attribute `{}`",
                 path_to_string(&meta.path)
             )));
         }
@@ -52,7 +52,7 @@ impl ContainerAttributes {
                 }
 
                 Err(meta.error(format!(
-                    "unknown arma-rs container attribute `{}`",
+                    "unknown arma container attribute `{}`",
                     path_to_string(&meta.path)
                 )))
             })?;
@@ -85,7 +85,7 @@ impl FieldAttributes {
                 }
 
                 Err(meta.error(format!(
-                    "unknown arma-rs field attribute `{}`",
+                    "unknown arma field attribute `{}`",
                     path_to_string(&meta.path)
                 )))
             })?;
