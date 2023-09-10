@@ -1,39 +1,53 @@
-use syn::Result;
+use syn::{Error, Result};
 
-struct AttrValue<T> {
-    value: Option<T>,
+pub struct Attribute<T> {
+    path: Option<syn::Path>,
+    value: T,
 }
 
-impl<T> AttrValue<T> {
-    fn none() -> Self {
-        Self { value: None }
+impl<T> Attribute<T> {
+    fn new(default: T) -> Self {
+        Self {
+            value: default,
+            path: None,
+        }
     }
 
-    fn set(&mut self, meta: syn::meta::ParseNestedMeta, value: T) -> Result<()> {
-        if self.value.is_some() {
+    pub fn is_set(&self) -> bool {
+        self.path.is_some()
+    }
+
+    fn set(&mut self, meta: &syn::meta::ParseNestedMeta, value: T) -> Result<()> {
+        if self.is_set() {
             return Err(meta.error(format!(
                 "duplicate arma attribute `{}`",
                 path_to_string(&meta.path)
             )));
         }
-        self.value = Some(value);
+        self.value = value;
+        self.path = Some(meta.path.clone());
         Ok(())
     }
 
-    fn get(&self) -> &Option<T> {
+    pub fn value(&self) -> &T {
         &self.value
+    }
+
+    #[must_use]
+    pub fn error(&self, message: &str) -> Error {
+        Error::new_spanned(self.path.as_ref().unwrap(), message)
     }
 }
 
 pub struct ContainerAttributes {
-    pub transparent: bool,
-    pub default: bool,
+    pub transparent: Attribute<bool>,
+    pub default: Attribute<bool>,
 }
 
 impl ContainerAttributes {
     pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut transparent = AttrValue::none();
-        let mut default = AttrValue::none();
+        let mut transparent = Attribute::new(false);
+        let mut default = Attribute::new(false);
 
         for attr in attrs {
             if !attr.path().is_ident("arma") {
@@ -42,12 +56,12 @@ impl ContainerAttributes {
 
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("transparent") {
-                    transparent.set(meta, true)?;
+                    transparent.set(&meta, true)?;
                     return Ok(());
                 }
 
                 if meta.path.is_ident("default") {
-                    default.set(meta, true)?;
+                    default.set(&meta, true)?;
                     return Ok(());
                 }
 
@@ -57,21 +71,20 @@ impl ContainerAttributes {
                 )))
             })?;
         }
-
         Ok(Self {
-            transparent: transparent.get().unwrap_or(false),
-            default: default.get().unwrap_or(false),
+            transparent,
+            default,
         })
     }
 }
 
 pub struct FieldAttributes {
-    pub default: bool,
+    pub default: Attribute<bool>,
 }
 
 impl FieldAttributes {
     pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut default = AttrValue::none();
+        let mut default = Attribute::new(false);
 
         for attr in attrs {
             if !attr.path().is_ident("arma") {
@@ -80,7 +93,7 @@ impl FieldAttributes {
 
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("default") {
-                    default.set(meta, true)?;
+                    default.set(&meta, true)?;
                     return Ok(());
                 }
 
@@ -90,10 +103,7 @@ impl FieldAttributes {
                 )))
             })?;
         }
-
-        Ok(Self {
-            default: default.get().unwrap_or(false),
-        })
+        Ok(Self { default })
     }
 }
 

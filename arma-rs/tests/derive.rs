@@ -200,4 +200,123 @@ mod derive {
             );
         }
     }
+
+    mod tuple {
+        use super::*;
+
+        #[test]
+        fn default() {
+            #[derive(FromArma, Default, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest(String, bool);
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest::default())
+            );
+
+            let input = Value::Array(vec![Value::String("first".to_string())]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), false))
+            );
+
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::Boolean(true),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), true))
+            );
+        }
+
+        #[test]
+        fn default_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(default)] bool);
+
+            let input = Value::Array(vec![Value::String("first".to_string())]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), false))
+            );
+
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::Boolean(true),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), true))
+            );
+        }
+
+        #[test]
+        fn default_multi_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(default)] bool, #[arma(default)] bool);
+
+            let input = Value::Array(vec![Value::String("first".to_string())]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), false, false))
+            );
+
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::Boolean(true),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), true, false))
+            );
+
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::Boolean(true),
+                Value::Boolean(true),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), true, true))
+            );
+        }
+
+        #[test]
+        fn default_error() {
+            #[derive(FromArma, Default, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest(String, String);
+
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::String("second".to_string()),
+                Value::String("third".to_string()),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(arma_rs::FromArmaError::SizeMismatch {
+                    expected: 2,
+                    actual: 3,
+                })
+            );
+        }
+
+        #[test]
+        fn default_field_error() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(default)] String);
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(arma_rs::FromArmaError::SizeMismatch {
+                    expected: 2,
+                    actual: 0,
+                })
+            );
+        }
+    }
 }

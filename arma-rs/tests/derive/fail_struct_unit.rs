@@ -4,7 +4,7 @@ use arma_rs_proc::{FromArma, IntoArma};
 struct Unit;
 
 #[derive(IntoArma, FromArma)]
-struct Empty {}
+struct EmptyMap {}
 
 #[derive(IntoArma, FromArma)]
 struct EmptyTuple();

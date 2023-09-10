@@ -1,0 +1,5 @@
+error: #[arma(transparent)] structs must have exactly one field
+ --> tests/derive/fail_struct_map_transparent_multi.rs:4:8
+  |
+4 | #[arma(transparent)]
+  |        ^^^^^^^^^^^

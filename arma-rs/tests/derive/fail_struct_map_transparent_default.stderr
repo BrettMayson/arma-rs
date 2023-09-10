@@ -1,15 +1,11 @@
 error: #[arma(transparent)] and #[arma(default)] cannot be used together
- --> tests/derive/fail_struct_map_transparent_default.rs:3:10
+ --> tests/derive/fail_struct_map_transparent_default.rs:4:8
   |
-3 | #[derive(FromArma)]
-  |          ^^^^^^^^
-  |
-  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+4 | #[arma(transparent, default)]
+  |        ^^^^^^^^^^^
 
 error: #[arma(transparent)] and #[arma(default)] cannot be used together
- --> tests/derive/fail_struct_map_transparent_default.rs:9:10
-  |
-9 | #[derive(FromArma)]
-  |          ^^^^^^^^
-  |
-  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+  --> tests/derive/fail_struct_map_transparent_default.rs:10:8
+   |
+10 | #[arma(transparent)]
+   |        ^^^^^^^^^^^

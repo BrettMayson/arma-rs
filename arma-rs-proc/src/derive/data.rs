@@ -1,4 +1,5 @@
-use syn::Result;
+use proc_macro2::Span;
+use syn::{Error, Result};
 
 use super::{ContainerAttributes, FieldAttributes};
 
@@ -10,16 +11,13 @@ pub struct ContainerData {
 }
 
 pub enum Data {
-    Enum, // Not supported
     Struct(DataStruct),
-    Union, // Not supported
 }
 
 pub enum DataStruct {
     Map(Vec<FieldNamed>),
     Tuple(Vec<FieldUnnamed>),
     NewType(FieldUnnamed),
-    Unit,
 }
 
 pub struct FieldNamed {
@@ -37,13 +35,15 @@ pub struct FieldUnnamed {
 
 impl ContainerData {
     pub fn from_input(input: syn::DeriveInput) -> Result<Self> {
+        let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
         let data = match input.data {
             syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)?),
-            syn::Data::Enum(_) => Data::Enum,
-            syn::Data::Union(_) => Data::Union,
+            syn::Data::Enum(_) => Err(Error::new(Span::call_site(), "enums aren't supported"))?,
+            syn::Data::Union(_) => Err(Error::new(Span::call_site(), "unions aren't supported"))?,
         };
+
         Ok(Self {
-            attributes: ContainerAttributes::from_attrs(&input.attrs)?,
+            attributes,
             ident: input.ident,
             data,
             generics: input.generics,
@@ -54,10 +54,16 @@ impl ContainerData {
 impl DataStruct {
     fn new(data: syn::DataStruct) -> Result<Self> {
         match data.fields {
-            syn::Fields::Unit => Ok(Self::Unit),
+            syn::Fields::Unit => Err(Error::new(
+                Span::call_site(),
+                "unit-like structs aren't supported",
+            )),
             syn::Fields::Named(fields) => {
                 if fields.named.is_empty() {
-                    return Ok(Self::Unit);
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "unit-like structs aren't supported",
+                    ));
                 }
 
                 let fields = fields
@@ -69,7 +75,10 @@ impl DataStruct {
             }
             syn::Fields::Unnamed(fields) => {
                 if fields.unnamed.is_empty() {
-                    return Ok(Self::Unit);
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "unit-like structs aren't supported",
+                    ));
                 }
 
                 if fields.unnamed.len() == 1 {

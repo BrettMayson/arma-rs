@@ -1,12 +1,12 @@
-use arma_rs_proc::FromArma;
+use arma_rs_proc::{FromArma, IntoArma};
 
-#[derive(FromArma)]
+#[derive(FromArma, IntoArma)]
 #[arma(transparent, default)]
 struct Container {
     first: String,
 }
 
-#[derive(FromArma)]
+#[derive(FromArma, IntoArma)]
 #[arma(transparent)]
 struct Field {
     #[arma(default)]
