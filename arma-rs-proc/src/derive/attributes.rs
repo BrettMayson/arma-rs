@@ -2,6 +2,19 @@ use syn::{Error, Result};
 
 use super::CombinedError;
 
+pub trait FromAttrs: Default + Sized {
+    fn parse_attr(&mut self, errors: &mut CombinedError, attrs: &syn::Attribute) -> Result<()>;
+
+    fn from_attrs(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> Result<Self> {
+        attrs.iter().try_fold(Self::default(), |mut result, attr| {
+            if attr.path().is_ident("arma") {
+                result.parse_attr(errors, attr)?;
+            }
+            Ok(result)
+        })
+    }
+}
+
 pub struct Attribute<T> {
     path: Option<syn::Path>,
     value: T,
@@ -46,36 +59,32 @@ pub struct ContainerAttributes {
     pub default: Attribute<bool>,
 }
 
-impl ContainerAttributes {
-    pub fn from_attrs(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut transparent = Attribute::new(false);
-        let mut default = Attribute::new(false);
+impl Default for ContainerAttributes {
+    fn default() -> Self {
+        Self {
+            transparent: Attribute::new(false),
+            default: Attribute::new(false),
+        }
+    }
+}
 
-        for attr in attrs {
-            if !attr.path().is_ident("arma") {
-                continue;
+impl FromAttrs for ContainerAttributes {
+    fn parse_attr(&mut self, errors: &mut CombinedError, attr: &syn::Attribute) -> Result<()> {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("transparent") {
+                self.transparent.set(errors, &meta, true);
+                return Ok(());
             }
 
-            attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("transparent") {
-                    transparent.set(errors, &meta, true);
-                    return Ok(());
-                }
+            if meta.path.is_ident("default") {
+                self.default.set(errors, &meta, true);
+                return Ok(());
+            }
 
-                if meta.path.is_ident("default") {
-                    default.set(errors, &meta, true);
-                    return Ok(());
-                }
-
-                Err(meta.error(format!(
-                    "unknown arma container attribute `{}`",
-                    path_to_string(&meta.path)
-                )))
-            })?;
-        }
-        Ok(Self {
-            transparent,
-            default,
+            Err(meta.error(format!(
+                "unknown arma container attribute `{}`",
+                path_to_string(&meta.path)
+            )))
         })
     }
 }
@@ -84,28 +93,27 @@ pub struct FieldAttributes {
     pub default: Attribute<bool>,
 }
 
-impl FieldAttributes {
-    pub fn from_attrs(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> Result<Self> {
-        let mut default = Attribute::new(false);
+impl Default for FieldAttributes {
+    fn default() -> Self {
+        Self {
+            default: Attribute::new(false),
+        }
+    }
+}
 
-        for attr in attrs {
-            if !attr.path().is_ident("arma") {
-                continue;
+impl FromAttrs for FieldAttributes {
+    fn parse_attr(&mut self, errors: &mut CombinedError, attr: &syn::Attribute) -> Result<()> {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("default") {
+                self.default.set(errors, &meta, true);
+                return Ok(());
             }
 
-            attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("default") {
-                    default.set(errors, &meta, true);
-                    return Ok(());
-                }
-
-                Err(meta.error(format!(
-                    "unknown arma field attribute `{}`",
-                    path_to_string(&meta.path)
-                )))
-            })?;
-        }
-        Ok(Self { default })
+            Err(meta.error(format!(
+                "unknown arma field attribute `{}`",
+                path_to_string(&meta.path)
+            )))
+        })
     }
 }
 

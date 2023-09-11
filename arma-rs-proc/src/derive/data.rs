@@ -1,7 +1,7 @@
 use proc_macro2::Span;
 use syn::{Error, Result};
 
-use super::{CombinedError, ContainerAttributes, FieldAttributes};
+use super::{attributes::FromAttrs, CombinedError, ContainerAttributes, FieldAttributes};
 
 pub struct ContainerData {
     pub attributes: ContainerAttributes,
