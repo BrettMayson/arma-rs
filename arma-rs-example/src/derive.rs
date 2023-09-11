@@ -4,51 +4,52 @@ use arma_rs::{
 };
 
 #[derive(IntoArma, FromArma)]
-pub struct DamagedPart {
+pub struct Player {
     name: String,
-    damage: u32,
+    #[arma(default)]
+    is_admin: bool,
 }
 
-pub fn half_damage(part: DamagedPart) -> DamagedPart {
-    DamagedPart {
-        damage: part.damage / 2,
-        ..part
+pub fn dice_roll(player: Player) -> (Player, i8) {
+    if player.is_admin {
+        (player, 20)
+    } else {
+        (player, 0)
     }
 }
 
 pub fn group() -> Group {
-    Group::new().command("half_damage", half_damage)
+    Group::new().command("dice_roll", dice_roll)
 }
 
 #[cfg(test)]
 mod tests {
-    use arma_rs::{Extension, FromArma, IntoArma};
-
-    use crate::derive::DamagedPart;
-
+    use arma_rs::Extension;
     #[test]
-    fn test_half_damage() {
+    fn test_dice_roll() {
         let extension = Extension::build()
             .group("derive", super::group())
             .finish()
             .testing();
 
-        let damaged_part = super::DamagedPart {
-            name: "engine".to_string(),
-            damage: 100,
-        };
         let (result, code) = extension.call(
-            "derive:half_damage",
-            Some(vec![damaged_part.to_arma().to_string()]),
+            "derive:dice_roll",
+            Some(vec![r#"[["name","John"]]"#.to_string()]),
         );
         assert_eq!(code, 0);
         assert!(
-            result == r#"[["name","engine"],["damage",50]]"#
-                || result == r#"[["damage",50],["name","engine"]]"#
+            result == r#"[[["name","John"],["is_admin",false]],0]"#
+                || result == r#"[[["is_admin",false],["name","John"]],0]"#
         );
 
-        let damaged_part = DamagedPart::from_arma(result).unwrap();
-        assert_eq!(damaged_part.name, "engine");
-        assert_eq!(damaged_part.damage, 50);
+        let (result, code) = extension.call(
+            "derive:dice_roll",
+            Some(vec![r#"[["name","John"],["is_admin",true]]"#.to_string()]),
+        );
+        assert_eq!(code, 0);
+        assert!(
+            result == r#"[[["name","John"],["is_admin",true]],20]"#
+                || result == r#"[[["is_admin",true],["name","John"]],20]"#
+        );
     }
 }
