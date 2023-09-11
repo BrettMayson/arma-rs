@@ -3,14 +3,12 @@ use arma_rs::{arma, Extension, Group};
 mod call_context;
 mod counter;
 mod derive;
-mod timer;
-
-#[cfg(not(miri))]
 mod system_info;
+mod timer;
 
 #[arma]
 fn init() -> Extension {
-    let mut ext = Extension::build()
+    Extension::build()
         .group(
             "hello",
             Group::new()
@@ -28,12 +26,9 @@ fn init() -> Extension {
         .group("call_context", call_context::group())
         .group("counter", counter::group())
         .group("derive", derive::group())
-        .group("timer", timer::group());
-    #[cfg(not(miri))]
-    {
-        ext = ext.group("system", system_info::group());
-    }
-    ext.finish()
+        .group("timer", timer::group())
+        .group("system", system_info::group())
+        .finish()
 }
 
 mod hello {

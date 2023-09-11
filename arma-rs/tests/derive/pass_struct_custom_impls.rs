@@ -1,5 +1,4 @@
 use arma_rs::{FromArma, FromArmaError, IntoArma, Value};
-use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma)]
 struct CustomFrom(u32);

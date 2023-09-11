@@ -1,5 +1,4 @@
 use arma_rs::{FromArma, IntoArma};
-use arma_rs_proc::{FromArma, IntoArma};
 
 #[derive(IntoArma, FromArma)]
 struct Newtype<T: IntoArma + FromArma>(T);

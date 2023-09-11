@@ -1,7 +1,4 @@
-use arma_rs::{
-    arma_rs_proc::{FromArma, IntoArma},
-    Group,
-};
+use arma_rs::{FromArma, Group, IntoArma};
 
 #[derive(IntoArma, FromArma)]
 pub struct Player {

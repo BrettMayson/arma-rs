@@ -4,8 +4,7 @@
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
 
-pub use arma_rs_proc;
-pub use arma_rs_proc::arma;
+pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
 #[cfg(feature = "extension")]
 use crossbeam_channel::{unbounded, Receiver, Sender};

@@ -1,6 +1,5 @@
 mod derive {
     use arma_rs::{FromArma, FromArmaError, IntoArma, Value};
-    use arma_rs_proc::{FromArma, IntoArma};
 
     #[test]
     #[cfg(not(miri))]

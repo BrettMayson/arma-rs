@@ -1,4 +1,4 @@
-use arma_rs_proc::{FromArma, IntoArma};
+use arma_rs::{FromArma, IntoArma};
 
 #[derive(FromArma, IntoArma)]
 #[arma(default)]
