@@ -95,7 +95,9 @@ pub trait FromArma: Sized {
 impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let Some(s) = s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) else {
-            return Err(FromArmaError::PrimitiveParseError(String::from("missing '\"' at start or end of string")));
+            return Err(FromArmaError::PrimitiveParseError(String::from(
+                "missing '\"' at start or end of string"
+            )));
         };
         Ok(s.replace("\"\"", "\""))
     }
