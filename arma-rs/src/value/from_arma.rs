@@ -96,7 +96,7 @@ impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let Some(s) = s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) else {
             return Err(FromArmaError::PrimitiveParseError(String::from(
-                "missing '\"' at start or end of string"
+                "missing '\"' at start or end of string",
             )));
         };
         Ok(s.replace("\"\"", "\""))
@@ -464,9 +464,10 @@ mod tests {
     #[test]
     fn parse_hashmap() {
         assert_eq!(
-            std::collections::HashMap::from_iter(
-                vec![(String::from("hello"), 123), (String::from("bye"), 321),].into_iter()
-            ),
+            std::collections::HashMap::from_iter(vec![
+                (String::from("hello"), 123),
+                (String::from("bye"), 321),
+            ]),
             <std::collections::HashMap<String, i32>>::from_arma(
                 r#"[["hello", 123],["bye",321]]"#.to_string()
             )
