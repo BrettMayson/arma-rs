@@ -3,6 +3,7 @@ mod derive {
     use arma_rs_proc::{FromArma, IntoArma};
 
     #[test]
+    #[cfg(not(miri))]
     fn compile() {
         let tests = trybuild::TestCases::new();
         tests.compile_fail("tests/derive/*fail*.rs");
