@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, fmt::{Display, Formatter}};
 
 #[derive(Clone, Default)]
 pub(crate) struct ArmaCallContext {
@@ -44,6 +44,27 @@ impl From<&str> for Caller {
     }
 }
 
+impl Display for Caller {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Steam(s) => write!(f, "{}", s),
+            Self::Unknown => write!(f, "Unknown"),
+        }
+    }
+}
+
+impl Caller {
+    /// Returns the steamID64 of the caller, if available.
+    pub fn as_u64(&self) -> Option<&u64> {
+        match self {
+            Caller::Steam(inner) => {
+                Some(inner)
+            },
+            _ => None,
+        }
+    }
+}
+
 /// Source of the extension call.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Source {
@@ -70,6 +91,28 @@ impl From<&str> for Source {
     }
 }
 
+impl Display for Source {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::File(s) => write!(f, "{}", s),
+            Self::Pbo(s) => write!(f, "{}", s),
+            Self::Console => write!(f, "Console"),
+        }
+    }
+}
+
+impl Source {
+    /// Returns the string representation of the source, if available.
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Source::File(inner) | Source::Pbo(inner) => {
+                Some(inner)
+            },
+            _ => None,
+        }
+    }
+}
+
 /// Current mission.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Mission {
@@ -90,6 +133,27 @@ impl From<&str> for Mission {
     }
 }
 
+impl Display for Mission {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Mission(s) => write!(f, "{}", s),
+            Self::None => write!(f, "None"),
+        }
+    }
+}
+
+impl Mission {
+    /// Returns the string representation of the mission, if available.
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Mission::Mission(inner) => {
+                Some(inner)
+            },
+            _ => None,
+        }
+    }
+}
+
 /// Current server.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub enum Server {
@@ -106,6 +170,27 @@ impl From<&str> for Server {
             Self::Singleplayer
         } else {
             Self::Multiplayer(s.to_string())
+        }
+    }
+}
+
+impl Display for Server {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Multiplayer(s) => write!(f, "{}", s),
+            Self::Singleplayer => write!(f, "Singleplayer"),
+        }
+    }
+}
+
+impl Server {
+    /// Returns the string representation of the server, if available.
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Server::Multiplayer(inner) => {
+                Some(inner)
+            },
+            _ => None,
         }
     }
 }
