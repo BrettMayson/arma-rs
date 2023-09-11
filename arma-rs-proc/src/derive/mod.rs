@@ -9,13 +9,34 @@ use syn::{DeriveInput, Result};
 use attributes::{Attribute, ContainerAttributes, FieldAttributes};
 use data::{ContainerData, Data, DataStruct, FieldNamed, FieldUnnamed};
 
-pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
-    let container = ContainerData::from_input(input)?;
-    let body = match container.data {
-        Data::Struct(data) => {
-            r#struct::validate_attributes(&data, &container.attributes)?;
-            r#struct::into_impl_body(&data, &container.attributes)
+pub struct CombinedError {
+    root: Option<syn::Error>,
+}
+
+impl CombinedError {
+    fn new() -> Self {
+        Self { root: None }
+    }
+
+    pub fn add(&mut self, error: syn::Error) {
+        match &mut self.root {
+            Some(root) => root.combine(error.clone()),
+            None => self.root = Some(error.clone()),
         }
+    }
+
+    pub fn into_result(self) -> Result<()> {
+        match self.root {
+            Some(error) => Err(error),
+            None => Ok(()),
+        }
+    }
+}
+
+pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
+    let container = parse_container_data(input)?;
+    let body = match container.data {
+        Data::Struct(data) => r#struct::into_impl_body(&data, &container.attributes),
     };
 
     let ident = container.ident;
@@ -31,12 +52,9 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 }
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
-    let container = ContainerData::from_input(input)?;
+    let container = parse_container_data(input)?;
     let body = match container.data {
-        Data::Struct(data) => {
-            r#struct::validate_attributes(&data, &container.attributes)?;
-            r#struct::from_impl_body(&data, &container.attributes)
-        }
+        Data::Struct(data) => r#struct::from_impl_body(&data, &container.attributes),
     };
 
     let ident = container.ident;
@@ -49,4 +67,15 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
             }
         }
     })
+}
+
+fn parse_container_data(input: DeriveInput) -> Result<ContainerData> {
+    let mut errors = CombinedError::new();
+    let container = ContainerData::from_input(&mut errors, input)?;
+    match container.data {
+        Data::Struct(ref data) => {
+            r#struct::validate_attributes(&mut errors, data, &container.attributes);
+        }
+    }
+    errors.into_result().map(|_| container)
 }

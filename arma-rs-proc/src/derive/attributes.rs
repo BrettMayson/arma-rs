@@ -1,5 +1,7 @@
 use syn::{Error, Result};
 
+use super::CombinedError;
+
 pub struct Attribute<T> {
     path: Option<syn::Path>,
     value: T,
@@ -17,16 +19,16 @@ impl<T> Attribute<T> {
         self.path.is_some()
     }
 
-    fn set(&mut self, meta: &syn::meta::ParseNestedMeta, value: T) -> Result<()> {
+    fn set(&mut self, errors: &mut CombinedError, meta: &syn::meta::ParseNestedMeta, value: T) {
         if self.is_set() {
-            return Err(meta.error(format!(
+            errors.add(meta.error(format!(
                 "duplicate arma attribute `{}`",
                 path_to_string(&meta.path)
             )));
+            return;
         }
         self.value = value;
         self.path = Some(meta.path.clone());
-        Ok(())
     }
 
     pub fn value(&self) -> &T {
@@ -45,7 +47,7 @@ pub struct ContainerAttributes {
 }
 
 impl ContainerAttributes {
-    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+    pub fn from_attrs(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> Result<Self> {
         let mut transparent = Attribute::new(false);
         let mut default = Attribute::new(false);
 
@@ -56,12 +58,12 @@ impl ContainerAttributes {
 
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("transparent") {
-                    transparent.set(&meta, true)?;
+                    transparent.set(errors, &meta, true);
                     return Ok(());
                 }
 
                 if meta.path.is_ident("default") {
-                    default.set(&meta, true)?;
+                    default.set(errors, &meta, true);
                     return Ok(());
                 }
 
@@ -83,7 +85,7 @@ pub struct FieldAttributes {
 }
 
 impl FieldAttributes {
-    pub fn from_attrs(attrs: &[syn::Attribute]) -> Result<Self> {
+    pub fn from_attrs(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> Result<Self> {
         let mut default = Attribute::new(false);
 
         for attr in attrs {
@@ -93,7 +95,7 @@ impl FieldAttributes {
 
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("default") {
-                    default.set(&meta, true)?;
+                    default.set(errors, &meta, true);
                     return Ok(());
                 }
 

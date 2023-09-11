@@ -1,7 +1,7 @@
 use proc_macro2::Span;
 use syn::{Error, Result};
 
-use super::{ContainerAttributes, FieldAttributes};
+use super::{CombinedError, ContainerAttributes, FieldAttributes};
 
 pub struct ContainerData {
     pub attributes: ContainerAttributes,
@@ -34,10 +34,10 @@ pub struct FieldUnnamed {
 }
 
 impl ContainerData {
-    pub fn from_input(input: syn::DeriveInput) -> Result<Self> {
-        let attributes = ContainerAttributes::from_attrs(&input.attrs)?;
+    pub fn from_input(errors: &mut CombinedError, input: syn::DeriveInput) -> Result<Self> {
+        let attributes = ContainerAttributes::from_attrs(errors, &input.attrs)?;
         let data = match input.data {
-            syn::Data::Struct(data) => Data::Struct(DataStruct::new(data)?),
+            syn::Data::Struct(data) => Data::Struct(DataStruct::new(errors, data)?),
             syn::Data::Enum(_) => Err(Error::new(Span::call_site(), "enums aren't supported"))?,
             syn::Data::Union(_) => Err(Error::new(Span::call_site(), "unions aren't supported"))?,
         };
@@ -52,7 +52,7 @@ impl ContainerData {
 }
 
 impl DataStruct {
-    fn new(data: syn::DataStruct) -> Result<Self> {
+    fn new(errors: &mut CombinedError, data: syn::DataStruct) -> Result<Self> {
         match data.fields {
             syn::Fields::Unit => Err(Error::new(
                 Span::call_site(),
@@ -69,7 +69,7 @@ impl DataStruct {
                 let fields = fields
                     .named
                     .into_iter()
-                    .map(FieldNamed::new)
+                    .map(|f| FieldNamed::new(errors, f))
                     .collect::<Result<_>>()?;
                 Ok(Self::Map(fields))
             }
@@ -82,14 +82,14 @@ impl DataStruct {
                 }
 
                 if fields.unnamed.len() == 1 {
-                    let field = FieldUnnamed::new(fields.unnamed[0].clone(), 0)?;
+                    let field = FieldUnnamed::new(errors, fields.unnamed[0].clone(), 0)?;
                     Ok(Self::NewType(field))
                 } else {
                     let fields = fields
                         .unnamed
                         .into_iter()
                         .enumerate()
-                        .map(|(i, f)| FieldUnnamed::new(f, i))
+                        .map(|(i, f)| FieldUnnamed::new(errors, f, i))
                         .collect::<Result<_>>()?;
                     Ok(Self::Tuple(fields))
                 }
@@ -99,11 +99,11 @@ impl DataStruct {
 }
 
 impl FieldNamed {
-    fn new(field: syn::Field) -> Result<Self> {
+    fn new(errors: &mut CombinedError, field: syn::Field) -> Result<Self> {
         let ident = field.ident.unwrap();
         let name = ident.to_string();
         Ok(Self {
-            attributes: FieldAttributes::from_attrs(&field.attrs)?,
+            attributes: FieldAttributes::from_attrs(errors, &field.attrs)?,
             ident,
             name,
             ty: field.ty,
@@ -112,9 +112,9 @@ impl FieldNamed {
 }
 
 impl FieldUnnamed {
-    fn new(field: syn::Field, index: usize) -> Result<Self> {
+    fn new(errors: &mut CombinedError, field: syn::Field, index: usize) -> Result<Self> {
         Ok(Self {
-            attributes: FieldAttributes::from_attrs(&field.attrs)?,
+            attributes: FieldAttributes::from_attrs(errors, &field.attrs)?,
             index: syn::Index::from(index),
             ty: field.ty,
         })
