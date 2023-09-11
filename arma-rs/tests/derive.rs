@@ -131,6 +131,35 @@ mod derive {
         }
 
         #[test]
+        fn default_field_precedence() {
+            #[derive(FromArma, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest {
+                first: String,
+                #[arma(default)]
+                second: String,
+            }
+
+            impl Default for DeriveTest {
+                fn default() -> Self {
+                    Self {
+                        first: "first".to_string(),
+                        second: "second".to_string(),
+                    }
+                }
+            }
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    first: "first".to_string(),
+                    second: Default::default()
+                })
+            );
+        }
+
+        #[test]
         fn error_missing() {
             #[derive(FromArma, Debug, PartialEq)]
             struct DeriveTest {
@@ -282,6 +311,25 @@ mod derive {
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest("first".to_string(), true, true))
+            );
+        }
+
+        #[test]
+        fn default_field_precedence() {
+            #[derive(FromArma, Debug, PartialEq)]
+            #[arma(default)]
+            struct DeriveTest(String, #[arma(default)] bool);
+
+            impl Default for DeriveTest {
+                fn default() -> Self {
+                    Self("first".to_string(), true)
+                }
+            }
+
+            let input = Value::Array(vec![]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), Default::default()))
             );
         }
 
