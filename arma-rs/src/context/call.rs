@@ -1,4 +1,4 @@
-use std::{path::Path, fmt::{Display, Formatter}};
+use std::path::Path;
 
 #[derive(Clone, Default)]
 pub(crate) struct ArmaCallContext {
