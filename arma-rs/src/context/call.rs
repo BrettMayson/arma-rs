@@ -44,15 +44,6 @@ impl From<&str> for Caller {
     }
 }
 
-impl Display for Caller {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Steam(s) => write!(f, "{}", s),
-            Self::Unknown => write!(f, "Unknown"),
-        }
-    }
-}
-
 impl Caller {
     /// Returns the steamID64 of the caller, if available.
     pub fn as_u64(&self) -> Option<&u64> {
@@ -91,16 +82,6 @@ impl From<&str> for Source {
     }
 }
 
-impl Display for Source {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::File(s) => write!(f, "{}", s),
-            Self::Pbo(s) => write!(f, "{}", s),
-            Self::Console => write!(f, "Console"),
-        }
-    }
-}
-
 impl Source {
     /// Returns the string representation of the source, if available.
     pub fn as_str(&self) -> Option<&str> {
@@ -133,15 +114,6 @@ impl From<&str> for Mission {
     }
 }
 
-impl Display for Mission {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Mission(s) => write!(f, "{}", s),
-            Self::None => write!(f, "None"),
-        }
-    }
-}
-
 impl Mission {
     /// Returns the string representation of the mission, if available.
     pub fn as_str(&self) -> Option<&str> {
@@ -170,15 +142,6 @@ impl From<&str> for Server {
             Self::Singleplayer
         } else {
             Self::Multiplayer(s.to_string())
-        }
-    }
-}
-
-impl Display for Server {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Multiplayer(s) => write!(f, "{}", s),
-            Self::Singleplayer => write!(f, "Singleplayer"),
         }
     }
 }
