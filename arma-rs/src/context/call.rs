@@ -54,7 +54,7 @@ pub enum Source {
     /// For example: `z\test\addons\main\fn_armaContext.sqf`.
     Pbo(String),
     #[default]
-    /// Debug console.
+    /// Debug console or an other form of on the fly execution, such as mission triggers.
     Console,
 }
 
