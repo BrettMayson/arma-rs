@@ -119,6 +119,7 @@ macro_rules! impl_from_arma {
         $(
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, FromArmaError> {
+                    let s = s.strip_suffix('"').and_then(|s| s.strip_prefix('"')).unwrap_or(&s);
                     s.parse::<Self>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))
                 }
             }
@@ -132,8 +133,7 @@ macro_rules! impl_from_arma_number {
         $(
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, FromArmaError> {
-                    // Convert valid strings to numbers
-                    let s = s.trim_matches('"');
+                    let s = s.strip_suffix('"').and_then(|s| s.strip_prefix('"')).unwrap_or(&s);
                     if s.contains("e") {
                         // parse exponential notation
                         let mut parts = s.split('e');
@@ -516,5 +516,17 @@ mod tests {
             ],
             <Vec<Value>>::from_arma(r#"["hello", "world"]"#.to_string()).unwrap()
         );
+    }
+
+    #[test]
+    fn parse_float() {
+        assert_eq!(1.0, <f64>::from_arma(r#"1.0"#.to_string()).unwrap());
+        assert_eq!(1.0, <f64>::from_arma(r#"1"#.to_string()).unwrap());
+        assert_eq!(1.0, <f64>::from_arma(r#"1.0e+0"#.to_string()).unwrap());
+        assert_eq!(-1.0, <f64>::from_arma(r#"-1.0"#.to_string()).unwrap());
+        assert_eq!(1.0, <f64>::from_arma(r#""1.0""#.to_string()).unwrap());
+        assert_eq!(1.0, <f64>::from_arma(r#""1""#.to_string()).unwrap());
+        assert_eq!(1.0, <f64>::from_arma(r#""1.0e+0""#.to_string()).unwrap());
+        assert_eq!(-1.0, <f64>::from_arma(r#""-1.0""#.to_string()).unwrap());
     }
 }
