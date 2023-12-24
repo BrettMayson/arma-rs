@@ -21,6 +21,112 @@ impl IntoArma for () {
     }
 }
 
+macro_rules! impl_into_arma_number {
+    ($($t:ty),*) => {
+        $(
+            impl IntoArma for $t {
+                fn to_arma(&self) -> Value {
+                    Value::Number(*self as f64)
+                }
+            }
+        )*
+    };
+}
+
+impl_into_arma_number!(f32, f64, i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+
+#[cfg(test)]
+#[test]
+fn test_f32() {
+    assert_eq!(String::from("1"), 1f32.to_arma().to_string());
+    assert_eq!(String::from("1.5"), 1.5f32.to_arma().to_string());
+}
+
+#[cfg(test)]
+#[test]
+fn test_f64() {
+    assert_eq!(String::from("1"), 1f64.to_arma().to_string());
+    assert_eq!(String::from("1.5"), 1.5f64.to_arma().to_string());
+}
+
+#[cfg(test)]
+#[test]
+fn test_bool() {
+    assert_eq!(String::from("true"), true.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_i8() {
+    assert_eq!(String::from("1"), 1i8.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_i16() {
+    assert_eq!(String::from("1"), 1i16.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_i32() {
+    assert_eq!(String::from("1"), 1i32.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_i64() {
+    assert_eq!(String::from("1"), 1i64.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_i128() {
+    assert_eq!(String::from("1"), 1i128.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_isize() {
+    assert_eq!(String::from("1"), 1isize.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_u8() {
+    assert_eq!(String::from("1"), 1u8.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_u16() {
+    assert_eq!(String::from("1"), 1u16.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_u32() {
+    assert_eq!(String::from("1"), 1u32.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_u64() {
+    assert_eq!(String::from("1"), 1u64.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_u128() {
+    assert_eq!(String::from("1"), 1u128.to_arma().to_string())
+}
+
+#[cfg(test)]
+#[test]
+fn test_usize() {
+    assert_eq!(String::from("1"), 1usize.to_arma().to_string())
+}
+
 macro_rules! impl_into_arma_tuple {
     { $c: expr, $($t:ident)* } => {
         seq_macro::seq!(N in 0..$c {
@@ -154,110 +260,6 @@ impl IntoArma for bool {
     fn to_arma(&self) -> Value {
         Value::Boolean(*self)
     }
-}
-
-#[cfg(test)]
-#[test]
-fn test_bool() {
-    assert_eq!(String::from("true"), true.to_arma().to_string())
-}
-
-impl IntoArma for i8 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(self.to_owned()))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_i8() {
-    assert_eq!(String::from("1"), 1i8.to_arma().to_string())
-}
-
-impl IntoArma for i16 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(self.to_owned()))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_i16() {
-    assert_eq!(String::from("1"), 1i16.to_arma().to_string())
-}
-
-impl IntoArma for i32 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(*self))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_i32() {
-    assert_eq!(String::from("1"), 1i32.to_arma().to_string())
-}
-
-impl IntoArma for f32 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(*self))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_f32() {
-    assert_eq!(String::from("1"), 1f32.to_arma().to_string());
-    assert_eq!(String::from("1.5"), 1.5f32.to_arma().to_string());
-}
-
-impl IntoArma for f64 {
-    fn to_arma(&self) -> Value {
-        Value::Number(*self)
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_f64() {
-    assert_eq!(String::from("1"), 1f64.to_arma().to_string());
-    assert_eq!(String::from("1.5"), 1.5f64.to_arma().to_string());
-}
-
-impl IntoArma for u8 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(self.to_owned()))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_u8() {
-    assert_eq!(String::from("1"), 1u8.to_arma().to_string())
-}
-
-impl IntoArma for u16 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(self.to_owned()))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_u16() {
-    assert_eq!(String::from("1"), 1u16.to_arma().to_string())
-}
-
-impl IntoArma for u32 {
-    fn to_arma(&self) -> Value {
-        Value::Number(f64::from(*self))
-    }
-}
-
-#[cfg(test)]
-#[test]
-fn test_u32() {
-    assert_eq!(String::from("1"), 1u32.to_arma().to_string())
 }
 
 impl<T: IntoArma> IntoArma for Option<T> {
