@@ -56,4 +56,10 @@ struct FieldStackedDuplicate {
     test: u32,
 }
 
+#[derive(IntoArma, FromArma)]
+#[arma(unknown, default, default)]
+struct MultipleErrors {
+    test: u32,
+}
+
 fn main() {}

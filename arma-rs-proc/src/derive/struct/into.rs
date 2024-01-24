@@ -1,17 +1,20 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use super::{ContainerAttributes, DataStruct, FieldNamed, FieldUnnamed};
+use crate::derive::{
+    attributes::ContainerAttributes,
+    data::{DataStruct, FieldNamed, FieldUnnamed},
+};
 
-pub fn into_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> TokenStream {
+pub fn impl_into_arma(attributes: &ContainerAttributes, data: &DataStruct) -> TokenStream {
     match &data {
-        DataStruct::Map(fields) => map_struct(fields, attributes),
-        DataStruct::Tuple(fields) => tuple_struct(fields, attributes),
-        DataStruct::NewType(field) => newtype_struct(field, attributes),
+        DataStruct::Map(fields) => map_struct(attributes, fields),
+        DataStruct::Tuple(fields) => tuple_struct(attributes, fields),
+        DataStruct::NewType(field) => newtype_struct(attributes, field),
     }
 }
 
-fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> TokenStream {
+fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
         let ident = &fields.first().unwrap().ident;
         return quote! {
@@ -27,7 +30,7 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> TokenS
     }
 }
 
-fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> TokenStream {
+fn tuple_struct(_attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> TokenStream {
     let indexes = fields.iter().map(|f| &f.index);
     quote! {
         Vec::<arma_rs::Value>::from([#(
@@ -36,7 +39,7 @@ fn tuple_struct(fields: &[FieldUnnamed], _attributes: &ContainerAttributes) -> T
     }
 }
 
-fn newtype_struct(_field: &FieldUnnamed, _attributes: &ContainerAttributes) -> TokenStream {
+fn newtype_struct(_attributes: &ContainerAttributes, _field: &FieldUnnamed) -> TokenStream {
     quote! {
         self.0.to_arma()
     }

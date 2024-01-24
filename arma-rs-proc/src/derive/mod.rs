@@ -6,8 +6,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DeriveInput, Result};
 
-use attributes::{Attribute, ContainerAttributes, FieldAttributes};
-use data::{ContainerData, Data, DataStruct, FieldNamed, FieldUnnamed};
+use data::ContainerData;
 
 pub struct CombinedError {
     root: Option<syn::Error>,
@@ -35,9 +34,7 @@ impl CombinedError {
 
 pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
     let container = parse_container_data(input)?;
-    let body = match container.data {
-        Data::Struct(data) => r#struct::into_impl_body(&data, &container.attributes),
-    };
+    let body = container.impl_into_arma();
 
     let ident = container.ident;
     let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
@@ -53,9 +50,7 @@ pub fn generate_into_arma(input: DeriveInput) -> Result<TokenStream> {
 
 pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
     let container = parse_container_data(input)?;
-    let body = match container.data {
-        Data::Struct(data) => r#struct::from_impl_body(&data, &container.attributes),
-    };
+    let body = container.impl_from_arma();
 
     let ident = container.ident;
     let (impl_generics, ty_generics, where_clause) = container.generics.split_for_impl();
@@ -72,10 +67,6 @@ pub fn generate_from_arma(input: DeriveInput) -> Result<TokenStream> {
 fn parse_container_data(input: DeriveInput) -> Result<ContainerData> {
     let mut errors = CombinedError::new();
     let container = ContainerData::from_input(&mut errors, input)?;
-    match container.data {
-        Data::Struct(ref data) => {
-            r#struct::validate_attributes(&mut errors, data, &container.attributes);
-        }
-    }
+    container.validate_attributes(&mut errors);
     errors.into_result().map(|_| container)
 }

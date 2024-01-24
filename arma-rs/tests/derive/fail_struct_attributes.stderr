@@ -51,3 +51,15 @@ error: duplicate arma attribute `default`
    |
 55 |     #[arma(default)]
    |            ^^^^^^^
+
+error: unknown arma container attribute `unknown`
+  --> tests/derive/fail_struct_attributes.rs:60:8
+   |
+60 | #[arma(unknown, default, default)]
+   |        ^^^^^^^
+
+error: duplicate arma attribute `default`
+  --> tests/derive/fail_struct_attributes.rs:60:26
+   |
+60 | #[arma(unknown, default, default)]
+   |                          ^^^^^^^

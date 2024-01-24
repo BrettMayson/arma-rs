@@ -1,17 +1,20 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use super::{ContainerAttributes, DataStruct, FieldNamed, FieldUnnamed};
+use crate::derive::{
+    attributes::ContainerAttributes,
+    data::{DataStruct, FieldNamed, FieldUnnamed},
+};
 
-pub fn from_impl_body(data: &DataStruct, attributes: &ContainerAttributes) -> TokenStream {
+pub fn impl_from_arma(attributes: &ContainerAttributes, data: &DataStruct) -> TokenStream {
     match &data {
-        DataStruct::Map(fields) => map_struct(fields, attributes),
-        DataStruct::Tuple(fields) => tuple_struct(fields, attributes),
-        DataStruct::NewType(field) => newtype_struct(field, attributes),
+        DataStruct::Map(fields) => map_struct(attributes, fields),
+        DataStruct::Tuple(fields) => tuple_struct(attributes, fields),
+        DataStruct::NewType(field) => newtype_struct(attributes, field),
     }
 }
 
-fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> TokenStream {
+fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
         let field = fields.first().unwrap();
         let ident = &field.ident;
@@ -67,7 +70,7 @@ fn map_struct(fields: &[FieldNamed], attributes: &ContainerAttributes) -> TokenS
     }
 }
 
-fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> TokenStream {
+fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> TokenStream {
     let mut setup = TokenStream::new();
     setup.extend(quote! {
         let input_values: Vec<arma_rs::Value> = arma_rs::FromArma::from_arma(input_string)?;
@@ -120,7 +123,7 @@ fn tuple_struct(fields: &[FieldUnnamed], attributes: &ContainerAttributes) -> To
     }
 }
 
-fn newtype_struct(_field: &FieldUnnamed, _attributes: &ContainerAttributes) -> TokenStream {
+fn newtype_struct(_attributes: &ContainerAttributes, _field: &FieldUnnamed) -> TokenStream {
     quote! {
         Ok(Self (arma_rs::FromArma::from_arma(input_string)?))
     }

@@ -1,95 +1,62 @@
 mod from;
 mod into;
+mod validate;
 
-use syn::Error;
+use proc_macro2::Span;
+use syn::{Error, Result};
 
-pub use from::from_impl_body;
-pub use into::into_impl_body;
+pub use from::impl_from_arma;
+pub use into::impl_into_arma;
+pub use validate::validate_attributes;
 
-use super::{Attribute, CombinedError, ContainerAttributes, DataStruct, FieldNamed, FieldUnnamed};
+use crate::derive::{
+    data::{DataStruct, FieldNamed, FieldUnnamed},
+    CombinedError,
+};
 
-pub fn validate_attributes(
-    errors: &mut CombinedError,
-    data: &DataStruct,
-    attributes: &ContainerAttributes,
-) {
-    if *attributes.transparent.value() {
-        match data {
-            DataStruct::Map(fields) => {
-                if fields.len() > 1 {
-                    errors.add(
-                        attributes
-                            .transparent
-                            .error("#[arma(transparent)] structs must have exactly one field"),
-                    );
+impl DataStruct {
+    pub fn new(errors: &mut CombinedError, data: syn::DataStruct) -> Result<Self> {
+        match data.fields {
+            syn::Fields::Unit => Err(Error::new(
+                Span::call_site(),
+                "unit-like structs aren't supported",
+            )),
+            syn::Fields::Named(fields) => {
+                if fields.named.is_empty() {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "unit-like structs aren't supported",
+                    ));
                 }
+
+                let fields = fields
+                    .named
+                    .into_iter()
+                    .map(|f| FieldNamed::new(errors, f))
+                    .collect::<_>();
+                Ok(Self::Map(fields))
             }
-            _ => {
-                errors.add(
-                    attributes
-                        .transparent
-                        .error("#[arma(transparent)] can only be used on map-like structs"),
-                );
-            }
-        }
-    }
-
-    if let Some(attr) = get_default_attr(data, attributes) {
-        if matches!(data, DataStruct::Map(_)) && *attributes.transparent.value() {
-            errors.add(
-                attributes
-                    .transparent
-                    .error("#[arma(transparent)] and #[arma(default)] cannot be used together"),
-            );
-        }
-
-        if matches!(data, DataStruct::NewType(_)) {
-            errors.add(attr.error("#[arma(default)] can't be used on new type structs"));
-        }
-    }
-
-    if let DataStruct::Tuple(fields) = data {
-        let mut index_first_default = None;
-        for (index, field) in fields.iter().enumerate() {
-            match index_first_default {
-                None => {
-                    if field.attributes.default.is_set() {
-                        index_first_default = Some(index);
-                    }
+            syn::Fields::Unnamed(fields) => {
+                if fields.unnamed.is_empty() {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        "unit-like structs aren't supported",
+                    ));
                 }
-                Some(index) => {
-                    if !field.attributes.default.is_set() {
-                        errors.add(Error::new_spanned(&field.ty,
-                            format!("field must have #[arma(default)] because previous field {} has #[arma(default)]", index)
-                        ));
-                    }
+
+                if fields.unnamed.len() == 1 {
+                    let field = FieldUnnamed::new(errors, fields.unnamed[0].clone(), 0);
+                    Ok(Self::NewType(field))
+                } else {
+                    let fields = fields
+                        .unnamed
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, f)| FieldUnnamed::new(errors, f, i))
+                        .collect::<_>();
+                    Ok(Self::Tuple(fields))
                 }
             }
         }
-    }
-}
-
-fn get_default_attr<'a>(
-    data: &'a DataStruct,
-    attributes: &'a ContainerAttributes,
-) -> Option<&'a Attribute<bool>> {
-    if *attributes.default.value() {
-        return Some(&attributes.default);
-    }
-
-    match data {
-        DataStruct::Map(fields) => fields
-            .iter()
-            .find(|f| *f.attributes.default.value())
-            .map(|f| &f.attributes.default),
-        DataStruct::Tuple(fields) => fields
-            .iter()
-            .find(|f| *f.attributes.default.value())
-            .map(|f| &f.attributes.default),
-        DataStruct::NewType(field) => field
-            .attributes
-            .default
-            .value()
-            .then_some(&field.attributes.default),
     }
 }
