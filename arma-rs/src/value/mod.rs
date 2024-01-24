@@ -17,9 +17,6 @@ pub enum Value {
     /// Represented as `null`
     Null,
     /// Arma's `number` value.
-    ///
-    /// # Warning
-    /// All numbers in SQF are implemented using a single-precision floating-point format resulting in a potentially lossy conversion from an integer.
     Number(f64),
     /// Arma's `array` value.
     /// Represented as `[...]`
