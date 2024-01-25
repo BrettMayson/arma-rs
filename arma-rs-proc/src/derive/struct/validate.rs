@@ -1,7 +1,7 @@
 use syn::Error;
 
 use crate::derive::{
-    attributes::{Attribute, ContainerAttributes},
+    attributes::{Attribute, ContainerAttributes, FieldAttributes},
     data::DataStruct,
     CombinedError,
 };
@@ -13,22 +13,21 @@ pub fn validate_attributes(
 ) {
     if *attributes.transparent.value() {
         match data {
-            DataStruct::Map(fields) => {
-                if fields.len() > 1 {
-                    errors.add(
-                        attributes
-                            .transparent
-                            .error("#[arma(transparent)] structs must have exactly one field"),
-                    );
-                }
-            }
-            _ => {
+            DataStruct::Map(fields) if fields.len() > 1 => {
                 errors.add(
                     attributes
                         .transparent
-                        .error("#[arma(transparent)] can only be used on map-like structs"),
+                        .error("#[arma(transparent)] structs must have exactly one field"),
                 );
             }
+            DataStruct::Tuple(_) => {
+                errors.add(
+                    attributes
+                        .transparent
+                        .error("#[arma(transparent)] cannot be used on tuple like structs"),
+                );
+            }
+            _ => {}
         }
     }
 
@@ -42,7 +41,7 @@ pub fn validate_attributes(
         }
 
         if matches!(data, DataStruct::NewType(_)) {
-            errors.add(attr.error("#[arma(default)] can't be used on new type structs"));
+            errors.add(attr.error("#[arma(default)] cannot be used on new type structs"));
         }
     }
 
@@ -75,19 +74,14 @@ fn get_default_attr<'a>(
         return Some(&attributes.default);
     }
 
-    match data {
-        DataStruct::Map(fields) => fields
-            .iter()
-            .find(|f| *f.attributes.default.value())
-            .map(|f| &f.attributes.default),
-        DataStruct::Tuple(fields) => fields
-            .iter()
-            .find(|f| *f.attributes.default.value())
-            .map(|f| &f.attributes.default),
-        DataStruct::NewType(field) => field
-            .attributes
-            .default
-            .value()
-            .then_some(&field.attributes.default),
-    }
+    let field_attributes: Vec<&FieldAttributes> = match data {
+        DataStruct::Map(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        DataStruct::Tuple(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        DataStruct::NewType(field) => vec![&field.attributes],
+    };
+
+    field_attributes
+        .iter()
+        .find(|attr| *attr.default.value())
+        .map(|f| &f.default)
 }

@@ -1,4 +1,4 @@
-error: #[arma(transparent)] can only be used on map-like structs
+error: #[arma(transparent)] cannot be used on tuple like structs
  --> tests/derive/fail_struct_tuple_transparent.rs:4:8
   |
 4 | #[arma(transparent)]

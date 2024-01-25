@@ -367,4 +367,23 @@ mod derive {
             );
         }
     }
+
+    mod newtype {
+        use super::*;
+
+        #[test]
+        fn transparent() {
+            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+            #[arma(transparent)]
+            struct DeriveTest(String);
+
+            let serialized = DeriveTest("expected".to_string());
+            let deserialized = Value::String("expected".to_string());
+            assert_eq!(serialized.to_arma(), deserialized);
+            assert_eq!(
+                DeriveTest::from_arma(deserialized.to_string()),
+                Ok(serialized)
+            );
+        }
+    }
 }
