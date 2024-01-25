@@ -1,4 +1,5 @@
 use proc_macro2::{Span, TokenStream};
+use quote::ToTokens;
 use syn::{Error, Result};
 
 use crate::derive::{
@@ -19,6 +20,12 @@ pub struct FieldUnnamed {
     pub ty: syn::Type,
 }
 
+pub trait Field {
+    fn attributes(&self) -> &FieldAttributes;
+    fn token(&self) -> TokenStream;
+    fn ty(&self) -> &syn::Type;
+}
+
 impl FieldNamed {
     pub fn new(errors: &mut CombinedError, field: syn::Field) -> Self {
         let ident = field.ident.unwrap();
@@ -32,6 +39,20 @@ impl FieldNamed {
     }
 }
 
+impl Field for FieldNamed {
+    fn attributes(&self) -> &FieldAttributes {
+        &self.attributes
+    }
+
+    fn token(&self) -> TokenStream {
+        self.ident.to_token_stream()
+    }
+
+    fn ty(&self) -> &syn::Type {
+        &self.ty
+    }
+}
+
 impl FieldUnnamed {
     pub fn new(errors: &mut CombinedError, field: syn::Field, index: usize) -> Self {
         Self {
@@ -39,6 +60,20 @@ impl FieldUnnamed {
             index: syn::Index::from(index),
             ty: field.ty,
         }
+    }
+}
+
+impl Field for FieldUnnamed {
+    fn attributes(&self) -> &FieldAttributes {
+        &self.attributes
+    }
+
+    fn token(&self) -> TokenStream {
+        self.index.to_token_stream()
+    }
+
+    fn ty(&self) -> &syn::Type {
+        &self.ty
     }
 }
 

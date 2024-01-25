@@ -3,7 +3,7 @@ use quote::quote;
 
 use crate::derive::{
     attributes::ContainerAttributes,
-    data::{DataStruct, FieldNamed, FieldUnnamed},
+    data::{DataStruct, Field, FieldNamed, FieldUnnamed},
 };
 
 pub fn impl_from_arma(attributes: &ContainerAttributes, data: &DataStruct) -> TokenStream {
@@ -16,13 +16,7 @@ pub fn impl_from_arma(attributes: &ContainerAttributes, data: &DataStruct) -> To
 
 fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
-        let field = fields.first().unwrap();
-        let ident = &field.ident;
-        return quote! {
-            Ok(Self {
-                #ident: arma_rs::FromArma::from_arma(input_string)?,
-            })
-        };
+        return newtype_struct(attributes, fields.first().unwrap());
     }
 
     let mut setup = TokenStream::new();
@@ -123,8 +117,12 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     }
 }
 
-fn newtype_struct(_attributes: &ContainerAttributes, _field: &FieldUnnamed) -> TokenStream {
+fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
+    let token = field.token();
+
     quote! {
-        Ok(Self (arma_rs::FromArma::from_arma(input_string)?))
+        Ok(Self {
+            #token: arma_rs::FromArma::from_arma(input_string)?
+        })
     }
 }

@@ -3,7 +3,7 @@ use quote::quote;
 
 use crate::derive::{
     attributes::ContainerAttributes,
-    data::{DataStruct, FieldNamed, FieldUnnamed},
+    data::{DataStruct, Field, FieldNamed, FieldUnnamed},
 };
 
 pub fn impl_into_arma(attributes: &ContainerAttributes, data: &DataStruct) -> TokenStream {
@@ -16,10 +16,7 @@ pub fn impl_into_arma(attributes: &ContainerAttributes, data: &DataStruct) -> To
 
 fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
-        let ident = &fields.first().unwrap().ident;
-        return quote! {
-            self.#ident.to_arma()
-        };
+        return newtype_struct(attributes, fields.first().unwrap());
     }
 
     let (idents, names): (Vec<_>, Vec<_>) = fields.iter().map(|f| (&f.ident, &f.name)).unzip();
@@ -39,8 +36,10 @@ fn tuple_struct(_attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> T
     }
 }
 
-fn newtype_struct(_attributes: &ContainerAttributes, _field: &FieldUnnamed) -> TokenStream {
+fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
+    let token = &field.token();
+
     quote! {
-        self.0.to_arma()
+        self.#token.to_arma()
     }
 }
