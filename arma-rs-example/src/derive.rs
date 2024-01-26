@@ -11,7 +11,7 @@ pub fn dice_roll(player: Player) -> (Player, i8) {
     if player.is_admin {
         (player, 20)
     } else {
-        (player, 0)
+        (player, 1)
     }
 }
 
@@ -35,8 +35,8 @@ mod tests {
         );
         assert_eq!(code, 0);
         assert!(
-            result == r#"[[["name","John"],["is_admin",false]],0]"#
-                || result == r#"[[["is_admin",false],["name","John"]],0]"#
+            result == r#"[[["name","John"],["is_admin",false]],1]"#
+                || result == r#"[[["is_admin",false],["name","John"]],1]"#
         );
 
         let (result, code) = extension.call(
