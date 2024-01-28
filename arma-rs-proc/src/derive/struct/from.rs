@@ -21,8 +21,14 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
 
     let mut setup = TokenStream::new();
     setup.extend(quote! {
-        let mut input_values: std::collections::HashMap<String, arma_rs::Value> =
-            arma_rs::FromArma::from_arma(input_string)?;
+        let mut input_values = std::collections::HashMap::<String, arma_rs::Value>::default();
+
+        let pairs: Vec<(String, arma_rs::Value)> = FromArma::from_arma(input_string)?;
+        for (k, v) in pairs {
+            if input_values.insert(k.clone(), v).is_some() {
+                return Err(arma_rs::FromArmaError::DuplicateField(k));
+            }
+        }
     });
     if *attributes.default.value() {
         setup.extend(quote! {
@@ -37,7 +43,7 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
         } else if *attributes.default.value() {
             quote!(container_default.#ident)
         } else {
-            quote!(return Err(arma_rs::FromArmaError::MapMissingField(#name.to_string())))
+            quote!(return Err(arma_rs::FromArmaError::MissingField(#name.to_string())))
         };
 
         quote! {
@@ -50,7 +56,7 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
 
     let check_unknown = quote! {
         if let Some(unknown) = input_values.keys().next() {
-            return Err(arma_rs::FromArmaError::MapUnknownField(unknown.clone()));
+            return Err(arma_rs::FromArmaError::UnknownField(unknown.clone()));
         }
     };
     quote! {
@@ -84,7 +90,7 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
         } else if *attributes.default.value() {
             quote!(container_default.#index)
         } else {
-            quote!(return Err(arma_rs::FromArmaError::SizeMismatch {
+            quote!(return Err(arma_rs::FromArmaError::InvalidLength {
                 expected: #expected_len,
                 actual: #index,
             }))
@@ -100,7 +106,7 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
 
     let check_unknown = quote! {
         if let Some(unknown) = input_values.next() {
-            return Err(arma_rs::FromArmaError::SizeMismatch {
+            return Err(arma_rs::FromArmaError::InvalidLength {
                 expected: #expected_len,
                 actual: #expected_len + 1 + input_values.len(),
             });

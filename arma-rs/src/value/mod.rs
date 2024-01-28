@@ -60,7 +60,7 @@ impl FromArma for Value {
             Some('0'..='9') | Some('-') => Ok(Value::Number(<f64>::from_arma(s)?)),
             Some('[') => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
             Some('"') => Ok(Value::String(<String>::from_arma(s)?)),
-            _ => Err(FromArmaError::ValueInvalid(s)),
+            _ => Err(FromArmaError::InvalidValue(s)),
         }
     }
 }

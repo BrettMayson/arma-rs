@@ -29,27 +29,27 @@ fn split_array(s: &str) -> Vec<String> {
 #[derive(Debug, PartialEq, Eq)]
 pub enum FromArmaError {
     /// Invalid [`crate::Value`]
-    ValueInvalid(String),
-
+    InvalidValue(String),
     /// Invalid primitive value
-    PrimitiveParseError(String),
-    /// Missing base in exponential notation
-    NumberMissingBase,
-    /// Missing exponent in exponential notation
-    NumberMissingExponent,
-    /// Missing array/tuple bracket
-    ArrayMissingBracket(bool),
-    /// Missing field in map
-    MapMissingField(String),
-    /// Unknown field in map
-    MapUnknownField(String),
+    InvalidPrimitive(String),
     /// Collection size mismatch
-    SizeMismatch {
+    InvalidLength {
         /// Expected size
         expected: usize,
         /// Actual size
         actual: usize,
     },
+
+    /// Missing base(true) or exponent(false) in exponential notation
+    MissingNumberNotation(bool),
+    /// Missing opening(true) or closing(false) bracket
+    MissingBracket(bool),
+    /// Missing field
+    MissingField(String),
+    /// Unknown field
+    UnknownField(String),
+    /// Duplicate field
+    DuplicateField(String),
 
     /// Custom error message
     Custom(String),
@@ -58,19 +58,22 @@ pub enum FromArmaError {
 impl std::fmt::Display for FromArmaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ValueInvalid(s) => write!(f, "invalid value: {s}"),
-            Self::PrimitiveParseError(s) => write!(f, "error parsing primitive: {s}"),
-            Self::NumberMissingBase => write!(f, "missing base in exponential notation"),
-            Self::NumberMissingExponent => write!(f, "missing exponent in exponential notation"),
-            Self::ArrayMissingBracket(start) => match *start {
+            Self::InvalidValue(s) => write!(f, "invalid value: {s}"),
+            Self::InvalidPrimitive(s) => write!(f, "error parsing primitive: {s}"),
+            Self::InvalidLength { expected, actual } => {
+                write!(f, "expected {expected} elements, got {actual}")
+            }
+            Self::MissingNumberNotation(base) => match base {
+                true => write!(f, "missing base in exponential notation"),
+                false => write!(f, "missing exponent in exponential notation"),
+            },
+            Self::MissingBracket(start) => match *start {
                 true => write!(f, "missing '[' at start of array"),
                 false => write!(f, "missing ']' at end of array"),
             },
-            Self::SizeMismatch { expected, actual } => {
-                write!(f, "expected {expected} elements, got {actual}")
-            }
-            Self::MapMissingField(s) => write!(f, "missing field: {s}"),
-            Self::MapUnknownField(s) => write!(f, "unknown field: {s}"),
+            Self::MissingField(s) => write!(f, "missing field: {s}"),
+            Self::UnknownField(s) => write!(f, "unknown field: {s}"),
+            Self::DuplicateField(s) => write!(f, "duplicate field: {s}"),
             Self::Custom(s) => f.write_str(s),
         }
     }
@@ -78,8 +81,8 @@ impl std::fmt::Display for FromArmaError {
 
 impl FromArmaError {
     /// Creates a new [`FromArmaError::Custom`]
-    pub fn custom(s: impl AsRef<str>) -> Self {
-        Self::Custom(s.as_ref().to_string())
+    pub fn custom(msg: impl std::fmt::Display) -> Self {
+        Self::Custom(msg.to_string())
     }
 }
 
@@ -95,7 +98,7 @@ pub trait FromArma: Sized {
 impl FromArma for String {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let Some(s) = s.strip_prefix('"').and_then(|s| s.strip_suffix('"')) else {
-            return Err(FromArmaError::PrimitiveParseError(String::from(
+            return Err(FromArmaError::InvalidPrimitive(String::from(
                 "missing '\"' at start or end of string",
             )));
         };
@@ -120,7 +123,7 @@ macro_rules! impl_from_arma {
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, FromArmaError> {
                     let s = s.strip_suffix('"').and_then(|s| s.strip_prefix('"')).unwrap_or(&s);
-                    s.parse::<Self>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))
+                    s.parse::<Self>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))
                 }
             }
         )*
@@ -138,16 +141,16 @@ macro_rules! impl_from_arma_number {
                         // parse exponential notation
                         let mut parts = s.split('e');
                         let base = match parts.next().unwrap() {
-                            s if !s.is_empty() => s.parse::<f64>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))?,
-                            _ => return Err(FromArmaError::NumberMissingBase),
+                            s if !s.is_empty() => s.parse::<f64>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
+                            _ => return Err(FromArmaError::MissingNumberNotation(true)),
                         };
                         let exp = match parts.next().unwrap() {
-                            s if !s.is_empty() => s.parse::<i32>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))?,
-                            _ => return Err(FromArmaError::NumberMissingExponent),
+                            s if !s.is_empty() => s.parse::<i32>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
+                            _ => return Err(FromArmaError::MissingNumberNotation(false)),
                         };
                         return Ok((base * 10.0_f64.powi(exp)) as $t);
                     }
-                    s.parse::<Self>().map_err(|e| FromArmaError::PrimitiveParseError(e.to_string()))
+                    s.parse::<Self>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))
                 }
             }
         )*
@@ -205,9 +208,9 @@ where
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let source = s
             .strip_prefix('[')
-            .ok_or(FromArmaError::ArrayMissingBracket(true))?
+            .ok_or(FromArmaError::MissingBracket(true))?
             .strip_suffix(']')
-            .ok_or(FromArmaError::ArrayMissingBracket(false))?;
+            .ok_or(FromArmaError::MissingBracket(false))?;
         let parts = split_array(source);
         parts.iter().try_fold(Self::new(), |mut acc, p| {
             acc.push(T::from_arma(p.to_string())?);
@@ -223,7 +226,7 @@ where
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let v: Vec<T> = FromArma::from_arma(s)?;
         let len = v.len();
-        v.try_into().map_err(|_| FromArmaError::SizeMismatch {
+        v.try_into().map_err(|_| FromArmaError::InvalidLength {
             expected: N,
             actual: len,
         })
@@ -264,21 +267,21 @@ mod tests {
     fn parse_tuple_size_errors() {
         assert!(matches!(
             <(String, i32)>::from_arma(r#"[]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
             })
         ));
         assert!(matches!(
             <(String, i32)>::from_arma(r#"["hello"]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 1
             })
         ));
         assert!(matches!(
             <(String, i32)>::from_arma(r#"["hello", 123, 456]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 3
             })
@@ -289,11 +292,11 @@ mod tests {
     fn parse_tuple_bracket_errors() {
         assert!(matches!(
             <(String, i32)>::from_arma(r#"["hello", 123"#.to_string()),
-            Err(FromArmaError::ArrayMissingBracket(false))
+            Err(FromArmaError::MissingBracket(false))
         ));
         assert!(matches!(
             <(String, i32)>::from_arma(r#""hello", 123"#.to_string()),
-            Err(FromArmaError::ArrayMissingBracket(true))
+            Err(FromArmaError::MissingBracket(true))
         ));
     }
 
@@ -410,12 +413,12 @@ mod tests {
     #[test]
     fn parse_vec_bracket_errors() {
         assert!(matches!(
-            <Vec<String>>::from_arma(r#"["hello","bye""#.to_string()),
-            Err(FromArmaError::ArrayMissingBracket(false))
+            <Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()),
+            Err(FromArmaError::MissingBracket(true))
         ));
         assert!(matches!(
-            <Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()),
-            Err(FromArmaError::ArrayMissingBracket(true))
+            <Vec<String>>::from_arma(r#"["hello","bye""#.to_string()),
+            Err(FromArmaError::MissingBracket(false))
         ));
     }
 
@@ -440,21 +443,21 @@ mod tests {
     fn parse_slice_size_errors() {
         assert!(matches!(
             <[String; 2]>::from_arma(r#"[]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
             })
         ));
         assert!(matches!(
             <[String; 2]>::from_arma(r#"["hello"]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 1
             })
         ));
         assert!(matches!(
             <[String; 2]>::from_arma(r#"["hello","bye","world"]"#.to_string()),
-            Err(FromArmaError::SizeMismatch {
+            Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 3
             })
@@ -464,12 +467,24 @@ mod tests {
     #[test]
     fn parse_hashmap() {
         assert_eq!(
-            std::collections::HashMap::from_iter(vec![
+            std::collections::HashMap::from([
                 (String::from("hello"), 123),
                 (String::from("bye"), 321),
             ]),
             <std::collections::HashMap<String, i32>>::from_arma(
                 r#"[["hello", 123],["bye",321]]"#.to_string()
+            )
+            .unwrap()
+        );
+
+        assert_eq!(
+            std::collections::HashMap::from([
+                (String::from("hello"), 123),
+                (String::from("bye"), 321),
+                (String::from("hello"), 321),
+            ]),
+            <std::collections::HashMap<String, i32>>::from_arma(
+                r#"[["hello", 123],["bye",321],["hello", 321]]"#.to_string()
             )
             .unwrap()
         );
@@ -488,11 +503,11 @@ mod tests {
     fn parse_exponential_errors() {
         assert!(matches!(
             <u32>::from_arma(r#"e-10"#.to_string()),
-            Err(FromArmaError::NumberMissingBase)
+            Err(FromArmaError::MissingNumberNotation(true))
         ));
         assert!(matches!(
             <u32>::from_arma(r#"1.0e"#.to_string()),
-            Err(FromArmaError::NumberMissingExponent)
+            Err(FromArmaError::MissingNumberNotation(false))
         ));
     }
 

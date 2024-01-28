@@ -168,7 +168,7 @@ mod derive {
             let input = Value::Array(vec![]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(FromArmaError::MapMissingField("_expected".to_string()))
+                Err(FromArmaError::MissingField("_expected".to_string()))
             );
         }
 
@@ -191,7 +191,30 @@ mod derive {
             ]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(FromArmaError::MapUnknownField("unknown".to_string()))
+                Err(FromArmaError::UnknownField("unknown".to_string()))
+            );
+        }
+
+        #[test]
+        fn error_duplicate() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                _expected: String,
+            }
+
+            let input = Value::Array(vec![
+                Value::Array(vec![
+                    Value::String("_expected".to_string()),
+                    Value::String("first".to_string()),
+                ]),
+                Value::Array(vec![
+                    Value::String("_expected".to_string()),
+                    Value::String("second".to_string()),
+                ]),
+            ]);
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Err(FromArmaError::DuplicateField("_expected".to_string()))
             );
         }
 
@@ -209,7 +232,7 @@ mod derive {
             ])]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(FromArmaError::MapUnknownField("unknown".to_string()))
+                Err(FromArmaError::UnknownField("unknown".to_string()))
             );
         }
 
@@ -225,7 +248,7 @@ mod derive {
             let input = Value::Array(vec![]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(FromArmaError::MapMissingField("_expected".to_string()))
+                Err(FromArmaError::MissingField("_expected".to_string()))
             );
         }
     }
@@ -345,7 +368,7 @@ mod derive {
             ]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(arma_rs::FromArmaError::SizeMismatch {
+                Err(arma_rs::FromArmaError::InvalidLength {
                     expected: 2,
                     actual: 3,
                 })
@@ -360,7 +383,7 @@ mod derive {
             let input = Value::Array(vec![]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Err(arma_rs::FromArmaError::SizeMismatch {
+                Err(arma_rs::FromArmaError::InvalidLength {
                     expected: 2,
                     actual: 0,
                 })
@@ -384,6 +407,17 @@ mod derive {
                 DeriveTest::from_arma(deserialized.to_string()),
                 Ok(serialized)
             );
+        }
+
+        #[test]
+        fn stringify() {
+            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+            struct DeriveTest(#[arma(stringify)] u64);
+
+            let serialized = DeriveTest(42);
+            let deserialized = "42".to_string();
+            assert_eq!(serialized.to_arma(), Value::String(deserialized.clone()));
+            assert_eq!(DeriveTest::from_arma(deserialized), Ok(serialized));
         }
     }
 }
