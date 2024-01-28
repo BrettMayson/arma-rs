@@ -40,8 +40,6 @@ pub enum FromArmaError {
         actual: usize,
     },
 
-    /// Missing base(true) or exponent(false) in exponential notation
-    MissingNumberNotation(bool),
     /// Missing opening(true) or closing(false) bracket
     MissingBracket(bool),
     /// Missing field
@@ -63,10 +61,6 @@ impl std::fmt::Display for FromArmaError {
             Self::InvalidLength { expected, actual } => {
                 write!(f, "expected {expected} elements, got {actual}")
             }
-            Self::MissingNumberNotation(base) => match base {
-                true => write!(f, "missing base in exponential notation"),
-                false => write!(f, "missing exponent in exponential notation"),
-            },
             Self::MissingBracket(start) => match *start {
                 true => write!(f, "missing '[' at start of array"),
                 false => write!(f, "missing ']' at end of array"),
@@ -142,11 +136,11 @@ macro_rules! impl_from_arma_number {
                         let mut parts = s.split('e');
                         let base = match parts.next().unwrap() {
                             s if !s.is_empty() => s.parse::<f64>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
-                            _ => return Err(FromArmaError::MissingNumberNotation(true)),
+                            _ => return Err(FromArmaError::InvalidPrimitive("invalid number literal".to_string())),
                         };
                         let exp = match parts.next().unwrap() {
                             s if !s.is_empty() => s.parse::<i32>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
-                            _ => return Err(FromArmaError::MissingNumberNotation(false)),
+                            _ => return Err(FromArmaError::InvalidPrimitive("invalid number literal".to_string())),
                         };
                         return Ok((base * 10.0_f64.powi(exp)) as $t);
                     }
@@ -265,39 +259,39 @@ mod tests {
 
     #[test]
     fn parse_tuple_size_errors() {
-        assert!(matches!(
+        assert_eq!(
             <(String, i32)>::from_arma(r#"[]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
             })
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <(String, i32)>::from_arma(r#"["hello"]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 1
             })
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <(String, i32)>::from_arma(r#"["hello", 123, 456]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 3
             })
-        ));
+        );
     }
 
     #[test]
     fn parse_tuple_bracket_errors() {
-        assert!(matches!(
+        assert_eq!(
             <(String, i32)>::from_arma(r#"["hello", 123"#.to_string()),
             Err(FromArmaError::MissingBracket(false))
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <(String, i32)>::from_arma(r#""hello", 123"#.to_string()),
             Err(FromArmaError::MissingBracket(true))
-        ));
+        );
     }
 
     #[test]
@@ -412,14 +406,14 @@ mod tests {
 
     #[test]
     fn parse_vec_bracket_errors() {
-        assert!(matches!(
+        assert_eq!(
             <Vec<String>>::from_arma(r#""hello","bye"]"#.to_string()),
             Err(FromArmaError::MissingBracket(true))
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <Vec<String>>::from_arma(r#"["hello","bye""#.to_string()),
             Err(FromArmaError::MissingBracket(false))
-        ));
+        );
     }
 
     #[test]
@@ -441,27 +435,27 @@ mod tests {
 
     #[test]
     fn parse_slice_size_errors() {
-        assert!(matches!(
+        assert_eq!(
             <[String; 2]>::from_arma(r#"[]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
             })
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <[String; 2]>::from_arma(r#"["hello"]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 1
             })
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             <[String; 2]>::from_arma(r#"["hello","bye","world"]"#.to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 3
             })
-        ));
+        );
     }
 
     #[test]
@@ -501,14 +495,31 @@ mod tests {
 
     #[test]
     fn parse_exponential_errors() {
-        assert!(matches!(
+        assert_eq!(
+            <f64>::from_arma(r#"e-10"#.to_string()),
+            Err(FromArmaError::InvalidPrimitive(
+                "invalid float literal".to_string()
+            ))
+        );
+        assert_eq!(
+            <f64>::from_arma(r#"1.0e"#.to_string()),
+            Err(FromArmaError::InvalidPrimitive(
+                "invalid float literal".to_string()
+            ))
+        );
+
+        assert_eq!(
             <u32>::from_arma(r#"e-10"#.to_string()),
-            Err(FromArmaError::MissingNumberNotation(true))
-        ));
-        assert!(matches!(
+            Err(FromArmaError::InvalidPrimitive(
+                "invalid number literal".to_string()
+            ))
+        );
+        assert_eq!(
             <u32>::from_arma(r#"1.0e"#.to_string()),
-            Err(FromArmaError::MissingNumberNotation(false))
-        ));
+            Err(FromArmaError::InvalidPrimitive(
+                "invalid number literal".to_string()
+            ))
+        );
     }
 
     #[test]
