@@ -100,12 +100,14 @@ impl ParseAttr for ContainerAttributes {
 }
 
 pub struct FieldAttributes {
+    pub stringify: Attribute<bool>,
     pub default: Attribute<bool>,
 }
 
 impl Default for FieldAttributes {
     fn default() -> Self {
         Self {
+            stringify: Attribute::new(false),
             default: Attribute::new(false),
         }
     }
@@ -113,6 +115,10 @@ impl Default for FieldAttributes {
 
 impl ParseAttr for FieldAttributes {
     fn parse_attr(&mut self, meta: syn::meta::ParseNestedMeta) -> Result<()> {
+        if meta.path.is_ident("stringify") {
+            return self.stringify.set(&meta, true);
+        }
+
         if meta.path.is_ident("default") {
             return self.default.set(&meta, true);
         }

@@ -276,8 +276,11 @@ fn test_option() {
     assert_eq!(String::from("1"), Some(1).to_arma().to_string());
 }
 
-impl<K: IntoArma, V: IntoArma, S: std::hash::BuildHasher> IntoArma
-    for std::collections::HashMap<K, V, S>
+impl<K, V, S> IntoArma for std::collections::HashMap<K, V, S>
+where
+    K: IntoArma,
+    V: IntoArma,
+    S: std::hash::BuildHasher,
 {
     fn to_arma(&self) -> Value {
         self.iter()
@@ -287,7 +290,11 @@ impl<K: IntoArma, V: IntoArma, S: std::hash::BuildHasher> IntoArma
     }
 }
 
-impl<K: IntoArma, S: std::hash::BuildHasher> IntoArma for std::collections::HashMap<K, Value, S> {
+impl<K, S> IntoArma for std::collections::HashMap<K, Value, S>
+where
+    K: IntoArma,
+    S: std::hash::BuildHasher,
+{
     fn to_arma(&self) -> Value {
         self.iter()
             .map(|(k, v)| vec![k.to_arma(), v.clone()])

@@ -74,14 +74,16 @@ fn get_default_attr<'a>(
         return Some(&attributes.default);
     }
 
-    let field_attributes: Vec<&FieldAttributes> = match data {
-        DataStruct::Map(fields) => fields.iter().map(|f| &f.attributes).collect(),
-        DataStruct::Tuple(fields) => fields.iter().map(|f| &f.attributes).collect(),
-        DataStruct::NewType(field) => vec![&field.attributes],
-    };
-
-    field_attributes
+    field_attributes(data)
         .iter()
         .find(|attr| *attr.default.value())
         .map(|f| &f.default)
+}
+
+fn field_attributes(data: &DataStruct) -> Vec<&FieldAttributes> {
+    match data {
+        DataStruct::Map(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        DataStruct::Tuple(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        DataStruct::NewType(field) => vec![&field.attributes],
+    }
 }

@@ -19,25 +19,48 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
         return newtype_struct(attributes, fields.first().unwrap());
     }
 
-    let (idents, names): (Vec<_>, Vec<_>) = fields.iter().map(|f| (&f.ident, &f.name)).unzip();
+    let fields = fields.iter().map(|field| {
+        let (ident, name) = (&field.ident, &field.name);
+
+        if *field.attributes.stringify.value() {
+            quote!((#name.to_string(), self.#ident.to_string().to_arma()))
+        } else {
+            quote!((#name.to_string(), self.#ident.to_arma()))
+        }
+    });
+
     quote! {
-        std::collections::HashMap::<String, arma_rs::Value>::from([#(
-            (#names.to_string(), self.#idents.to_arma()),
-        )*]).to_arma()
+        std::collections::HashMap::<String, arma_rs::Value>::from([
+            #(#fields),*
+        ]).to_arma()
     }
 }
 
 fn tuple_struct(_attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> TokenStream {
-    let indexes = fields.iter().map(|f| &f.index);
+    let fields = fields.iter().map(|field| {
+        let index = &field.index;
+
+        if *field.attributes.stringify.value() {
+            quote!(self.#index.to_string().to_arma())
+        } else {
+            quote!(self.#index.to_arma())
+        }
+    });
+
     quote! {
-        Vec::<arma_rs::Value>::from([#(
-            self.#indexes.to_arma(),
-        )*]).to_arma()
+        Vec::<arma_rs::Value>::from([
+            #(#fields),*
+        ]).to_arma()
     }
 }
 
 fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
     let token = &field.token();
+    if *field.attributes().stringify.value() {
+        return quote! {
+            self.#token.to_string().to_arma()
+        };
+    }
 
     quote! {
         self.#token.to_arma()
