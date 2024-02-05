@@ -1,31 +1,22 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 
 use crate::derive::{
-    attributes::{ContainerAttributes, FieldAttributes},
-    data::{FieldNamed, FieldUnnamed, StructData},
+    attributes::ContainerAttributes,
+    data::{Field, FieldNamed, FieldUnnamed, StructData},
 };
 
 pub fn impl_into_arma(attributes: &ContainerAttributes, data: &StructData) -> TokenStream {
     match &data {
         StructData::Map(fields) => map_struct(attributes, fields),
         StructData::Tuple(fields) => tuple_struct(attributes, fields),
-        StructData::NewType(field) => newtype_struct(
-            attributes,
-            &field.index.to_token_stream(),
-            &field.attributes,
-        ),
+        StructData::NewType(field) => newtype_struct(attributes, field),
     }
 }
 
 fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
-        let field = fields.first().unwrap();
-        return newtype_struct(
-            attributes,
-            &field.ident.to_token_stream(),
-            &field.attributes,
-        );
+        return newtype_struct(attributes, fields.first().unwrap());
     }
 
     let field_bodies = fields.iter().map(|field| {
@@ -65,15 +56,13 @@ fn tuple_struct(_attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> T
     }
 }
 
-fn newtype_struct(
-    _attributes: &ContainerAttributes,
-    field_token: &TokenStream,
-    field_attributes: &FieldAttributes,
-) -> TokenStream {
-    let field_body = if *field_attributes.to_string.value() {
-        quote!(self.#field_token.to_string())
+fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
+    let token = field.token();
+
+    let field_body = if *field.attributes().to_string.value() {
+        quote!(self.#token.to_string())
     } else {
-        quote!(self.#field_token)
+        quote!(self.#token)
     };
 
     quote! {

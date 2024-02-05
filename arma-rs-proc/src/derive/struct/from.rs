@@ -1,31 +1,22 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::quote;
 
 use crate::derive::{
-    attributes::{ContainerAttributes, FieldAttributes},
-    data::{FieldNamed, FieldUnnamed, StructData},
+    attributes::ContainerAttributes,
+    data::{Field, FieldNamed, FieldUnnamed, StructData},
 };
 
 pub fn impl_from_arma(attributes: &ContainerAttributes, data: &StructData) -> TokenStream {
     match &data {
         StructData::Map(fields) => map_struct(attributes, fields),
         StructData::Tuple(fields) => tuple_struct(attributes, fields),
-        StructData::NewType(field) => newtype_struct(
-            attributes,
-            &field.index.to_token_stream(),
-            &field.attributes,
-        ),
+        StructData::NewType(field) => newtype_struct(attributes, field),
     }
 }
 
 fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
-        let field = fields.first().unwrap();
-        return newtype_struct(
-            attributes,
-            &field.ident.to_token_stream(),
-            &field.attributes,
-        );
+        return newtype_struct(attributes, fields.first().unwrap());
     }
 
     let mut setup = TokenStream::new();
@@ -152,12 +143,10 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     }
 }
 
-fn newtype_struct(
-    _attributes: &ContainerAttributes,
-    field_token: &TokenStream,
-    field_attributes: &FieldAttributes,
-) -> TokenStream {
-    let field_body = if *field_attributes.from_str.value() {
+fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
+    let token = field.token();
+
+    let field_body = if *field.attributes().from_str.value() {
         quote!(func_input.parse().map_err(arma_rs::FromArmaError::custom)?)
     } else {
         quote!(arma_rs::FromArma::from_arma(func_input)?)
@@ -165,7 +154,7 @@ fn newtype_struct(
 
     quote! {
         Ok(Self {
-            #field_token: #field_body
+            #token: #field_body
         })
     }
 }

@@ -1,4 +1,5 @@
 use proc_macro2::{Span, TokenStream};
+use quote::ToTokens;
 use syn::{Error, Result};
 
 use crate::derive::{
@@ -94,5 +95,30 @@ impl FieldUnnamed {
             index: syn::Index::from(index),
             ty: field.ty,
         }
+    }
+}
+
+pub trait Field {
+    fn attributes(&self) -> &FieldAttributes;
+    fn token(&self) -> TokenStream;
+}
+
+impl Field for FieldNamed {
+    fn attributes(&self) -> &FieldAttributes {
+        &self.attributes
+    }
+
+    fn token(&self) -> TokenStream {
+        self.ident.to_token_stream()
+    }
+}
+
+impl Field for FieldUnnamed {
+    fn attributes(&self) -> &FieldAttributes {
+        &self.attributes
+    }
+
+    fn token(&self) -> TokenStream {
+        self.index.to_token_stream()
     }
 }
