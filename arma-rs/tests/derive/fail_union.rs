@@ -1,6 +1,6 @@
 use arma_rs::{FromArma, IntoArma};
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 union DeriveTest {
     first: u32,
 }

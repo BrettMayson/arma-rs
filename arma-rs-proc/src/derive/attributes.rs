@@ -1,6 +1,6 @@
 use syn::{Error, Result};
 
-use crate::derive::CombinedError;
+use crate::derive::CombinedErrors;
 
 pub struct ContainerAttributes {
     pub transparent: Attribute<bool>,
@@ -74,7 +74,7 @@ pub trait ParseAttr {
     fn parse_attr(&mut self, meta: syn::meta::ParseNestedMeta) -> Result<()>;
 }
 
-pub fn parse_attributes<T>(errors: &mut CombinedError, attrs: &[syn::Attribute]) -> T
+pub fn parse_attributes<T>(errors: &mut CombinedErrors, attrs: &[syn::Attribute]) -> T
 where
     T: ParseAttr + Default + Sized,
 {

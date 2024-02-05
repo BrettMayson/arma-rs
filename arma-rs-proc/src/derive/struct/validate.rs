@@ -3,11 +3,11 @@ use syn::Error;
 use crate::derive::{
     attributes::{Attribute, ContainerAttributes, FieldAttributes},
     data::StructData,
-    CombinedError,
+    CombinedErrors,
 };
 
 pub fn validate_attributes(
-    errors: &mut CombinedError,
+    errors: &mut CombinedErrors,
     attributes: &ContainerAttributes,
     data: &StructData,
 ) {
@@ -32,16 +32,16 @@ pub fn validate_attributes(
     }
 
     if let Some(attr) = get_default_attr(attributes, data) {
-        if matches!(data, StructData::Map(_)) && *attributes.transparent.value() {
-            errors.add(
-                attributes
-                    .transparent
-                    .error("#[arma(transparent)] and #[arma(default)] cannot be used together"),
-            );
-        }
-
-        if matches!(data, StructData::NewType(_)) {
-            errors.add(attr.error("#[arma(default)] cannot be used on new type structs"));
+        match data {
+            StructData::Map(_) if *attributes.transparent.value() => {
+                errors.add(
+                    attr.error("#[arma(default)] and #[arma(transparent)] cannot be used together"),
+                );
+            }
+            StructData::NewType(_) => {
+                errors.add(attr.error("#[arma(default)] cannot be used on new type structs"));
+            }
+            _ => {}
         }
     }
 

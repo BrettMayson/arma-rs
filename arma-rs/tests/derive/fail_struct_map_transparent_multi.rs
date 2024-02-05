@@ -1,6 +1,6 @@
 use arma_rs::{FromArma, IntoArma};
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 #[arma(transparent)]
 struct TooManyFields {
     first: String,

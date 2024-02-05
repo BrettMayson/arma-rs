@@ -11,11 +11,11 @@ pub use validate::validate_attributes;
 
 use crate::derive::{
     data::{FieldNamed, FieldUnnamed, StructData},
-    CombinedError,
+    CombinedErrors,
 };
 
 impl StructData {
-    pub fn new(errors: &mut CombinedError, data: syn::DataStruct) -> Result<Self> {
+    pub fn new(errors: &mut CombinedErrors, data: syn::DataStruct) -> Result<Self> {
         match data.fields {
             syn::Fields::Unit => Err(Error::new(
                 Span::call_site(),

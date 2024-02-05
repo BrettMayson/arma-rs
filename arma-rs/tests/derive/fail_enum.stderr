@@ -1,15 +1,15 @@
 error: enums aren't supported
  --> tests/derive/fail_enum.rs:3:10
   |
-3 | #[derive(IntoArma, FromArma)]
+3 | #[derive(FromArma, IntoArma)]
   |          ^^^^^^^^
   |
-  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: enums aren't supported
  --> tests/derive/fail_enum.rs:3:20
   |
-3 | #[derive(IntoArma, FromArma)]
+3 | #[derive(FromArma, IntoArma)]
   |                    ^^^^^^^^
   |
-  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)

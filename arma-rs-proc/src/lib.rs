@@ -103,28 +103,42 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     })
 }
 
-/// Derive implementation of `IntoArma`, only supports structs.
-/// - Structs with named fields are converted to a hashmap.
-/// - Tuple structs are converted to an array.
-/// - New type structs directly use's the value's `IntoArma` implementation.
-/// - Unit-like structs are not supported.
-#[proc_macro_derive(IntoArma, attributes(arma))]
-pub fn derive_into_arma(item: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(item as DeriveInput);
-    derive::generate_into_arma(input)
-        .unwrap_or_else(Error::into_compile_error)
-        .into()
-}
-
 /// Derive implementation of `FromArma`, only supports structs.
-/// - Structs with named fields are converted from a hashmap.
+/// - Map structs are converted from an hashmap.
 /// - Tuple structs are converted from an array.
-/// - New type structs directly use's the value's `FromArma` implementation.
+/// - Newtype structs directly use's the value's `FromArma` implementation.
 /// - Unit-like structs are not supported.
+///
+/// ### Container Attributes
+/// - `#[arma(transparent)]`: treat single field map structs as if its a newtype structs.
+/// - `#[arma(default)]`: any missing field will be filled by the structs `Default` implementation.
+///
+/// ### Field Attributes
+/// - `#[arma(from_str)]`: use the types `std::str::FromStr` instead of `FromArma`.
+/// - `#[arma(default)]`: if missing use its `Default` implementation (takes precedence over container).
 #[proc_macro_derive(FromArma, attributes(arma))]
 pub fn derive_from_arma(item: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(item as DeriveInput);
     derive::generate_from_arma(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
+}
+
+/// Derive implementation of `IntoArma`, only supports structs.
+/// - Map structs are converted to an hashmap.
+/// - Tuple structs are converted to an array.
+/// - Newtype structs directly use's the value's `IntoArma` implementation.
+/// - Unit-like structs are not supported.
+///
+/// ### Container Attributes
+/// - `#[arma(transparent)]`: treat single field map structs as if its a newtype structs.
+///
+/// ### Field Attributes
+/// - `#[arma(to_string)]`: use the types `std::string::ToString` instead of `IntoArma`.
+#[proc_macro_derive(IntoArma, attributes(arma))]
+pub fn derive_into_arma(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as DeriveInput);
+    derive::generate_into_arma(input)
         .unwrap_or_else(Error::into_compile_error)
         .into()
 }

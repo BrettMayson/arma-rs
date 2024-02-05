@@ -197,18 +197,24 @@ pub fn group() -> arma_rs::Group {
 }
 ```
 
-## Custom Return Types
+## Custom Types
 
-If you're bringing your existing Rust library with your own types, you can easily define how they are converted to Arma.
+If you're bringing your existing Rust library with your own types, you can easily define how they are converted to and from Arma.
 
 ```rust
-use arma_rs::{IntoArma, Value};
+use arma_rs::{FromArma, IntoArma, Value, FromArmaError};
 
-#[derive(Default)]
 pub struct MemoryReport {
     total: u64,
     free: u64,
     avail: u64,
+}
+
+impl FromArma for MemoryReport {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
+        let (total, free, avail) = <(u64, u64, u64)>::from_arma(s)?;
+        Ok(Self { total, free, avail })
+    }
 }
 
 impl IntoArma for MemoryReport {
@@ -223,6 +229,26 @@ impl IntoArma for MemoryReport {
 }
 ```
 
+### Derive
+
+Alternatively you can derive these traits. Note that the derive and manual implementation examples slightly differ, as when deriving map like structs its represented as an hashmap rather than an array. For more information on data representation and attributes see: [FromArma](https://docs.rs/arma-rs/latest/arma_rs/derive.FromArma.html) and [IntoArma](https://docs.rs/arma-rs/latest/arma_rs/derive.IntoArma.html).
+
+```rust
+use arma_rs::{FromArma, IntoArma};
+
+#[derive(FromArma, IntoArma)]
+struct MemoryReport {
+    #[arma(to_string)]
+    total: u64,
+    #[arma(to_string)]
+    free: u64,
+    #[arma(to_string)]
+    avail: u64,
+}
+```
+
+Deriving is currently only supported for structs, this might chance in the future.
+
 ## Error Codes
 
 By default arma-rs will only allow commands via `RvExtensionArgs`. Using `callExtension` with only a function name will return an empty string.
@@ -232,7 +258,7 @@ By default arma-rs will only allow commands via `RvExtensionArgs`. Using `callEx
 "my_extension" callExtension ["hello:english", []] // returns ["Hello", 0, 0]
 ```
 
-This behvaiour can be changed by calling `.allow_no_args()` when building the extension. It is recommended not to use this, and to implement error handling instead.
+This behaviour can be changed by calling `.allow_no_args()` when building the extension. It is recommended not to use this, and to implement error handling instead.
 
 | Code | Description                                       |
 |------|---------------------------------------------------|

@@ -1,6 +1,6 @@
 use arma_rs::{FromArma, Group, IntoArma};
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 pub struct Player {
     name: String,
     #[arma(default)]

@@ -4,7 +4,7 @@ use syn::{Error, Result};
 
 use crate::derive::{
     attributes::{parse_attributes, ContainerAttributes, FieldAttributes},
-    r#struct, CombinedError,
+    r#struct, CombinedErrors,
 };
 
 pub struct ContainerData {
@@ -25,7 +25,7 @@ pub enum StructData {
 }
 
 impl ContainerData {
-    pub fn from_input(errors: &mut CombinedError, input: syn::DeriveInput) -> Result<Self> {
+    pub fn from_input(errors: &mut CombinedErrors, input: syn::DeriveInput) -> Result<Self> {
         let data = match input.data {
             syn::Data::Struct(data) => Data::Struct(StructData::new(errors, data)?),
             syn::Data::Enum(_) => Err(Error::new(Span::call_site(), "enums aren't supported"))?,
@@ -41,7 +41,7 @@ impl ContainerData {
         })
     }
 
-    pub fn validate_attributes(&self, errors: &mut CombinedError) {
+    pub fn validate_attributes(&self, errors: &mut CombinedErrors) {
         match self.data {
             Data::Struct(ref data) => {
                 r#struct::validate_attributes(errors, &self.attributes, data);
@@ -76,7 +76,7 @@ pub struct FieldUnnamed {
 }
 
 impl FieldNamed {
-    pub fn new(errors: &mut CombinedError, field: syn::Field) -> Self {
+    pub fn new(errors: &mut CombinedErrors, field: syn::Field) -> Self {
         let ident = field.ident.unwrap();
         let name = ident.to_string();
         Self {
@@ -89,7 +89,7 @@ impl FieldNamed {
 }
 
 impl FieldUnnamed {
-    pub fn new(errors: &mut CombinedError, field: syn::Field, index: usize) -> Self {
+    pub fn new(errors: &mut CombinedErrors, field: syn::Field, index: usize) -> Self {
         Self {
             attributes: parse_attributes::<FieldAttributes>(errors, &field.attrs),
             index: syn::Index::from(index),

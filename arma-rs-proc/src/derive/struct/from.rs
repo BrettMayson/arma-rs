@@ -7,6 +7,7 @@ use crate::derive::{
 };
 
 pub fn impl_from_arma(attributes: &ContainerAttributes, data: &StructData) -> TokenStream {
+    // For simplicity sake we assume that theres no conflicts and everything has already been validated
     match &data {
         StructData::Map(fields) => map_struct(attributes, fields),
         StructData::Tuple(fields) => tuple_struct(attributes, fields),

@@ -1,12 +1,12 @@
 use arma_rs::{FromArma, IntoArma};
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 struct Unit;
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 struct EmptyMap {}
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 struct EmptyTuple();
 
 fn main() {}

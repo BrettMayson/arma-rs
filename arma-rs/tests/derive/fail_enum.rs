@@ -1,6 +1,6 @@
 use arma_rs::{FromArma, IntoArma};
 
-#[derive(IntoArma, FromArma)]
+#[derive(FromArma, IntoArma)]
 enum DeriveTest {}
 
 fn main() {}
