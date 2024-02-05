@@ -126,10 +126,11 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     });
 
     let check_unknown = quote! {
-        if let Some(unknown) = input_as_values.next() {
+        let remaining = input_as_values.len();
+        if remaining > 0 {
             return Err(arma_rs::FromArmaError::InvalidLength {
                 expected: #expected_len,
-                actual: #expected_len + 1 + input_as_values.len(),
+                actual: #expected_len + remaining,
             });
         }
     };

@@ -535,21 +535,21 @@ mod derive {
         }
 
         #[test]
-        fn default_error() {
+        fn error_length() {
             #[derive(FromArma, Default, Debug, PartialEq)]
-            #[arma(default)]
             struct DeriveTest(String, String);
 
             let input = Value::Array(vec![
                 Value::String("first".to_string()),
                 Value::String("second".to_string()),
                 Value::String("third".to_string()),
+                Value::String("forth".to_string()),
             ]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
                 Err(arma_rs::FromArmaError::InvalidLength {
                     expected: 2,
-                    actual: 3,
+                    actual: 4,
                 })
             );
         }

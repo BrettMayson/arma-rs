@@ -143,7 +143,7 @@ pub enum CallbackError {
 impl std::fmt::Display for CallbackError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CallbackError::ChannelClosed => write!(f, "Callback channel closed"),
+            Self::ChannelClosed => write!(f, "Callback channel closed"),
         }
     }
 }

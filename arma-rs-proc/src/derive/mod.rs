@@ -58,8 +58,8 @@ impl CombinedErrors {
 
     pub fn add(&mut self, error: syn::Error) {
         match &mut self.root {
-            Some(root) => root.combine(error.clone()),
-            None => self.root = Some(error.clone()),
+            Some(root) => root.combine(error),
+            None => self.root = Some(error),
         }
     }
 
