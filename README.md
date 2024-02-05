@@ -247,7 +247,7 @@ struct MemoryReport {
 }
 ```
 
-Deriving is currently only supported for structs, this might chance in the future.
+Deriving is currently only supported for structs, this might change in the future.
 
 ## Error Codes
 
