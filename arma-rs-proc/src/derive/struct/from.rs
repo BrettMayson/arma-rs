@@ -1,22 +1,31 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 
 use crate::derive::{
-    attributes::ContainerAttributes,
-    data::{DataStruct, Field, FieldNamed, FieldUnnamed},
+    attributes::{ContainerAttributes, FieldAttributes},
+    data::{FieldNamed, FieldUnnamed, StructData},
 };
 
-pub fn impl_from_arma(attributes: &ContainerAttributes, data: &DataStruct) -> TokenStream {
+pub fn impl_from_arma(attributes: &ContainerAttributes, data: &StructData) -> TokenStream {
     match &data {
-        DataStruct::Map(fields) => map_struct(attributes, fields),
-        DataStruct::Tuple(fields) => tuple_struct(attributes, fields),
-        DataStruct::NewType(field) => newtype_struct(attributes, field),
+        StructData::Map(fields) => map_struct(attributes, fields),
+        StructData::Tuple(fields) => tuple_struct(attributes, fields),
+        StructData::NewType(field) => newtype_struct(
+            attributes,
+            &field.index.to_token_stream(),
+            &field.attributes,
+        ),
     }
 }
 
 fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenStream {
     if *attributes.transparent.value() {
-        return newtype_struct(attributes, fields.first().unwrap());
+        let field = fields.first().unwrap();
+        return newtype_struct(
+            attributes,
+            &field.ident.to_token_stream(),
+            &field.attributes,
+        );
     }
 
     let mut setup = TokenStream::new();
@@ -32,21 +41,24 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
     });
     if *attributes.default.value() {
         setup.extend(quote! {
-            let container_default = Self::default();
+            let container_default: Self = std::default::Default::default();
         });
     };
 
-    let field_assignments = fields.iter().map(|field| {
-        let (ident, name, ty) = (&field.ident, &field.name, &field.ty);
+    let field_bodies = fields.iter().map(|field| {
+        let (ident, name) = (&field.ident, &field.name);
 
-        let some_match = if *field.attributes.stringify.value() {
-            quote!(input_value.to_string().parse::<#ty>().map_err(arma_rs::FromArmaError::custom)?)
+        let some_match = if *field.attributes.from_str.value() {
+            quote!(input_value
+                .to_string()
+                .parse()
+                .map_err(arma_rs::FromArmaError::custom)?)
         } else {
             quote!(arma_rs::FromArma::from_arma(input_value.to_string())?)
         };
 
         let none_match = if *field.attributes.default.value() {
-            quote!(#ty::default())
+            quote!(std::default::Default::default())
         } else if *attributes.default.value() {
             quote!(container_default.#ident)
         } else {
@@ -69,7 +81,7 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
     quote! {
         #setup
         let result = Self {
-            #(#field_assignments),*
+            #(#field_bodies),*
         };
 
         #check_unknown
@@ -85,22 +97,25 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     });
     if *attributes.default.value() {
         setup.extend(quote! {
-            let container_default = Self::default();
+            let container_default: Self = std::default::Default::default();
         });
     };
 
     let expected_len = fields.len();
-    let field_assignments = fields.iter().map(|field| {
-        let (index, ty) = (&field.index, &field.ty);
+    let field_bodies = fields.iter().map(|field| {
+        let index = &field.index;
 
-        let some_match = if *field.attributes.stringify.value() {
-            quote!(input_value.to_string().parse::<#ty>().map_err(arma_rs::FromArmaError::custom)?)
+        let some_match = if *field.attributes.from_str.value() {
+            quote!(input_value
+                .to_string()
+                .parse()
+                .map_err(arma_rs::FromArmaError::custom)?)
         } else {
             quote!(arma_rs::FromArma::from_arma(input_value.to_string())?)
         };
 
         let none_match = if *field.attributes.default.value() {
-            quote!(#ty::default())
+            quote!(std::default::Default::default())
         } else if *attributes.default.value() {
             quote!(container_default.#index)
         } else {
@@ -129,7 +144,7 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     quote! {
         #setup
         let result = Self (
-            #(#field_assignments),*
+            #(#field_bodies),*
         );
 
         #check_unknown
@@ -137,20 +152,20 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
     }
 }
 
-fn newtype_struct(_attributes: &ContainerAttributes, field: &impl Field) -> TokenStream {
-    let token = field.token();
-    if *field.attributes().stringify.value() {
-        let ty = &field.ty();
-        return quote! {
-            Ok(Self {
-                #token: func_input.parse::<#ty>().map_err(arma_rs::FromArmaError::custom)?
-            })
-        };
-    }
+fn newtype_struct(
+    _attributes: &ContainerAttributes,
+    field_token: &TokenStream,
+    field_attributes: &FieldAttributes,
+) -> TokenStream {
+    let field_body = if *field_attributes.from_str.value() {
+        quote!(func_input.parse().map_err(arma_rs::FromArmaError::custom)?)
+    } else {
+        quote!(arma_rs::FromArma::from_arma(func_input)?)
+    };
 
     quote! {
         Ok(Self {
-            #token: arma_rs::FromArma::from_arma(func_input)?
+            #field_token: #field_body
         })
     }
 }

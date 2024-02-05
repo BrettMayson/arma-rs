@@ -1,23 +1,30 @@
 mod derive {
     use arma_rs::{FromArma, FromArmaError, IntoArma, Value};
 
+    fn sort_value_array(value: &mut Value) -> &Value {
+        if let Value::Array(values) = value {
+            values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        }
+        value
+    }
+
     #[derive(Debug, PartialEq, Default)]
-    enum ValueNoImpl {
+    enum ValueStringImpl {
         #[default]
         Even,
         Odd,
     }
 
-    impl std::fmt::Display for ValueNoImpl {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    impl std::string::ToString for ValueStringImpl {
+        fn to_string(&self) -> String {
             match self {
-                Self::Even => write!(f, "even"),
-                Self::Odd => write!(f, "odd"),
+                Self::Even => "even".to_string(),
+                Self::Odd => "odd".to_string(),
             }
         }
     }
 
-    impl std::str::FromStr for ValueNoImpl {
+    impl std::str::FromStr for ValueStringImpl {
         type Err = String;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -40,8 +47,38 @@ mod derive {
         use super::*;
 
         #[test]
+        fn derive() {
+            #[derive(FromArma, IntoArma, Debug, PartialEq)]
+            struct DeriveTest {
+                first: String,
+                second: bool,
+            }
+
+            let serialized = DeriveTest {
+                first: "first".to_string(),
+                second: true,
+            };
+            let deserialized = Value::Array(vec![
+                Value::Array(vec![
+                    Value::String("first".to_string()),
+                    Value::String("first".to_string()),
+                ]),
+                Value::Array(vec![
+                    Value::String("second".to_string()),
+                    Value::Boolean(true),
+                ]),
+            ]);
+
+            assert_eq!(sort_value_array(&mut serialized.to_arma()), &deserialized);
+            assert_eq!(
+                DeriveTest::from_arma(deserialized.to_string()),
+                Ok(serialized)
+            );
+        }
+
+        #[test]
         fn transparent() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+            #[derive(FromArma, IntoArma, Debug, PartialEq)]
             #[arma(transparent)]
             struct DeriveTest {
                 expected: String,
@@ -59,48 +96,60 @@ mod derive {
         }
 
         #[test]
-        fn stringify_field() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+        fn from_str_field() {
+            #[derive(FromArma, Debug, PartialEq)]
             struct DeriveTest {
-                #[arma(stringify)]
-                expected: ValueNoImpl,
+                #[arma(from_str)]
+                expected: ValueStringImpl,
             }
 
-            let serialized = DeriveTest {
-                expected: ValueNoImpl::Odd,
-            };
-            let deserialized = Value::Array(vec![Value::Array(vec![
+            let input = Value::Array(vec![Value::Array(vec![
                 Value::String("expected".to_string()),
                 Value::String("odd".to_string()),
             ])]);
-            assert_eq!(serialized.to_arma(), deserialized);
             assert_eq!(
-                DeriveTest::from_arma(deserialized.to_string()),
-                Ok(serialized)
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    expected: ValueStringImpl::Odd,
+                })
             );
         }
 
         #[test]
-        fn stringify_default_field() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
+        fn to_string_field() {
+            #[derive(IntoArma, Debug, PartialEq)]
             struct DeriveTest {
-                #[arma(stringify, default)]
-                expected: ValueNoImpl,
+                #[arma(to_string)]
+                expected: ValueStringImpl,
             }
 
-            let serialized = DeriveTest {
-                expected: ValueNoImpl::default(),
-            };
             assert_eq!(
-                serialized.to_arma(),
+                DeriveTest {
+                    expected: ValueStringImpl::Odd,
+                }
+                .to_arma(),
                 Value::Array(vec![Value::Array(vec![
                     Value::String("expected".to_string()),
-                    Value::String(ValueNoImpl::default().to_string()),
+                    Value::String("odd".to_string()),
                 ])])
             );
+        }
+
+        #[test]
+        fn from_str_default_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest {
+                #[arma(from_str, default)]
+                expected: ValueStringImpl,
+            }
 
             let input = Value::Array(vec![]);
-            assert_eq!(DeriveTest::from_arma(input.to_string()), Ok(serialized));
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest {
+                    expected: ValueStringImpl::default(),
+                })
+            );
         }
 
         #[test]
@@ -109,7 +158,7 @@ mod derive {
             #[arma(default)]
             struct DeriveTest {
                 first: String,
-                second: String,
+                second: bool,
             }
 
             let input = Value::Array(vec![]);
@@ -126,19 +175,19 @@ mod derive {
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
                     first: "first".to_string(),
-                    ..Default::default()
+                    ..DeriveTest::default()
                 })
             );
 
             let input = Value::Array(vec![Value::Array(vec![
                 Value::String("second".to_string()),
-                Value::String("second".to_string()),
+                Value::Boolean(true),
             ])]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
-                    second: "second".to_string(),
-                    ..Default::default()
+                    second: true,
+                    ..DeriveTest::default()
                 })
             );
 
@@ -149,14 +198,14 @@ mod derive {
                 ]),
                 Value::Array(vec![
                     Value::String("second".to_string()),
-                    Value::String("second".to_string()),
+                    Value::Boolean(true),
                 ]),
             ]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
                     first: "first".to_string(),
-                    second: "second".to_string()
+                    second: true
                 })
             );
         }
@@ -167,7 +216,7 @@ mod derive {
             struct DeriveTest {
                 first: String,
                 #[arma(default)]
-                second: String,
+                second: bool,
             }
 
             let input = Value::Array(vec![Value::Array(vec![
@@ -178,7 +227,7 @@ mod derive {
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
                     first: "first".to_string(),
-                    second: Default::default()
+                    second: false
                 })
             );
 
@@ -189,14 +238,14 @@ mod derive {
                 ]),
                 Value::Array(vec![
                     Value::String("second".to_string()),
-                    Value::String("second".to_string()),
+                    Value::Boolean(true),
                 ]),
             ]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
                     first: "first".to_string(),
-                    second: "second".to_string()
+                    second: true
                 })
             );
         }
@@ -208,14 +257,14 @@ mod derive {
             struct DeriveTest {
                 first: String,
                 #[arma(default)]
-                second: String,
+                second: bool,
             }
 
             impl Default for DeriveTest {
                 fn default() -> Self {
                     Self {
                         first: "first".to_string(),
-                        second: "second".to_string(),
+                        second: true,
                     }
                 }
             }
@@ -225,7 +274,7 @@ mod derive {
                 DeriveTest::from_arma(input.to_string()),
                 Ok(DeriveTest {
                     first: "first".to_string(),
-                    second: Default::default()
+                    second: false
                 })
             );
         }
@@ -329,14 +378,14 @@ mod derive {
         use super::*;
 
         #[test]
-        fn stringify_field() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
-            struct DeriveTest(String, #[arma(stringify)] ValueNoImpl);
+        fn derive() {
+            #[derive(FromArma, IntoArma, Debug, PartialEq)]
+            struct DeriveTest(String, bool);
 
-            let serialized = DeriveTest("first".to_string(), ValueNoImpl::Odd);
+            let serialized = DeriveTest("first".to_string(), true);
             let deserialized = Value::Array(vec![
                 Value::String("first".to_string()),
-                Value::String("odd".to_string()),
+                Value::Boolean(true),
             ]);
             assert_eq!(serialized.to_arma(), deserialized);
             assert_eq!(
@@ -346,21 +395,44 @@ mod derive {
         }
 
         #[test]
-        fn stringify_default_field() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
-            struct DeriveTest(String, #[arma(stringify, default)] ValueNoImpl);
+        fn from_string_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(from_str)] ValueStringImpl);
 
-            let serialized = DeriveTest("first".to_string(), ValueNoImpl::default());
+            let input = Value::Array(vec![
+                Value::String("first".to_string()),
+                Value::String("odd".to_string()),
+            ]);
             assert_eq!(
-                serialized.to_arma(),
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), ValueStringImpl::Odd))
+            );
+        }
+
+        #[test]
+        fn to_string_field() {
+            #[derive(IntoArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(to_string)] ValueStringImpl);
+
+            assert_eq!(
+                DeriveTest("first".to_string(), ValueStringImpl::Odd).to_arma(),
                 Value::Array(vec![
                     Value::String("first".to_string()),
-                    Value::String(ValueNoImpl::default().to_string()),
+                    Value::String("odd".to_string()),
                 ])
             );
+        }
+
+        #[test]
+        fn from_str_default_field() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(String, #[arma(from_str, default)] ValueStringImpl);
 
             let input = Value::Array(vec![Value::String("first".to_string())]);
-            assert_eq!(DeriveTest::from_arma(input.to_string()), Ok(serialized));
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest("first".to_string(), ValueStringImpl::default()))
+            );
         }
 
         #[test]
@@ -451,14 +523,14 @@ mod derive {
 
             impl Default for DeriveTest {
                 fn default() -> Self {
-                    Self("first".to_string(), !bool::default())
+                    Self("first".to_string(), true)
                 }
             }
 
             let input = Value::Array(vec![]);
             assert_eq!(
                 DeriveTest::from_arma(input.to_string()),
-                Ok(DeriveTest("first".to_string(), Default::default()))
+                Ok(DeriveTest("first".to_string(), false))
             );
         }
 
@@ -502,9 +574,8 @@ mod derive {
         use super::*;
 
         #[test]
-        fn transparent() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
-            #[arma(transparent)]
+        fn derive() {
+            #[derive(FromArma, IntoArma, Debug, PartialEq)]
             struct DeriveTest(String);
 
             let serialized = DeriveTest("expected".to_string());
@@ -517,14 +588,26 @@ mod derive {
         }
 
         #[test]
-        fn stringify() {
-            #[derive(IntoArma, FromArma, Debug, PartialEq)]
-            struct DeriveTest(#[arma(stringify)] u64);
+        fn from_str() {
+            #[derive(FromArma, Debug, PartialEq)]
+            struct DeriveTest(#[arma(from_str)] ValueStringImpl);
 
-            let serialized = DeriveTest(42);
-            let deserialized = "42".to_string();
-            assert_eq!(serialized.to_arma(), Value::String(deserialized.clone()));
-            assert_eq!(DeriveTest::from_arma(deserialized), Ok(serialized));
+            let input = Value::String("odd".to_string());
+            assert_eq!(
+                DeriveTest::from_arma(input.to_string()),
+                Ok(DeriveTest(ValueStringImpl::Odd))
+            );
+        }
+
+        #[test]
+        fn to_string() {
+            #[derive(IntoArma, Debug, PartialEq)]
+            struct DeriveTest(#[arma(to_string)] ValueStringImpl);
+
+            assert_eq!(
+                DeriveTest(ValueStringImpl::Odd).to_arma(),
+                Value::String("odd".to_string()),
+            );
         }
     }
 }

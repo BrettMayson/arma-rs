@@ -10,11 +10,11 @@ pub use into::impl_into_arma;
 pub use validate::validate_attributes;
 
 use crate::derive::{
-    data::{DataStruct, FieldNamed, FieldUnnamed},
+    data::{FieldNamed, FieldUnnamed, StructData},
     CombinedError,
 };
 
-impl DataStruct {
+impl StructData {
     pub fn new(errors: &mut CombinedError, data: syn::DataStruct) -> Result<Self> {
         match data.fields {
             syn::Fields::Unit => Err(Error::new(

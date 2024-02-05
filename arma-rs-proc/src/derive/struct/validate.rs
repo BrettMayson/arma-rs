@@ -2,25 +2,25 @@ use syn::Error;
 
 use crate::derive::{
     attributes::{Attribute, ContainerAttributes, FieldAttributes},
-    data::DataStruct,
+    data::StructData,
     CombinedError,
 };
 
 pub fn validate_attributes(
     errors: &mut CombinedError,
     attributes: &ContainerAttributes,
-    data: &DataStruct,
+    data: &StructData,
 ) {
     if *attributes.transparent.value() {
         match data {
-            DataStruct::Map(fields) if fields.len() > 1 => {
+            StructData::Map(fields) if fields.len() > 1 => {
                 errors.add(
                     attributes
                         .transparent
                         .error("#[arma(transparent)] structs must have exactly one field"),
                 );
             }
-            DataStruct::Tuple(_) => {
+            StructData::Tuple(_) => {
                 errors.add(
                     attributes
                         .transparent
@@ -32,7 +32,7 @@ pub fn validate_attributes(
     }
 
     if let Some(attr) = get_default_attr(attributes, data) {
-        if matches!(data, DataStruct::Map(_)) && *attributes.transparent.value() {
+        if matches!(data, StructData::Map(_)) && *attributes.transparent.value() {
             errors.add(
                 attributes
                     .transparent
@@ -40,12 +40,12 @@ pub fn validate_attributes(
             );
         }
 
-        if matches!(data, DataStruct::NewType(_)) {
+        if matches!(data, StructData::NewType(_)) {
             errors.add(attr.error("#[arma(default)] cannot be used on new type structs"));
         }
     }
 
-    if let DataStruct::Tuple(fields) = data {
+    if let StructData::Tuple(fields) = data {
         let mut index_first_default = None;
         for (index, field) in fields.iter().enumerate() {
             match index_first_default {
@@ -68,7 +68,7 @@ pub fn validate_attributes(
 
 fn get_default_attr<'a>(
     attributes: &'a ContainerAttributes,
-    data: &'a DataStruct,
+    data: &'a StructData,
 ) -> Option<&'a Attribute<bool>> {
     if *attributes.default.value() {
         return Some(&attributes.default);
@@ -80,10 +80,10 @@ fn get_default_attr<'a>(
         .map(|f| &f.default)
 }
 
-fn field_attributes(data: &DataStruct) -> Vec<&FieldAttributes> {
+fn field_attributes(data: &StructData) -> Vec<&FieldAttributes> {
     match data {
-        DataStruct::Map(fields) => fields.iter().map(|f| &f.attributes).collect(),
-        DataStruct::Tuple(fields) => fields.iter().map(|f| &f.attributes).collect(),
-        DataStruct::NewType(field) => vec![&field.attributes],
+        StructData::Map(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        StructData::Tuple(fields) => fields.iter().map(|f| &f.attributes).collect(),
+        StructData::NewType(field) => vec![&field.attributes],
     }
 }
