@@ -4,7 +4,7 @@
 #[cfg(feature = "call-context")]
 use std::{cell::RefCell, cmp::Ordering};
 
-pub use arma_rs_proc::arma;
+pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
 #[cfg(feature = "extension")]
 use crossbeam_channel::{unbounded, Receiver, Sender};
@@ -19,7 +19,7 @@ pub use link_args;
 extern crate log;
 
 mod value;
-pub use value::{loadout, FromArma, IntoArma, Value};
+pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
 
 #[cfg(feature = "extension")]
 mod ext_result;

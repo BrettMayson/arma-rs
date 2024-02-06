@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 /// A magazine loaded into a weapon
@@ -49,7 +49,7 @@ impl Magazine {
     }
 }
 impl FromArma for Magazine {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         if s == "[]" {
             return Ok(Self(None));
         }

@@ -1,0 +1,11 @@
+error: field must have #[arma(default)] because previous field 0 has #[arma(default)]
+ --> tests/derive/fail_struct_tuple_default_field_first.rs:4:44
+  |
+4 | struct DeriveTest(#[arma(default)] String, u32, bool);
+  |                                            ^^^
+
+error: field must have #[arma(default)] because previous field 0 has #[arma(default)]
+ --> tests/derive/fail_struct_tuple_default_field_first.rs:4:49
+  |
+4 | struct DeriveTest(#[arma(default)] String, u32, bool);
+  |                                                 ^^^^

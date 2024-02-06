@@ -1,0 +1,11 @@
+error: #[arma(default)] cannot be used on new type structs
+ --> tests/derive/fail_struct_newtype_default.rs:4:8
+  |
+4 | #[arma(default)]
+  |        ^^^^^^^
+
+error: #[arma(default)] cannot be used on new type structs
+ --> tests/derive/fail_struct_newtype_default.rs:8:21
+  |
+8 | struct Field(#[arma(default)] u32);
+  |                     ^^^^^^^

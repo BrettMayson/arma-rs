@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// An item stored in a uniform, vest, or backpack
@@ -79,13 +79,15 @@ impl InventoryItem {
     }
 }
 impl FromArma for InventoryItem {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let commas = s.matches(',').count();
         match commas {
             1 => <(String, u32)>::from_arma(s).map(|(name, count)| Self::Item(name, count)),
             2 => <(String, u32, u32)>::from_arma(s)
                 .map(|(name, count, ammo)| Self::Magazine(name, count, ammo)),
-            _ => Err(format!("Invalid inventory item: {s}")),
+            _ => Err(FromArmaError::custom(format!(
+                "Invalid inventory item: {s}"
+            ))),
         }
     }
 }

@@ -1,6 +1,6 @@
 //! For working with Arma's unit loadout array
 
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 mod assigned;
 mod container;
@@ -223,7 +223,7 @@ impl Loadout {
 }
 
 impl FromArma for Loadout {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let vanilla = <(
             Weapon,
             Weapon,

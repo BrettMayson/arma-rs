@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 use super::InventoryItem;
 
@@ -58,7 +58,7 @@ impl Container {
     }
 }
 impl FromArma for Container {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         if s == "[]" {
             return Ok(Self(None));
         }

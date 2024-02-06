@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{FromArma, Value};
+use crate::{FromArma, FromArmaError, Value};
 
 #[derive(Debug, Default, Clone, PartialEq)]
 /// CBA Extended Loadout
@@ -46,7 +46,7 @@ impl CBAExtended {
 }
 
 impl FromArma for CBAExtended {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let value = <Vec<(String, Value)>>::from_arma(s);
         match value {
             Ok(value) => Ok(Self(Some(value.into_iter().collect()))),

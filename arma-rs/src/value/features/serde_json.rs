@@ -1,4 +1,4 @@
-use crate::{FromArma, IntoArma, Value};
+use crate::{FromArma, FromArmaError, IntoArma, Value};
 
 impl IntoArma for serde_json::Value {
     fn to_arma(&self) -> Value {
@@ -28,7 +28,7 @@ impl IntoArma for serde_json::Value {
 }
 
 impl FromArma for serde_json::Value {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         let value = Value::from_arma(s)?;
         Ok(value.to_json())
     }

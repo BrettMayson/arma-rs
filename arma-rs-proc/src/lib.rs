@@ -1,7 +1,9 @@
+mod derive;
+
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::quote;
-use syn::ItemFn;
+use syn::{DeriveInput, Error, ItemFn};
 
 #[proc_macro_attribute]
 /// Used to generate the necessary boilerplate for an Arma extension.
@@ -114,4 +116,44 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         #ast
     })
+}
+
+/// Derive implementation of `FromArma`, only supports structs.
+/// - Map structs are converted from an hashmap.
+/// - Tuple structs are converted from an array.
+/// - Newtype structs directly use's the value's `FromArma` implementation.
+/// - Unit-like structs are not supported.
+///
+/// ### Container Attributes
+/// - `#[arma(transparent)]`: treat single field map structs as if its a newtype structs.
+/// - `#[arma(default)]`: any missing field will be filled by the structs `Default` implementation.
+///
+/// ### Field Attributes
+/// - `#[arma(from_str)]`: use the types `std::str::FromStr` instead of `FromArma`.
+/// - `#[arma(default)]`: if missing use its `Default` implementation (takes precedence over container).
+#[proc_macro_derive(FromArma, attributes(arma))]
+pub fn derive_from_arma(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as DeriveInput);
+    derive::generate_from_arma(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
+}
+
+/// Derive implementation of `IntoArma`, only supports structs.
+/// - Map structs are converted to an hashmap.
+/// - Tuple structs are converted to an array.
+/// - Newtype structs directly use's the value's `IntoArma` implementation.
+/// - Unit-like structs are not supported.
+///
+/// ### Container Attributes
+/// - `#[arma(transparent)]`: treat single field map structs as if its a newtype structs.
+///
+/// ### Field Attributes
+/// - `#[arma(to_string)]`: use the types `std::string::ToString` instead of `IntoArma`.
+#[proc_macro_derive(IntoArma, attributes(arma))]
+pub fn derive_into_arma(item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as DeriveInput);
+    derive::generate_into_arma(input)
+        .unwrap_or_else(Error::into_compile_error)
+        .into()
 }

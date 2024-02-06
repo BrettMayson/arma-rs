@@ -5,7 +5,7 @@ mod from_arma;
 mod into_arma;
 pub mod loadout;
 
-pub use from_arma::FromArma;
+pub use from_arma::{FromArma, FromArmaError};
 pub use into_arma::IntoArma;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
@@ -53,14 +53,14 @@ impl Display for Value {
 }
 
 impl FromArma for Value {
-    fn from_arma(s: String) -> Result<Self, String> {
+    fn from_arma(s: String) -> Result<Self, FromArmaError> {
         match s.chars().next() {
             Some('n') => Ok(Self::Null),
             Some('t') | Some('f') => Ok(Value::Boolean(<bool>::from_arma(s)?)),
             Some('0'..='9') | Some('-') => Ok(Value::Number(<f64>::from_arma(s)?)),
             Some('[') => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
             Some('"') => Ok(Value::String(<String>::from_arma(s)?)),
-            _ => Err(format!("Invalid value: {s}")),
+            _ => Err(FromArmaError::InvalidValue(s)),
         }
     }
 }

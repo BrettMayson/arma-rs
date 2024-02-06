@@ -1,0 +1,47 @@
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:3:10
+  |
+3 | #[derive(FromArma, IntoArma)]
+  |          ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:3:20
+  |
+3 | #[derive(FromArma, IntoArma)]
+  |                    ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:6:10
+  |
+6 | #[derive(FromArma, IntoArma)]
+  |          ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:6:20
+  |
+6 | #[derive(FromArma, IntoArma)]
+  |                    ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:9:10
+  |
+9 | #[derive(FromArma, IntoArma)]
+  |          ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `FromArma` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: unit-like structs aren't supported
+ --> tests/derive/fail_struct_unit.rs:9:20
+  |
+9 | #[derive(FromArma, IntoArma)]
+  |                    ^^^^^^^^
+  |
+  = note: this error originates in the derive macro `IntoArma` (in Nightly builds, run with -Z macro-backtrace for more info)

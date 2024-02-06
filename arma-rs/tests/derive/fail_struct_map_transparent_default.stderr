@@ -1,0 +1,11 @@
+error: #[arma(default)] and #[arma(transparent)] cannot be used together
+ --> tests/derive/fail_struct_map_transparent_default.rs:4:21
+  |
+4 | #[arma(transparent, default)]
+  |                     ^^^^^^^
+
+error: #[arma(default)] and #[arma(transparent)] cannot be used together
+  --> tests/derive/fail_struct_map_transparent_default.rs:12:12
+   |
+12 |     #[arma(default)]
+   |            ^^^^^^^

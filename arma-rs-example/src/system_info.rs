@@ -35,8 +35,10 @@ pub fn group() -> Group {
 }
 
 #[cfg(test)]
+#[cfg(not(miri))]
 mod tests {
     use arma_rs::Extension;
+
     #[test]
     fn test_memory() {
         let extension = Extension::build()
