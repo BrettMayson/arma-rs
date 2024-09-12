@@ -42,9 +42,6 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
         static mut RV_EXTENSION: Option<Extension> = None;
 
-        #[no_mangle]
-        pub static RVExtensionFeatureFlags: u64 = arma_rs::flags::RV_CONTEXT_NO_DEFAULT_CALL;
-
         #[cfg(all(target_os="windows", target_arch="x86"))]
         arma_rs::link_args::windows! {
             unsafe {

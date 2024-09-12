@@ -73,6 +73,10 @@ pub type State = state::TypeMap![Send + Sync];
 /// Allows a console to be allocated for the extension.
 static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+#[no_mangle]
+/// Feature flags read on each callExtension call.
+pub static RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
@@ -365,42 +369,41 @@ impl ExtensionBuilder {
             if module.is_null() {
                 panic!("GetModuleHandleW failed");
             }
-            let function_name = CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
+            let function_name =
+                CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
 
             let func_address = unsafe {
                 GetProcAddress(module_handle, function_name.as_ptr());
             };
-            
+
             if func_address.is_null() {
                 panic!("Failed to get function address");
             }
 
-            unsafe {
-                std::mem::transmute(func_address)
-            }
+            unsafe { std::mem::transmute(func_address) }
         };
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {
-            let c_name = std::ffi::CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
-            
-            let handle = unsafe { libc::dlopen(std::ptr::null_mut(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
-            
+            let c_name = std::ffi::CString::new("RVExtensionRequestContextProc")
+                .expect("CString::new failed");
+
+            let handle =
+                unsafe { libc::dlopen(std::ptr::null_mut(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+
             if handle.is_null() {
                 panic!("Failed to open handle to current process");
             }
-            
+
             let result = unsafe { libc::dlsym(handle, c_name.as_ptr()) };
-            
+
             unsafe { libc::dlclose(handle) };
-            
+
             if result.is_null() {
                 panic!("Failed to get function address");
             }
 
-            unsafe {
-                std::mem::transmute::<*mut libc::c_void, unsafe extern "C" fn()>(result)
-            }
+            unsafe { std::mem::transmute::<*mut libc::c_void, unsafe extern "C" fn()>(result) }
         };
 
         #[cfg(debug_assertions)]
