@@ -111,6 +111,7 @@ impl Extension {
         });
         let res = self.0.group.handle(
             self.context(),
+            &self.0.context_manager,
             function,
             output.as_mut_ptr(),
             BUFFER_SIZE,

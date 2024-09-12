@@ -1,10 +1,11 @@
 use crate::ext_result::IntoExtResult;
 use crate::value::{FromArma, Value};
-use crate::Context;
+use crate::{ArmaCallContext, ArmaContextManager, Context};
 
 type HandlerFunc = Box<
     dyn Fn(
         Context,
+        &ArmaContextManager,
         *mut libc::c_char,
         libc::size_t,
         Option<*mut *mut i8>,
@@ -28,12 +29,13 @@ where
     Handler {
         handler: Box::new(
             move |context: Context,
+                  acm: &ArmaContextManager,
                   output: *mut libc::c_char,
                   size: libc::size_t,
                   args: Option<*mut *mut i8>,
                   count: Option<libc::c_int>|
                   -> libc::c_int {
-                unsafe { command.call(context, output, size, args, count) }
+                unsafe { command.call(context, acm, output, size, args, count) }
             },
         ),
     }
@@ -47,6 +49,7 @@ pub trait Executor: 'static {
     unsafe fn call(
         &self,
         context: Context,
+        acm: &ArmaContextManager,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -65,6 +68,7 @@ pub trait Factory<A, R> {
     unsafe fn call(
         &self,
         context: Context,
+        acm: &ArmaContextManager,
         output: *mut libc::c_char,
         size: libc::size_t,
         args: Option<*mut *mut i8>,
@@ -81,12 +85,13 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         unsafe fn call(
             &self,
             context: Context,
+            acm: &ArmaContextManager,
             output: *mut libc::c_char,
             size: libc::size_t,
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
-            self.call(context, output, size, args, count);
+            self.call(context, acm, output, size, args, count);
         }
     }
 
@@ -98,7 +103,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, _: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, _: Context, _: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -152,7 +157,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         $($param: FromArma,)*
     {
         #[allow(non_snake_case)]
-        unsafe fn call(&self, context: Context, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+        unsafe fn call(&self, context: Context, _: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
             let count = count.unwrap_or_else(|| 0);
             if count != $c {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
@@ -183,6 +188,116 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 handle_output_and_return(
                     {
                         (self)(context, $(
+                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                                c += 1;
+                                val
+                            } else {
+                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                            },
+                        )*)
+                    },
+                    output,
+                    size
+                )
+            }
+        }
+    }
+
+    // Call Context
+    impl<Func, $($param,)* ER> Factory<(ArmaCallContext, $($param,)*), ER> for Func
+    where
+        ER: IntoExtResult + 'static,
+        Func: Fn(ArmaCallContext, $($param),*) -> ER,
+        $($param: FromArma,)*
+    {
+        #[allow(non_snake_case)]
+        unsafe fn call(&self, _: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+            let call_context = acm.request();
+            let count = count.unwrap_or_else(|| 0);
+            if count != $c {
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
+            }
+            if $c == 0 {
+                handle_output_and_return(
+                    (self)(call_context, $($param::from_arma("".to_string()).unwrap(),)*),
+                    output,
+                    size
+                )
+            } else {
+                #[allow(unused_variables, unused_mut)]
+                let mut argv: Vec<String> = {
+                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let mut argv = argv
+                        .to_vec()
+                        .into_iter()
+                        .map(|s| {
+                            std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                        })
+                        .collect::<Vec<String>>();
+                    argv.reverse();
+                    argv
+                };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
+                handle_output_and_return(
+                    {
+                        (self)(call_context, $(
+                            if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
+                                c += 1;
+                                val
+                            } else {
+                                return format!("3{}", c).parse::<libc::c_int>().unwrap()
+                            },
+                        )*)
+                    },
+                    output,
+                    size
+                )
+            }
+        }
+    }
+
+    // Context & Call Context
+    impl<Func, $($param,)* ER> Factory<(Context, ArmaCallContext, $($param,)*), ER> for Func
+    where
+        ER: IntoExtResult + 'static,
+        Func: Fn(Context, ArmaCallContext, $($param),*) -> ER,
+        $($param: FromArma,)*
+    {
+        #[allow(non_snake_case)]
+        unsafe fn call(&self, context: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
+            let call_context = acm.request();
+            let count = count.unwrap_or_else(|| 0);
+            if count != $c {
+                return format!("2{}", count).parse::<libc::c_int>().unwrap();
+            }
+            if $c == 0 {
+                handle_output_and_return(
+                    (self)(context, call_context, $($param::from_arma("".to_string()).unwrap(),)*),
+                    output,
+                    size
+                )
+            } else {
+                #[allow(unused_variables, unused_mut)]
+                let mut argv: Vec<String> = {
+                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let mut argv = argv
+                        .to_vec()
+                        .into_iter()
+                        .map(|s| {
+                            std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                        })
+                        .collect::<Vec<String>>();
+                    argv.reverse();
+                    argv
+                };
+                #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut c = 0;
+                #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
+                handle_output_and_return(
+                    {
+                        (self)(context, call_context, $(
                             if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
                                 c += 1;
                                 val

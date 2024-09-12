@@ -121,18 +121,20 @@ pub fn group() -> arma_rs::Group {
 
 ## Call Context
 
-Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `Context` argument.
+Since Arma v2.11 additional context is provided each time the extension is called. This context can be accessed through the optional `ArmaCallContext` argument.
+
+Since Arma v2.18 the context is only requested from Arma when the functionh has `ArmaCallContext` as an argument.
 
 ```rust
-use arma_rs::Context;
+use arma_rs::ArmaCallContext;
 
-pub fn call_context(ctx: Context) -> String {
+pub fn call_context(call_context: ArmaCallContext) -> String {
     format!(
         "{:?},{:?},{:?},{:?}",
-        ctx.caller(),
-        ctx.source(),
-        ctx.mission(),
-        ctx.server()
+        call_context.caller(),
+        call_context.source(),
+        call_context.mission(),
+        call_context.server()
     )
 }
 
@@ -140,8 +142,6 @@ pub fn group() -> arma_rs::Group {
     arma_rs::Group::new().command("call_context", call_context)
 }
 ```
-
-Support for this context can be can be toggled using the `call-context` feature flag, which is enabled by default.
 
 ## Persistent State
 

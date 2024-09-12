@@ -1,7 +1,7 @@
 #![warn(missing_docs, nonstandard_style)]
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
-use std::{cell::OnceCell, cmp::Ordering, rc::Rc};
+use std::{cmp::Ordering, rc::Rc};
 
 pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
@@ -167,8 +167,6 @@ impl Extension {
             self.callback_channel.0.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             GroupContext::new(self.group.state.clone()),
-            OnceCell::new(),
-            self.context_manager.clone(),
         )
     }
 
@@ -183,8 +181,11 @@ impl Extension {
         size: libc::size_t,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
+        clear_call_context: bool,
     ) -> libc::c_int {
-        self.context_manager.replace(None);
+        if clear_call_context {
+            self.context_manager.replace(None);
+        }
         let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
             cstring.to_string()
         } else {
@@ -200,6 +201,7 @@ impl Extension {
             }
             _ => self.group.handle(
                 self.context().with_buffer_size(size),
+                self.context_manager.as_ref(),
                 &function,
                 output,
                 size,

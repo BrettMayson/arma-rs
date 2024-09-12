@@ -1,7 +1,6 @@
-use arma_rs::{Context, Group};
+use arma_rs::{ArmaCallContext, Group};
 
-pub fn current(ctx: Context) -> String {
-    let call_context = ctx.call_context();
+pub fn current(call_context: ArmaCallContext) -> String {
     format!(
         "{:?},{:?},{:?},{:?}",
         call_context.caller(),

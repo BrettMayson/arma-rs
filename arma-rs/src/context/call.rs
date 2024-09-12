@@ -1,6 +1,7 @@
 use std::path::Path;
 
 #[derive(Clone, Default)]
+/// Context of the Arma call.
 pub struct ArmaCallContext {
     pub(super) caller: Caller,
     pub(super) source: Source,
@@ -23,18 +24,30 @@ impl ArmaCallContext {
         }
     }
 
+    #[must_use]
+    /// Player that called the extension. Can be [`Caller::Unknown`] when the player's steamID64 is unavailable
+    /// # Note
+    /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
     pub fn caller(&self) -> &Caller {
         &self.caller
     }
 
+    #[must_use]
+    /// Source from where the extension was called.
     pub fn source(&self) -> &Source {
         &self.source
     }
 
+    #[must_use]
+    /// Current mission's name.
+    /// # Note
+    /// Can result in [`Mission::None`] in missions made prior to Arma v2.02.
     pub fn mission(&self) -> &Mission {
         &self.mission
     }
 
+    #[must_use]
+    /// Current server's name
     pub fn server(&self) -> &Server {
         &self.server
     }

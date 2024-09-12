@@ -44,6 +44,8 @@ mod extension {
     }
 
     mod c_interface_full {
+        use arma_rs::ArmaCallContext;
+
         use super::*;
 
         #[test]
@@ -79,6 +81,7 @@ mod extension {
                     1024,
                     Some(vec![ptr_hello].as_mut_ptr()),
                     Some(1),
+                    true,
                 );
                 assert_eq!(code, 0);
                 let _ = CString::from_raw(ptr);
@@ -87,7 +90,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("hello").unwrap().into_raw();
-                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("Hello"));
                 let _ = CString::from_raw(ptr);
@@ -102,6 +105,7 @@ mod extension {
                     1024,
                     Some(vec![ptr_john].as_mut_ptr()),
                     Some(1),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("Welcome John"));
@@ -118,8 +122,7 @@ mod extension {
         #[test]
         fn call_context() {
             let mut extension = Extension::build()
-                .command("call_context", |ctx: Context| -> String {
-                    let call_context = ctx.call_context();
+                .command("call_context", |call_context: ArmaCallContext| -> String {
                     format!(
                         "{:?},{:?},{:?},{:?}",
                         call_context.caller(),
@@ -147,7 +150,7 @@ mod extension {
                     4,
                 );
                 let ptr = CString::new("call_context").unwrap().into_raw();
-                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, false);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(
                     cstring,
@@ -177,8 +180,6 @@ mod extension {
 
     mod c_interface_invalid_calls {
         use super::*;
-
-        use arma_rs::{Caller, Mission, Server, Source};
 
         #[test]
         fn extension() {
@@ -224,7 +225,7 @@ mod extension {
             let ptr = CString::new("hello").unwrap().into_raw();
             unsafe {
                 let mut output = [0i8; 1024];
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(""));
                 assert_eq!(code, 1);
@@ -235,7 +236,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("invalid").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(""));
                 assert_eq!(code, 1);
@@ -246,7 +247,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback_invalid_name").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("null"));
                 assert_eq!(code, 0);
@@ -257,7 +258,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback_invalid_func").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("null"));
                 assert_eq!(code, 0);
@@ -268,7 +269,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback_invalid_data").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("null"));
                 assert_eq!(code, 0);
@@ -279,7 +280,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback_valid_null").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("null"));
                 assert_eq!(code, 0);
@@ -290,7 +291,7 @@ mod extension {
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback_valid_data").unwrap().into_raw();
-                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+                let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok("null"));
                 assert_eq!(code, 0);
@@ -308,78 +309,6 @@ mod extension {
                     .len(),
                 2
             );
-        }
-
-        #[test]
-        fn call_context() {
-            let mut extension = Extension::build().finish();
-
-            fn is_call_ctx_default(ctx: Context) -> bool {
-                let call_context = ctx.call_context();
-                call_context.caller() == &Caller::default()
-                    && call_context.source() == &Source::default()
-                    && call_context.mission() == &Mission::default()
-                    && call_context.server() == &Server::default()
-            }
-
-            // Valid Arma call context
-            // Note: Ordering of these arma call context tests matter, used to confirm that the test correctly set arma call context
-            unsafe {
-                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
-                let ptr1 = CString::new("123").unwrap().into_raw();
-                let ptr2 = CString::new("pbo").unwrap().into_raw();
-                let ptr3 = CString::new("mission").unwrap().into_raw();
-                let ptr4 = CString::new("server").unwrap().into_raw();
-                extension.handle_call_context(
-                    vec![
-                        ptr1, // steam ID
-                        ptr2, // file source
-                        ptr3, // mission name
-                        ptr4, // server name
-                    ]
-                    .as_mut_ptr(),
-                    4,
-                );
-                assert!(!is_call_ctx_default(extension.context()));
-                let _ = CString::from_raw(ptr1);
-                let _ = CString::from_raw(ptr2);
-                let _ = CString::from_raw(ptr3);
-                let _ = CString::from_raw(ptr4);
-            }
-
-            // Arma call context not enough args
-            unsafe {
-                assert!(!is_call_ctx_default(extension.context())); // Confirm expected status
-                extension.handle_call_context(vec![].as_mut_ptr(), 0);
-                assert!(is_call_ctx_default(extension.context()));
-            }
-
-            // Arma call context too many args
-            unsafe {
-                assert!(is_call_ctx_default(extension.context())); // Confirm expected status
-                let ptr = CString::new("").unwrap().into_raw();
-                let ptr1 = CString::new("123").unwrap().into_raw();
-                let ptr2 = CString::new("pbo").unwrap().into_raw();
-                let ptr3 = CString::new("mission").unwrap().into_raw();
-                let ptr4 = CString::new("server").unwrap().into_raw();
-                extension.handle_call_context(
-                    vec![
-                        ptr1, // steam ID
-                        ptr2, // file source
-                        ptr3, // mission name
-                        ptr4, // server name
-                        ptr, ptr,
-                    ]
-                    .as_mut_ptr(),
-                    6,
-                );
-                assert!(!is_call_ctx_default(extension.context()));
-                let _ = CString::from_raw(ptr);
-                let _ = CString::from_raw(ptr1);
-                let _ = CString::from_raw(ptr2);
-                let _ = CString::from_raw(ptr3);
-                let _ = CString::from_raw(ptr4);
-            }
         }
     }
 
@@ -422,6 +351,7 @@ mod extension {
                     1024,
                     Some(vec![ptr1, ptr2].as_mut_ptr()),
                     Some(2),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(result));
@@ -451,6 +381,7 @@ mod extension {
                     1024,
                     Some(vec![ptr1, ptr2, ptr3].as_mut_ptr()),
                     Some(3),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(""));
@@ -479,6 +410,7 @@ mod extension {
                     1024,
                     Some(vec![ptr1].as_mut_ptr()),
                     Some(1),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(""));
@@ -506,6 +438,7 @@ mod extension {
                     1024,
                     Some(vec![ptr1, ptr2].as_mut_ptr()),
                     Some(2),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(result));
@@ -534,6 +467,7 @@ mod extension {
                     1024,
                     Some(vec![ptr1, ptr2].as_mut_ptr()),
                     Some(2),
+                    true,
                 );
                 let cstring = CStr::from_ptr(output.as_ptr()).to_str();
                 assert_eq!(cstring, Ok(""));
@@ -548,7 +482,7 @@ mod extension {
         unsafe {
             let ptr = CString::new("overflow").unwrap().into_raw();
             let mut output = [0i8; 1024];
-            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None);
+            let code = extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, true);
             let cstring = CStr::from_ptr(output.as_ptr()).to_str();
             assert_eq!(cstring, Ok(""));
             assert_eq!(code, 4);
@@ -566,6 +500,7 @@ mod extension {
                 1024,
                 Some(vec![ptr_true].as_mut_ptr()),
                 Some(1),
+                true,
             );
             let cstring = CStr::from_ptr(output.as_ptr()).to_str();
             assert_eq!(cstring, Ok("told to error"));
@@ -585,6 +520,7 @@ mod extension {
                 1024,
                 Some(vec![ptr_false].as_mut_ptr()),
                 Some(1),
+                true,
             );
             let cstring = CStr::from_ptr(output.as_ptr()).to_str();
             assert_eq!(cstring, Ok("told to succeed"));

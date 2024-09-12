@@ -333,19 +333,18 @@ mod extension {
     }
 
     mod call_context {
-        use arma_rs::{Caller, Context, Extension, Mission, Server, Source};
+        use arma_rs::{ArmaCallContext, Caller, Extension, Mission, Server, Source};
 
         #[test]
         fn call() {
             let extension = Extension::build()
-                .command("call_ctx", |ctx: Context| -> String {
-                    let caller = ctx.call_context();
+                .command("call_ctx", |call_context: ArmaCallContext| -> String {
                     format!(
                         "{:?},{:?},{:?},{:?}",
-                        caller.caller(),
-                        caller.source(),
-                        caller.mission(),
-                        caller.server()
+                        call_context.caller(),
+                        call_context.source(),
+                        call_context.mission(),
+                        call_context.server()
                     )
                 })
                 .finish()
@@ -362,36 +361,6 @@ mod extension {
                 result,
                 "Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")"
             );
-        }
-
-        #[test]
-        fn availability() {
-            fn is_call_ctx_default(ctx: Context) -> bool {
-                let caller = ctx.call_context();
-                caller.caller() == &Caller::default()
-                    && caller.source() == &Source::default()
-                    && caller.mission() == &Mission::default()
-                    && caller.server() == &Server::default()
-            }
-
-            let extension = Extension::build()
-                .command("is_call_ctx_default", is_call_ctx_default)
-                .finish()
-                .testing();
-            let (result, _) = extension.call_with_context(
-                "is_call_ctx_default",
-                None,
-                Caller::Steam(123),
-                Source::Pbo(String::from("pbo")),
-                Mission::Mission(String::from("mission")),
-                Server::Multiplayer(String::from("server")),
-            );
-            assert_eq!(result, "false");
-            assert!(!is_call_ctx_default(extension.context()));
-
-            let (result, _) = extension.call("is_call_ctx_default", None);
-            assert_eq!(result, "true");
-            assert!(is_call_ctx_default(extension.context()));
         }
     }
 }

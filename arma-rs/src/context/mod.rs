@@ -1,7 +1,5 @@
 //! Contextual execution information.
 
-use std::{cell::OnceCell, rc::Rc};
-
 use crossbeam_channel::Sender;
 
 use crate::{CallbackMessage, IntoArma, Value};
@@ -9,8 +7,8 @@ use crate::{CallbackMessage, IntoArma, Value};
 mod call;
 mod global;
 mod group;
-mod state;
 mod manager;
+mod state;
 
 pub use self::state::ContextState;
 pub use call::*;
@@ -24,8 +22,6 @@ pub struct Context {
     global: GlobalContext,
     group: GroupContext,
     buffer_size: usize,
-    call: OnceCell<ArmaCallContext>,
-    context_manager: Rc<ArmaContextManager>,
 }
 
 impl Context {
@@ -33,15 +29,11 @@ impl Context {
         callback_tx: Sender<CallbackMessage>,
         global: GlobalContext,
         group: GroupContext,
-        call: OnceCell<ArmaCallContext>,
-        context_manager: Rc<ArmaContextManager>,
     ) -> Self {
         Self {
             callback_tx,
             global,
             group,
-            call,
-            context_manager,
             buffer_size: 0,
         }
     }
@@ -67,17 +59,12 @@ impl Context {
         &self.group
     }
 
-    #[must_use]
-    /// Call context, fetched from Arma on first use.
-    pub fn call_context(&self) -> &ArmaCallContext {
-        self.call.get_or_init(|| self.context_manager.request())
-    }
-
-    #[must_use]
-    /// Call context with stack trace, fetched from Arma on first use.
-    pub fn call_context_and_stack(&self) -> &ArmaCallContext {
-        todo!()
-    }
+    // TODO implement
+    // #[must_use]
+    // /// Call context with stack trace, fetched from Arma on first use.
+    // pub fn call_context_and_stack(&self) -> &ArmaCallContext {
+    //     todo!()
+    // }
 
     #[must_use]
     /// Returns the length in bytes of the output buffer.
@@ -140,7 +127,7 @@ impl IntoArma for CallbackError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{empty_request_context, State};
+    use crate::State;
     use crossbeam_channel::{bounded, Sender};
     use std::sync::Arc;
 
@@ -149,8 +136,6 @@ mod tests {
             tx,
             GlobalContext::new(String::new(), Arc::new(State::default())),
             GroupContext::new(Arc::new(State::default())),
-            OnceCell::new(),
-            Rc::new(ArmaContextManager::new(empty_request_context)),
         )
     }
 
