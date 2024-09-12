@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use crate::{CallbackMessage, Context, State, Value};
 
-#[cfg(feature = "call-context")]
 use crate::{ArmaCallContext, Caller, Mission, Server, Source};
 
 /// Wrapper around [`crate::Extension`] used for testing.
@@ -65,7 +64,6 @@ impl Extension {
         &self.0.group.state
     }
 
-    #[cfg(feature = "call-context")]
     #[must_use]
     /// Call a function with Arma call context.
     ///
@@ -80,7 +78,9 @@ impl Extension {
         mission: Mission,
         server: Server,
     ) -> (String, libc::c_int) {
-        self.set_call_context(ArmaCallContext::new(caller, source, mission, server));
+        self.0
+            .context_manager
+            .replace(Some(ArmaCallContext::new(caller, source, mission, server)));
         unsafe { self.handle_call(function, args) }
     }
 
@@ -93,14 +93,8 @@ impl Extension {
     /// # Note
     /// If the `call-context` feature is enabled, this function passes default values for each field.
     pub fn call(&self, function: &str, args: Option<Vec<String>>) -> (String, libc::c_int) {
-        #[cfg(feature = "call-context")]
-        self.set_call_context(ArmaCallContext::default());
+        self.0.context_manager.replace(None);
         unsafe { self.handle_call(function, args) }
-    }
-
-    #[cfg(feature = "call-context")]
-    fn set_call_context(&self, ctx: ArmaCallContext) {
-        self.0.call_ctx.replace(ctx);
     }
 
     unsafe fn handle_call(

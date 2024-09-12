@@ -33,6 +33,5 @@ features = ["Win32_Foundation", "Win32_System_Console"]
 trybuild = "1.0.8"
 
 [features]
-default = ["extension", "call-context"]
+default = ["extension"]
 extension = ["libc", "crossbeam-channel"]
-call-context = ["extension"]

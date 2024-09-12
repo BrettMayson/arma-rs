@@ -115,17 +115,17 @@ mod extension {
             );
         }
 
-        #[cfg(feature = "call-context")]
         #[test]
         fn call_context() {
             let mut extension = Extension::build()
                 .command("call_context", |ctx: Context| -> String {
+                    let call_context = ctx.call_context();
                     format!(
                         "{:?},{:?},{:?},{:?}",
-                        ctx.caller(),
-                        ctx.source(),
-                        ctx.mission(),
-                        ctx.server()
+                        call_context.caller(),
+                        call_context.source(),
+                        call_context.mission(),
+                        call_context.server()
                     )
                 })
                 .finish();
@@ -178,7 +178,6 @@ mod extension {
     mod c_interface_invalid_calls {
         use super::*;
 
-        #[cfg(feature = "call-context")]
         use arma_rs::{Caller, Mission, Server, Source};
 
         #[test]
@@ -311,16 +310,16 @@ mod extension {
             );
         }
 
-        #[cfg(feature = "call-context")]
         #[test]
         fn call_context() {
             let mut extension = Extension::build().finish();
 
             fn is_call_ctx_default(ctx: Context) -> bool {
-                ctx.caller() == &Caller::default()
-                    && ctx.source() == &Source::default()
-                    && ctx.mission() == &Mission::default()
-                    && ctx.server() == &Server::default()
+                let call_context = ctx.call_context();
+                call_context.caller() == &Caller::default()
+                    && call_context.source() == &Source::default()
+                    && call_context.mission() == &Mission::default()
+                    && call_context.server() == &Server::default()
             }
 
             // Valid Arma call context

@@ -1,12 +1,13 @@
 use arma_rs::{Context, Group};
 
 pub fn current(ctx: Context) -> String {
+    let call_context = ctx.call_context();
     format!(
         "{:?},{:?},{:?},{:?}",
-        ctx.caller(),
-        ctx.source(),
-        ctx.mission(),
-        ctx.server()
+        call_context.caller(),
+        call_context.source(),
+        call_context.mission(),
+        call_context.server()
     )
 }
 

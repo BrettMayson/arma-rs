@@ -1,29 +1,31 @@
 //! Contextual execution information.
 
+use std::{cell::OnceCell, rc::Rc};
+
 use crossbeam_channel::Sender;
 
 use crate::{CallbackMessage, IntoArma, Value};
 
-#[cfg(feature = "call-context")]
 mod call;
 mod global;
 mod group;
 mod state;
+mod manager;
 
 pub use self::state::ContextState;
-#[cfg(feature = "call-context")]
 pub use call::*;
 pub use global::GlobalContext;
 pub use group::GroupContext;
+pub use manager::ArmaContextManager;
 
 /// Contains information about the current execution context
 pub struct Context {
     callback_tx: Sender<CallbackMessage>,
     global: GlobalContext,
     group: GroupContext,
-    #[cfg(feature = "call-context")]
-    call: ArmaCallContext,
     buffer_size: usize,
+    call: OnceCell<ArmaCallContext>,
+    context_manager: Rc<ArmaContextManager>,
 }
 
 impl Context {
@@ -31,14 +33,15 @@ impl Context {
         callback_tx: Sender<CallbackMessage>,
         global: GlobalContext,
         group: GroupContext,
-        #[cfg(feature = "call-context")] call: ArmaCallContext,
+        call: OnceCell<ArmaCallContext>,
+        context_manager: Rc<ArmaContextManager>,
     ) -> Self {
         Self {
             callback_tx,
             global,
             group,
-            #[cfg(feature = "call-context")]
             call,
+            context_manager,
             buffer_size: 0,
         }
     }
@@ -64,36 +67,16 @@ impl Context {
         &self.group
     }
 
-    #[cfg(feature = "call-context")]
     #[must_use]
-    /// Player that called the extension. Can be [`Caller::Unknown`] when the player's steamID64 is unavailable
-    /// # Note
-    /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
-    pub const fn caller(&self) -> &Caller {
-        &self.call.caller
+    /// Call context, fetched from Arma on first use.
+    pub fn call_context(&self) -> &ArmaCallContext {
+        self.call.get_or_init(|| self.context_manager.request())
     }
 
-    #[cfg(feature = "call-context")]
     #[must_use]
-    /// Source from where the extension was called.
-    pub const fn source(&self) -> &Source {
-        &self.call.source
-    }
-
-    #[cfg(feature = "call-context")]
-    #[must_use]
-    /// Current mission's name.
-    /// # Note
-    /// Can result in [`Mission::None`] in missions made prior to Arma v2.02.
-    pub const fn mission(&self) -> &Mission {
-        &self.call.mission
-    }
-
-    #[cfg(feature = "call-context")]
-    #[must_use]
-    /// Current server's name
-    pub const fn server(&self) -> &Server {
-        &self.call.server
+    /// Call context with stack trace, fetched from Arma on first use.
+    pub fn call_context_and_stack(&self) -> &ArmaCallContext {
+        todo!()
     }
 
     #[must_use]
@@ -157,7 +140,7 @@ impl IntoArma for CallbackError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::State;
+    use crate::{empty_request_context, State};
     use crossbeam_channel::{bounded, Sender};
     use std::sync::Arc;
 
@@ -166,8 +149,8 @@ mod tests {
             tx,
             GlobalContext::new(String::new(), Arc::new(State::default())),
             GroupContext::new(Arc::new(State::default())),
-            #[cfg(feature = "call-context")]
-            ArmaCallContext::default(),
+            OnceCell::new(),
+            Rc::new(ArmaContextManager::new(empty_request_context)),
         )
     }
 

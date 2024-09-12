@@ -1,7 +1,7 @@
 use std::path::Path;
 
 #[derive(Clone, Default)]
-pub(crate) struct ArmaCallContext {
+pub struct ArmaCallContext {
     pub(super) caller: Caller,
     pub(super) source: Source,
     pub(super) mission: Mission,
@@ -21,6 +21,22 @@ impl ArmaCallContext {
             mission,
             server,
         }
+    }
+
+    pub fn caller(&self) -> &Caller {
+        &self.caller
+    }
+
+    pub fn source(&self) -> &Source {
+        &self.source
+    }
+
+    pub fn mission(&self) -> &Mission {
+        &self.mission
+    }
+
+    pub fn server(&self) -> &Server {
+        &self.server
     }
 }
 

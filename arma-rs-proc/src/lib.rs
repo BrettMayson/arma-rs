@@ -16,7 +16,9 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let ext_init = quote! {
         if RV_EXTENSION.is_none() {
-            RV_EXTENSION = Some(#init());
+            let mut ext = #init();
+            ext.register_request_context_proc(RVExtensionRequestContextProc);
+            RV_EXTENSION = Some(ext);
         }
     };
 
@@ -41,6 +43,13 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         use arma_rs::libc as arma_rs_libc;
 
         static mut RV_EXTENSION: Option<Extension> = None;
+
+        #[no_mangle]
+        pub static RVExtensionFeatureFlags: u64 = arma_rs::flags::RV_CONTEXT_NO_DEFAULT_CALL;
+
+        extern "C" {
+            fn RVExtensionRequestContextProc();
+        }
 
         #[cfg(all(target_os="windows", target_arch="x86"))]
         arma_rs::link_args::windows! {

@@ -1,8 +1,7 @@
 #![warn(missing_docs, nonstandard_style)]
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
-#[cfg(feature = "call-context")]
-use std::{cell::RefCell, cmp::Ordering};
+use std::{cell::OnceCell, cmp::Ordering, rc::Rc};
 
 pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
@@ -17,6 +16,8 @@ pub use link_args;
 #[cfg(feature = "extension")]
 #[macro_use]
 extern crate log;
+
+pub mod flags;
 
 mod value;
 pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
@@ -55,6 +56,8 @@ pub type Callback = extern "stdcall" fn(
 /// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
+/// Requests a call context from Arma
+pub type ContextRequest = unsafe extern "C" fn();
 
 #[cfg(feature = "extension")]
 enum CallbackMessage {
@@ -80,8 +83,7 @@ pub struct Extension {
     callback: Option<Callback>,
     callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
-    #[cfg(feature = "call-context")]
-    call_ctx: RefCell<ArmaCallContext>,
+    context_manager: Rc<ArmaContextManager>,
 }
 
 #[cfg(feature = "extension")]
@@ -121,7 +123,12 @@ impl Extension {
         self.callback = Some(callback);
     }
 
-    #[cfg(feature = "call-context")]
+    #[doc(hidden)]
+    /// Called by generated code, do not call directly.
+    pub fn register_request_context_proc(&mut self, function: ContextRequest) {
+        self.context_manager.request.replace(function);
+    }
+
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
@@ -150,15 +157,8 @@ impl Extension {
                 )
             }
         };
-        self.call_ctx.replace(ctx);
+        self.context_manager.replace(Some(ctx));
     }
-
-    #[cfg(not(feature = "call-context"))]
-    #[doc(hidden)]
-    /// Called by generated code, do not call directly.
-    /// # Safety
-    /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_call_context(&mut self, _args: *mut *mut i8, _count: libc::c_int) {}
 
     #[must_use]
     /// Get a context for interacting with Arma
@@ -167,8 +167,8 @@ impl Extension {
             self.callback_channel.0.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             GroupContext::new(self.group.state.clone()),
-            #[cfg(feature = "call-context")]
-            self.call_ctx.borrow().clone(),
+            OnceCell::new(),
+            self.context_manager.clone(),
         )
     }
 
@@ -184,6 +184,7 @@ impl Extension {
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
     ) -> libc::c_int {
+        self.context_manager.replace(None);
         let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
             cstring.to_string()
         } else {
@@ -360,11 +361,12 @@ impl ExtensionBuilder {
             callback: None,
             callback_channel: unbounded(),
             callback_thread: None,
-            #[cfg(feature = "call-context")]
-            call_ctx: RefCell::new(ArmaCallContext::default()),
+            context_manager: Rc::new(ArmaContextManager::new(empty_request_context)),
         }
     }
 }
+
+unsafe extern "C" fn empty_request_context() {}
 
 #[doc(hidden)]
 /// Called by generated code, do not call directly.

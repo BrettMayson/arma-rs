@@ -1,4 +1,3 @@
-#[cfg(all(feature = "extension", feature = "call-context"))]
 #[cfg(feature = "extension")]
 mod extension {
     use arma_rs::{Context, ContextState, Extension, Group};
@@ -333,7 +332,6 @@ mod extension {
         assert_eq!(value, 21);
     }
 
-    #[cfg(feature = "call-context")]
     mod call_context {
         use arma_rs::{Caller, Context, Extension, Mission, Server, Source};
 
@@ -341,12 +339,13 @@ mod extension {
         fn call() {
             let extension = Extension::build()
                 .command("call_ctx", |ctx: Context| -> String {
+                    let caller = ctx.call_context();
                     format!(
                         "{:?},{:?},{:?},{:?}",
-                        ctx.caller(),
-                        ctx.source(),
-                        ctx.mission(),
-                        ctx.server()
+                        caller.caller(),
+                        caller.source(),
+                        caller.mission(),
+                        caller.server()
                     )
                 })
                 .finish()
@@ -368,10 +367,11 @@ mod extension {
         #[test]
         fn availability() {
             fn is_call_ctx_default(ctx: Context) -> bool {
-                ctx.caller() == &Caller::default()
-                    && ctx.source() == &Source::default()
-                    && ctx.mission() == &Mission::default()
-                    && ctx.server() == &Server::default()
+                let caller = ctx.call_context();
+                caller.caller() == &Caller::default()
+                    && caller.source() == &Source::default()
+                    && caller.mission() == &Mission::default()
+                    && caller.server() == &Server::default()
             }
 
             let extension = Extension::build()
