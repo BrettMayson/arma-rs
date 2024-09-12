@@ -62,6 +62,7 @@ impl ContainerData {
     }
 }
 
+#[allow(dead_code)]
 pub struct FieldNamed {
     pub attributes: FieldAttributes,
     pub ident: syn::Ident,

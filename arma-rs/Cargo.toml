@@ -35,4 +35,4 @@ trybuild = "1.0.8"
 [features]
 default = ["extension", "call-context"]
 extension = ["libc", "crossbeam-channel"]
-call-context = ["extension"]
+call-context = ["extension", "arma-rs-proc/call-context"]
