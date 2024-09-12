@@ -127,7 +127,8 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
-        const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
+        // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension) - 2.18 increased to 6
+        const CONTEXT_COUNT: usize = 4;
         let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
             Ordering::Less => {
                 error!("invalid amount of args passed to `handle_call_context`");
