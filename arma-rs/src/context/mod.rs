@@ -59,13 +59,6 @@ impl Context {
         &self.group
     }
 
-    // TODO implement
-    // #[must_use]
-    // /// Call context with stack trace, fetched from Arma on first use.
-    // pub fn call_context_and_stack(&self) -> &ArmaCallContext {
-    //     todo!()
-    // }
-
     #[must_use]
     /// Returns the length in bytes of the output buffer.
     /// This is the maximum size of the data that can be returned by the extension.

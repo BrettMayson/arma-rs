@@ -356,6 +356,56 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
+        // super convenient
+        #[cfg(all(windows, not(debug_assertions)))]
+        let request_context = {
+            let module = unsafe {
+                winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null());
+            };
+            if module.is_null() {
+                panic!("GetModuleHandleW failed");
+            }
+            let function_name = CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
+
+            let func_address = unsafe {
+                GetProcAddress(module_handle, function_name.as_ptr());
+            };
+            
+            if func_address.is_null() {
+                panic!("Failed to get function address");
+            }
+
+            unsafe {
+                std::mem::transmute(func_address)
+            }
+        };
+
+        #[cfg(all(not(windows), not(debug_assertions)))]
+        let request_context = {
+            let c_name = std::ffi::CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
+            
+            let handle = unsafe { libc::dlopen(std::ptr::null_mut(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+            
+            if handle.is_null() {
+                panic!("Failed to open handle to current process");
+            }
+            
+            let result = unsafe { libc::dlsym(handle, c_name.as_ptr()) };
+            
+            unsafe { libc::dlclose(handle) };
+            
+            if result.is_null() {
+                panic!("Failed to get function address");
+            }
+
+            unsafe {
+                std::mem::transmute::<*mut libc::c_void, unsafe extern "C" fn()>(result)
+            }
+        };
+
+        #[cfg(debug_assertions)]
+        let request_context = empty_request_context;
+
         Extension {
             version: self.version,
             group: self.group.into(),
@@ -363,7 +413,7 @@ impl ExtensionBuilder {
             callback: None,
             callback_channel: unbounded(),
             callback_thread: None,
-            context_manager: Rc::new(ArmaContextManager::new(empty_request_context)),
+            context_manager: Rc::new(ArmaContextManager::new(request_context)),
         }
     }
 }
