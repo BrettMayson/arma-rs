@@ -101,6 +101,9 @@ impl Extension {
     #[must_use]
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
+        unsafe {if !CONSOLE_ALLOCATED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+            let _ = windows::Win32::System::Console::AllocConsole();
+        }}
         ExtensionBuilder {
             version: String::from("0.0.0"),
             group: Group::new(),
@@ -131,12 +134,6 @@ impl Extension {
     /// Called by generated code, do not call directly.
     pub fn register_callback(&mut self, callback: Callback) {
         self.callback = Some(callback);
-    }
-
-    #[doc(hidden)]
-    /// Called by generated code, do not call directly.
-    pub fn register_request_context_proc(&mut self, function: ContextRequest) {
-        self.context_manager.request.replace(function);
     }
 
     #[doc(hidden)]
@@ -348,16 +345,16 @@ impl ExtensionBuilder {
         #[cfg(all(windows, not(debug_assertions)))]
         let request_context = {
             let module = unsafe {
-                winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null());
+                winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null())
             };
             if module.is_null() {
                 panic!("GetModuleHandleW failed");
             }
             let function_name =
-                CString::new("RVExtensionRequestContextProc").expect("CString::new failed");
+                std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
 
             let func_address = unsafe {
-                GetProcAddress(module_handle, function_name.as_ptr());
+                winapi::um::libloaderapi::GetProcAddress(module, function_name.as_ptr())
             };
 
             if func_address.is_null() {
@@ -366,6 +363,7 @@ impl ExtensionBuilder {
 
             unsafe { std::mem::transmute(func_address) }
         };
+        println!("Returning extension");
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {

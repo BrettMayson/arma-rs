@@ -14,11 +14,11 @@ struct RawArmaCallContext {
 
 impl RawArmaCallContext {
     fn from_arma(args: *mut *mut i8, count: libc::c_int) -> Self {
-        let steam_id = unsafe { *args.offset(0) as *const u64 };
-        let source = unsafe { *args.offset(1) as *const *const libc::c_char };
-        let mission = unsafe { *args.offset(2) as *const *const libc::c_char };
-        let server = unsafe { *args.offset(3) as *const *const libc::c_char };
-        let remote_exec_owner = unsafe { *args.offset(4) as *const i16 };
+        let steam_id = unsafe { *args.offset(0) as u64 };
+        let source = unsafe { *args.offset(1) as *const libc::c_char };
+        let mission = unsafe { *args.offset(2) as *const libc::c_char };
+        let server = unsafe { *args.offset(3) as *const libc::c_char };
+        let remote_exec_owner = unsafe { *args.offset(4) as i16 };
 
         let call_stack = if count > 5 {
             let stack = unsafe { *args.offset(5) as *const super::stack::RawContextStackTrace };
@@ -28,11 +28,11 @@ impl RawArmaCallContext {
         };
 
         Self {
-            steam_id: unsafe { *steam_id },
-            source: unsafe { *source },
-            mission: unsafe { *mission },
-            server: unsafe { *server },
-            remote_exec_owner: unsafe { *remote_exec_owner },
+            steam_id,
+            source,
+            mission,
+            server,
+            remote_exec_owner,
             call_stack,
         }
     }
