@@ -1,7 +1,7 @@
 #![warn(missing_docs, nonstandard_style)]
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
-use std::{cmp::Ordering, rc::Rc};
+use std::rc::Rc;
 
 pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
@@ -17,7 +17,11 @@ pub use link_args;
 #[macro_use]
 extern crate log;
 
-pub mod flags;
+mod flags;
+
+mod call_context;
+use call_context::{ArmaCallContext, ArmaContextManager};
+pub use call_context::{CallContext, CallContextStackTrace, Caller, Mission, Server, Source};
 
 mod value;
 pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
@@ -75,7 +79,7 @@ static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
 
 #[no_mangle]
 /// Feature flags read on each callExtension call.
-pub static RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
+pub static mut RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
 
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
@@ -138,30 +142,8 @@ impl Extension {
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
-        const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
-        let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
-            Ordering::Less => {
-                error!("invalid amount of args passed to `handle_call_context`");
-                ArmaCallContext::default()
-            }
-            ordering => {
-                if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `handle_call_context`");
-                }
-
-                let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
-                    .iter()
-                    .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
-                    .collect();
-                ArmaCallContext::new(
-                    Caller::from(argv[0].as_ref()),
-                    Source::from(argv[1].as_ref()),
-                    Mission::from(argv[2].as_ref()),
-                    Server::from(argv[3].as_ref()),
-                )
-            }
-        };
-        self.context_manager.replace(Some(ctx));
+        self.context_manager
+            .replace(Some(ArmaCallContext::from_arma(args, count)));
     }
 
     #[must_use]

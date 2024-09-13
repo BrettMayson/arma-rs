@@ -333,12 +333,12 @@ mod extension {
     }
 
     mod call_context {
-        use arma_rs::{ArmaCallContext, Caller, Extension, Mission, Server, Source};
+        use arma_rs::{CallContext, Caller, Extension, Mission, Server, Source};
 
         #[test]
         fn call() {
             let extension = Extension::build()
-                .command("call_ctx", |call_context: ArmaCallContext| -> String {
+                .command("call_ctx", |call_context: CallContext| -> String {
                     format!(
                         "{:?},{:?},{:?},{:?}",
                         call_context.caller(),
@@ -356,6 +356,7 @@ mod extension {
                 Source::Pbo(String::from("pbo")),
                 Mission::Mission(String::from("mission")),
                 Server::Multiplayer(String::from("server")),
+                0,
             );
             assert_eq!(
                 result,

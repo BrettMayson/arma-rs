@@ -126,20 +126,31 @@ Since Arma v2.11 additional context is provided each time the extension is calle
 Since Arma v2.18 the context is only requested from Arma when the functionh has `ArmaCallContext` as an argument.
 
 ```rust
-use arma_rs::ArmaCallContext;
+use arma_rs::{CallContext, CallContextStackTrace};
 
-pub fn call_context(call_context: ArmaCallContext) -> String {
+pub fn call_context(call_context: CallContext) -> String {
     format!(
-        "{:?},{:?},{:?},{:?}",
+        "{:?},{:?},{:?},{:?},{:?}",
         call_context.caller(),
         call_context.source(),
         call_context.mission(),
-        call_context.server()
+        call_context.server(),
+        call_context.remote_exec_owner(),
+    )
+}
+
+pub fn stack_trace(call_context: CallContextStackTrace) -> String {
+    format!(
+        "{:?}\n{:?}",
+        call_context.source(),
+        call_context.stack_trace()
     )
 }
 
 pub fn group() -> arma_rs::Group {
-    arma_rs::Group::new().command("call_context", call_context)
+    arma_rs::Group::new()
+        .command("call_context", call_context)
+        .command("stack_trace", stack_trace)
 }
 ```
 

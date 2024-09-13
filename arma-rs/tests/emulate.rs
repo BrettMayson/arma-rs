@@ -44,8 +44,6 @@ mod extension {
     }
 
     mod c_interface_full {
-        use arma_rs::ArmaCallContext;
-
         use super::*;
 
         #[test]
@@ -117,51 +115,6 @@ mod extension {
                 stack.read().unwrap().get("c_interface_full").unwrap().len(),
                 1
             );
-        }
-
-        #[test]
-        fn call_context() {
-            let mut extension = Extension::build()
-                .command("call_context", |call_context: ArmaCallContext| -> String {
-                    format!(
-                        "{:?},{:?},{:?},{:?}",
-                        call_context.caller(),
-                        call_context.source(),
-                        call_context.mission(),
-                        call_context.server()
-                    )
-                })
-                .finish();
-
-            unsafe {
-                let mut output = [0i8; 1024];
-                let ptr1 = CString::new("123").unwrap().into_raw();
-                let ptr2 = CString::new("pbo").unwrap().into_raw();
-                let ptr3 = CString::new("mission").unwrap().into_raw();
-                let ptr4 = CString::new("server").unwrap().into_raw();
-                extension.handle_call_context(
-                    vec![
-                        ptr1, // steam ID
-                        ptr2, // file source
-                        ptr3, // mission name
-                        ptr4, // server name
-                    ]
-                    .as_mut_ptr(),
-                    4,
-                );
-                let ptr = CString::new("call_context").unwrap().into_raw();
-                extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, false);
-                let cstring = CStr::from_ptr(output.as_ptr()).to_str();
-                assert_eq!(
-                    cstring,
-                    Ok("Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")")
-                );
-                let _ = CString::from_raw(ptr);
-                let _ = CString::from_raw(ptr1);
-                let _ = CString::from_raw(ptr2);
-                let _ = CString::from_raw(ptr3);
-                let _ = CString::from_raw(ptr4);
-            }
         }
     }
 

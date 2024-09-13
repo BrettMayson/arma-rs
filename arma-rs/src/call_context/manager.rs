@@ -2,12 +2,12 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::ContextRequest;
 
-use super::ArmaCallContext;
+use super::CallContextStackTrace;
 
 /// Manages requesting and replacing the ArmaCallContext
 pub struct ArmaContextManager {
     pub(crate) request: RefCell<ContextRequest>,
-    state: Rc<RefCell<Option<ArmaCallContext>>>,
+    state: Rc<RefCell<Option<CallContextStackTrace>>>,
 }
 
 impl ArmaContextManager {
@@ -20,7 +20,7 @@ impl ArmaContextManager {
     }
 
     /// Request a new ArmaCallContext from Arma
-    pub fn request(&self) -> ArmaCallContext {
+    pub fn request(&self) -> CallContextStackTrace {
         // When the request is called, Arma will send the request to the extension
         // The extension will set the state to the request it just received
         unsafe {
@@ -34,7 +34,7 @@ impl ArmaContextManager {
     }
 
     /// Replace the current ArmaCallContext with a new one
-    pub fn replace(&self, value: Option<ArmaCallContext>) {
+    pub fn replace(&self, value: Option<CallContextStackTrace>) {
         *self.state.borrow_mut() = value;
     }
 }

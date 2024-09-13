@@ -65,6 +65,7 @@ impl Extension {
     }
 
     #[must_use]
+    #[allow(clippy::too_many_arguments)]
     /// Call a function with Arma call context.
     ///
     /// # Safety
@@ -77,10 +78,15 @@ impl Extension {
         source: Source,
         mission: Mission,
         server: Server,
+        remote_exec_owner: i16,
     ) -> (String, libc::c_int) {
-        self.0
-            .context_manager
-            .replace(Some(ArmaCallContext::new(caller, source, mission, server)));
+        self.0.context_manager.replace(Some(ArmaCallContext::new(
+            caller,
+            source,
+            mission,
+            server,
+            remote_exec_owner,
+        )));
         unsafe { self.handle_call(function, args) }
     }
 
