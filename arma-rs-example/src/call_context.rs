@@ -49,6 +49,6 @@ mod tests {
             0,
         );
         assert_eq!(code, 0);
-        assert_eq!(result, "Unknown,Console,None,Singleplayer");
+        assert_eq!(result, "Unknown,Console,None,Singleplayer,0");
     }
 }
