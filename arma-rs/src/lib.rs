@@ -19,13 +19,16 @@ extern crate log;
 
 mod flags;
 
-mod call_context;
-use call_context::{ArmaCallContext, ArmaContextManager};
-pub use call_context::{CallContext, CallContextStackTrace, Caller, Mission, Server, Source};
 
 mod value;
 pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
 
+#[cfg(feature = "extension")]
+mod call_context;
+#[cfg(feature = "extension")]
+use call_context::{ArmaCallContext, ArmaContextManager};
+#[cfg(feature = "extension")]
+pub use call_context::{CallContext, CallContextStackTrace, Caller, Mission, Server, Source};
 #[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
