@@ -19,7 +19,6 @@ extern crate log;
 
 mod flags;
 
-
 mod value;
 pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
 
