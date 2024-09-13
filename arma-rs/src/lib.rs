@@ -101,11 +101,6 @@ impl Extension {
     #[must_use]
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
-        unsafe {
-            if !CONSOLE_ALLOCATED.swap(true, std::sync::atomic::Ordering::SeqCst) {
-                let _ = windows::Win32::System::Console::AllocConsole();
-            }
-        }
         ExtensionBuilder {
             version: String::from("0.0.0"),
             group: Group::new(),
