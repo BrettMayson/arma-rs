@@ -101,9 +101,11 @@ impl Extension {
     #[must_use]
     /// Creates a new extension.
     pub fn build() -> ExtensionBuilder {
-        unsafe {if !CONSOLE_ALLOCATED.swap(true, std::sync::atomic::Ordering::SeqCst) {
-            let _ = windows::Win32::System::Console::AllocConsole();
-        }}
+        unsafe {
+            if !CONSOLE_ALLOCATED.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                let _ = windows::Win32::System::Console::AllocConsole();
+            }
+        }
         ExtensionBuilder {
             version: String::from("0.0.0"),
             group: Group::new(),
@@ -344,18 +346,15 @@ impl ExtensionBuilder {
         // super convenient
         #[cfg(all(windows, not(debug_assertions)))]
         let request_context = {
-            let module = unsafe {
-                winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null())
-            };
+            let module = unsafe { winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null()) };
             if module.is_null() {
                 panic!("GetModuleHandleW failed");
             }
             let function_name =
                 std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
 
-            let func_address = unsafe {
-                winapi::um::libloaderapi::GetProcAddress(module, function_name.as_ptr())
-            };
+            let func_address =
+                unsafe { winapi::um::libloaderapi::GetProcAddress(module, function_name.as_ptr()) };
 
             if func_address.is_null() {
                 panic!("Failed to get function address");
