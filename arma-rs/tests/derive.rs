@@ -15,11 +15,11 @@ mod derive {
         Odd,
     }
 
-    impl std::string::ToString for ValueStringImpl {
-        fn to_string(&self) -> String {
+    impl std::fmt::Display for ValueStringImpl {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Self::Even => "even".to_string(),
-                Self::Odd => "odd".to_string(),
+                Self::Even => write!(f, "even"),
+                Self::Odd => write!(f, "odd"),
             }
         }
     }

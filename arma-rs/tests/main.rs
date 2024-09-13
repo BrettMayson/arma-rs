@@ -1,4 +1,3 @@
-#[cfg(all(feature = "extension", feature = "call-context"))]
 #[cfg(feature = "extension")]
 mod extension {
     use arma_rs::{Context, ContextState, Extension, Group};
@@ -333,20 +332,19 @@ mod extension {
         assert_eq!(value, 21);
     }
 
-    #[cfg(feature = "call-context")]
     mod call_context {
-        use arma_rs::{Caller, Context, Extension, Mission, Server, Source};
+        use arma_rs::{CallContext, Caller, Extension, Mission, Server, Source};
 
         #[test]
         fn call() {
             let extension = Extension::build()
-                .command("call_ctx", |ctx: Context| -> String {
+                .command("call_ctx", |call_context: CallContext| -> String {
                     format!(
                         "{:?},{:?},{:?},{:?}",
-                        ctx.caller(),
-                        ctx.source(),
-                        ctx.mission(),
-                        ctx.server()
+                        call_context.caller(),
+                        call_context.source(),
+                        call_context.mission(),
+                        call_context.server()
                     )
                 })
                 .finish()
@@ -358,40 +356,12 @@ mod extension {
                 Source::Pbo(String::from("pbo")),
                 Mission::Mission(String::from("mission")),
                 Server::Multiplayer(String::from("server")),
+                0,
             );
             assert_eq!(
                 result,
                 "Steam(123),Pbo(\"pbo\"),Mission(\"mission\"),Multiplayer(\"server\")"
             );
-        }
-
-        #[test]
-        fn availability() {
-            fn is_call_ctx_default(ctx: Context) -> bool {
-                ctx.caller() == &Caller::default()
-                    && ctx.source() == &Source::default()
-                    && ctx.mission() == &Mission::default()
-                    && ctx.server() == &Server::default()
-            }
-
-            let extension = Extension::build()
-                .command("is_call_ctx_default", is_call_ctx_default)
-                .finish()
-                .testing();
-            let (result, _) = extension.call_with_context(
-                "is_call_ctx_default",
-                None,
-                Caller::Steam(123),
-                Source::Pbo(String::from("pbo")),
-                Mission::Mission(String::from("mission")),
-                Server::Multiplayer(String::from("server")),
-            );
-            assert_eq!(result, "false");
-            assert!(!is_call_ctx_default(extension.context()));
-
-            let (result, _) = extension.call("is_call_ctx_default", None);
-            assert_eq!(result, "true");
-            assert!(is_call_ctx_default(extension.context()));
         }
     }
 }

@@ -73,7 +73,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
                 if ext.allow_no_args() {
-                    ext.handle_call(function, output, size, None, None);
+                    ext.handle_call(function, output, size, None, None, true);
                 }
             }
         }
@@ -85,7 +85,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
         pub unsafe extern #extern_type fn #argfn(output: *mut arma_rs_libc::c_char, size: arma_rs_libc::size_t, function: *mut arma_rs_libc::c_char, args: *mut *mut arma_rs_libc::c_char, arg_count: arma_rs_libc::c_int) -> arma_rs_libc::c_int {
             #ext_init
             if let Some(ext) = &RV_EXTENSION {
-                ext.handle_call(function, output, size, Some(args), Some(arg_count))
+                ext.handle_call(function, output, size, Some(args), Some(arg_count), true)
             } else {
                 0
             }

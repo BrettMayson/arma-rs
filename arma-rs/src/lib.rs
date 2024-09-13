@@ -1,8 +1,7 @@
 #![warn(missing_docs, nonstandard_style)]
 #![doc = include_str!(concat!(env!("OUT_DIR"), "/README.md"))]
 
-#[cfg(feature = "call-context")]
-use std::{cell::RefCell, cmp::Ordering};
+use std::rc::Rc;
 
 pub use arma_rs_proc::{arma, FromArma, IntoArma};
 
@@ -18,9 +17,17 @@ pub use link_args;
 #[macro_use]
 extern crate log;
 
+mod flags;
+
 mod value;
 pub use value::{loadout, FromArma, FromArmaError, IntoArma, Value};
 
+#[cfg(feature = "extension")]
+mod call_context;
+#[cfg(feature = "extension")]
+use call_context::{ArmaCallContext, ArmaContextManager};
+#[cfg(feature = "extension")]
+pub use call_context::{CallContext, CallContextStackTrace, Caller, Mission, Server, Source};
 #[cfg(feature = "extension")]
 mod ext_result;
 #[cfg(feature = "extension")]
@@ -55,6 +62,8 @@ pub type Callback = extern "stdcall" fn(
 /// Used by generated code to call back into Arma
 pub type Callback =
     extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
+/// Requests a call context from Arma
+pub type ContextRequest = unsafe extern "C" fn();
 
 #[cfg(feature = "extension")]
 enum CallbackMessage {
@@ -70,6 +79,10 @@ pub type State = state::TypeMap![Send + Sync];
 /// Allows a console to be allocated for the extension.
 static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+#[no_mangle]
+/// Feature flags read on each callExtension call.
+pub static mut RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
+
 /// Contains all the information about your extension
 /// This is used by the generated code to interface with Arma
 #[cfg(feature = "extension")]
@@ -80,8 +93,7 @@ pub struct Extension {
     callback: Option<Callback>,
     callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
-    #[cfg(feature = "call-context")]
-    call_ctx: RefCell<ArmaCallContext>,
+    context_manager: Rc<ArmaContextManager>,
 }
 
 #[cfg(feature = "extension")]
@@ -121,44 +133,14 @@ impl Extension {
         self.callback = Some(callback);
     }
 
-    #[cfg(feature = "call-context")]
     #[doc(hidden)]
     /// Called by generated code, do not call directly.
     /// # Safety
     /// This function is unsafe because it interacts with the C API.
     pub unsafe fn handle_call_context(&mut self, args: *mut *mut i8, count: libc::c_int) {
-        const CONTEXT_COUNT: usize = 4; // As of Arma 2.11 four args get passed (https://community.bistudio.com/wiki/callExtension)
-        let ctx = match count.cmp(&(CONTEXT_COUNT as i32)) {
-            Ordering::Less => {
-                error!("invalid amount of args passed to `handle_call_context`");
-                ArmaCallContext::default()
-            }
-            ordering => {
-                if ordering == Ordering::Greater {
-                    warn!("unexpected amount of args passed to `handle_call_context`");
-                }
-
-                let argv: Vec<_> = std::slice::from_raw_parts(args, CONTEXT_COUNT)
-                    .iter()
-                    .map(|&s| std::ffi::CStr::from_ptr(s).to_string_lossy())
-                    .collect();
-                ArmaCallContext::new(
-                    Caller::from(argv[0].as_ref()),
-                    Source::from(argv[1].as_ref()),
-                    Mission::from(argv[2].as_ref()),
-                    Server::from(argv[3].as_ref()),
-                )
-            }
-        };
-        self.call_ctx.replace(ctx);
+        self.context_manager
+            .replace(Some(ArmaCallContext::from_arma(args, count)));
     }
-
-    #[cfg(not(feature = "call-context"))]
-    #[doc(hidden)]
-    /// Called by generated code, do not call directly.
-    /// # Safety
-    /// This function is unsafe because it interacts with the C API.
-    pub unsafe fn handle_call_context(&mut self, _args: *mut *mut i8, _count: libc::c_int) {}
 
     #[must_use]
     /// Get a context for interacting with Arma
@@ -167,8 +149,6 @@ impl Extension {
             self.callback_channel.0.clone(),
             GlobalContext::new(self.version.clone(), self.group.state.clone()),
             GroupContext::new(self.group.state.clone()),
-            #[cfg(feature = "call-context")]
-            self.call_ctx.borrow().clone(),
         )
     }
 
@@ -183,7 +163,11 @@ impl Extension {
         size: libc::size_t,
         args: Option<*mut *mut i8>,
         count: Option<libc::c_int>,
+        clear_call_context: bool,
     ) -> libc::c_int {
+        if clear_call_context {
+            self.context_manager.replace(None);
+        }
         let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
             cstring.to_string()
         } else {
@@ -199,6 +183,7 @@ impl Extension {
             }
             _ => self.group.handle(
                 self.context().with_buffer_size(size),
+                self.context_manager.as_ref(),
                 &function,
                 output,
                 size,
@@ -353,6 +338,53 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
+        // super convenient
+        #[cfg(all(windows, not(debug_assertions)))]
+        let request_context = {
+            let module = unsafe { winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null()) };
+            if module.is_null() {
+                panic!("GetModuleHandleW failed");
+            }
+            let function_name =
+                std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
+
+            let func_address =
+                unsafe { winapi::um::libloaderapi::GetProcAddress(module, function_name.as_ptr()) };
+
+            if func_address.is_null() {
+                panic!("Failed to get function address");
+            }
+
+            unsafe { std::mem::transmute(func_address) }
+        };
+        println!("Returning extension");
+
+        #[cfg(all(not(windows), not(debug_assertions)))]
+        let request_context = {
+            let c_name = std::ffi::CString::new("RVExtensionRequestContextProc")
+                .expect("CString::new failed");
+
+            let handle =
+                unsafe { libc::dlopen(std::ptr::null_mut(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+
+            if handle.is_null() {
+                panic!("Failed to open handle to current process");
+            }
+
+            let result = unsafe { libc::dlsym(handle, c_name.as_ptr()) };
+
+            unsafe { libc::dlclose(handle) };
+
+            if result.is_null() {
+                panic!("Failed to get function address");
+            }
+
+            unsafe { std::mem::transmute::<*mut libc::c_void, unsafe extern "C" fn()>(result) }
+        };
+
+        #[cfg(debug_assertions)]
+        let request_context = empty_request_context;
+
         Extension {
             version: self.version,
             group: self.group.into(),
@@ -360,11 +392,12 @@ impl ExtensionBuilder {
             callback: None,
             callback_channel: unbounded(),
             callback_thread: None,
-            #[cfg(feature = "call-context")]
-            call_ctx: RefCell::new(ArmaCallContext::default()),
+            context_manager: Rc::new(ArmaContextManager::new(request_context)),
         }
     }
 }
+
+unsafe extern "C" fn empty_request_context() {}
 
 #[doc(hidden)]
 /// Called by generated code, do not call directly.

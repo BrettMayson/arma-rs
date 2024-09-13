@@ -58,7 +58,7 @@ jobs:
           command: miri
           args: test
         env:
-          MIRIFLAGS: "-Zmiri-tag-raw-pointers"
+          MIRIFLAGS: ""
   # loom:
   #   runs-on: ubuntu-latest
   #   steps:

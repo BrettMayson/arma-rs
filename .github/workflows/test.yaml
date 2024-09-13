@@ -18,6 +18,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
+      - uses: taiki-e/install-action@nextest
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         uses: actions-rs/cargo@v1
@@ -25,10 +26,7 @@ jobs:
           command: generate-lockfile
       # https://twitter.com/jonhoo/status/1571290371124260865
       - name: cargo test --locked
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --all-features --all-targets
+        run: cargo nextest run --locked --all-features --all-targets
   # minimal:
   #   runs-on: ubuntu-latest
   #   name: ubuntu / stable / minimal-versions
@@ -87,16 +85,18 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools-preview
-      - name: cargo install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
       - name: cargo generate-lockfile
         if: hashFiles('Cargo.lock') == ''
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
       - name: cargo llvm-cov
-        run: cargo llvm-cov --locked --all-features --lcov --output-path lcov.info
+        run: cargo llvm-cov nextest --locked --all-features --lcov --output-path out.lcov
       - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          files: out.lcov
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
