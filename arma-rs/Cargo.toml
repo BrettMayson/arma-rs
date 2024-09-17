@@ -10,7 +10,7 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = { path = "../arma-rs-proc", version = "1.10.0" }
+arma-rs-proc = { path = "../arma-rs-proc", version = "1.11.0" }
 log = "0.4.20"
 state = "0.6.0"
 seq-macro = "0.3.5"
