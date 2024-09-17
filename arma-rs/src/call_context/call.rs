@@ -166,6 +166,24 @@ pub enum Caller {
     Unknown,
 }
 
+impl Caller {
+    /// Convert the caller to a string.
+    pub fn as_str(&self) -> String {
+        match self {
+            Self::Steam(id) => id.to_string(),
+            Self::Unknown => "0".to_string(),
+        }
+    }
+
+    /// Convert the caller to a u64.
+    pub fn as_u64(&self) -> u64 {
+        match self {
+            Self::Steam(id) => *id,
+            Self::Unknown => 0,
+        }
+    }
+}
+
 impl From<&str> for Caller {
     fn from(s: &str) -> Self {
         if s.is_empty() || s == "0" {
@@ -200,6 +218,16 @@ pub enum Source {
     Console,
 }
 
+impl Source {
+    /// Convert the source to a string.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::File(s) | Self::Pbo(s) => s,
+            Self::Console => "",
+        }
+    }
+}
+
 impl From<&str> for Source {
     fn from(s: &str) -> Self {
         if s.is_empty() {
@@ -229,6 +257,16 @@ pub enum Mission {
     None,
 }
 
+impl Mission {
+    /// Convert the mission to a string.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Mission(s) => s,
+            Self::None => "",
+        }
+    }
+}
+
 impl From<&str> for Mission {
     fn from(s: &str) -> Self {
         if s.is_empty() {
@@ -254,6 +292,16 @@ pub enum Server {
     #[default]
     /// Singleplayer or no mission
     Singleplayer,
+}
+
+impl Server {
+    /// Convert the server to a string.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Multiplayer(s) => s,
+            Self::Singleplayer => "",
+        }
+    }
 }
 
 impl From<&str> for Server {
