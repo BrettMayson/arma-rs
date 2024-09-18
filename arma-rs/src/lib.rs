@@ -357,7 +357,6 @@ impl ExtensionBuilder {
 
             unsafe { std::mem::transmute(func_address) }
         };
-        println!("Returning extension");
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {
@@ -365,7 +364,7 @@ impl ExtensionBuilder {
                 .expect("CString::new failed");
 
             let handle =
-                unsafe { libc::dlopen(std::ptr::null_mut(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
+                unsafe { libc::dlopen(std::ptr::null(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
 
             if handle.is_null() {
                 panic!("Failed to open handle to current process");
@@ -379,7 +378,7 @@ impl ExtensionBuilder {
                 panic!("Failed to get function address");
             }
 
-            unsafe { std::mem::transmute::<*mut libc::c_void, unsafe extern "C" fn()>(result) }
+            unsafe { std::mem::transmute(result) }
         };
 
         #[cfg(debug_assertions)]
