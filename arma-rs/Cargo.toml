@@ -1,7 +1,7 @@
 [package]
 name = "arma-rs"
 description = "Arma 3 Extensions in Rust"
-version = "1.11.2"
+version = "1.11.3"
 edition = "2021"
 authors = ["Brett Mayson"]
 repository = "https://github.com/brettmayson/arma-rs"
