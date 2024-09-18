@@ -361,7 +361,7 @@ impl ExtensionBuilder {
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {
-            let c_name = std::ffi::CString::new("RVExtensionRequestContextProc")
+            let c_name = std::ffi::CString::new("RVExtensionRequestContext")
                 .expect("CString::new failed");
 
             let handle =
