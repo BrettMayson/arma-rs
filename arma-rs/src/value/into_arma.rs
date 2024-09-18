@@ -410,6 +410,7 @@ impl Value {
             Self::Array(a) => a.is_empty(),
             Self::Boolean(b) => !*b,
             Self::String(s) => s.is_empty(),
+            _ => false,
         }
     }
 }

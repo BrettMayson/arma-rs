@@ -31,6 +31,8 @@ pub enum Value {
     /// This conversation will remove one step of escaping.
     /// Example: `"My name is ""John""."` will become `My name is "John".`
     String(String),
+    /// Unknown value. Contains the raw string.
+    Unknown(String),
 }
 
 impl Display for Value {
@@ -48,6 +50,7 @@ impl Display for Value {
             ),
             Self::Boolean(b) => write!(f, "{b}"),
             Self::String(s) => write!(f, "\"{}\"", s.replace('\"', "\"\"")),
+            Self::Unknown(s) => write!(f, "Unknown({})", s),
         }
     }
 }
@@ -60,7 +63,7 @@ impl FromArma for Value {
             Some('0'..='9') | Some('-') => Ok(Value::Number(<f64>::from_arma(s)?)),
             Some('[') => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
             Some('"') => Ok(Value::String(<String>::from_arma(s)?)),
-            _ => Err(FromArmaError::InvalidValue(s)),
+            _ => Ok(Value::Unknown(s)),
         }
     }
 }
