@@ -45,6 +45,7 @@ impl Value {
             }
             Value::String(s) => serde_json::Value::String(s.to_owned()),
             Value::Array(v) => serde_json::Value::Array(v.iter().map(|v| v.to_json()).collect()),
+            Value::Unknown(s) => serde_json::Value::String(s.to_owned()),
         }
     }
 }

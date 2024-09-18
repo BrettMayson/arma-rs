@@ -358,8 +358,7 @@ impl ExtensionBuilder {
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {
-            let handle =
-                unsafe { libc::dlopen(std::ptr::null(), libc::RTLD_NOLOAD) };
+            let handle = unsafe { libc::dlopen(std::ptr::null(), libc::RTLD_NOLOAD) };
             if handle.is_null() {
                 panic!("Failed to open handle to current process");
             }
