@@ -9,7 +9,7 @@ The best way to make Arma 3 Extensions.
 
 ```toml
 [dependencies]
-arma-rs = "1.11.3"
+arma-rs = "1.11.4"
 
 [lib]
 name = "my_extension"
