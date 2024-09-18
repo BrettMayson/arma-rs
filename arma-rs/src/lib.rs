@@ -339,46 +339,37 @@ impl ExtensionBuilder {
     /// Builds the extension.
     pub fn finish(self) -> Extension {
         // super convenient
+        let function_name =
+            std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
         #[cfg(all(windows, not(debug_assertions)))]
         let request_context = {
-            let module = unsafe { winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null()) };
-            if module.is_null() {
+            let handle = unsafe { winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null()) };
+            if handle.is_null() {
                 panic!("GetModuleHandleW failed");
             }
-            let function_name =
-                std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
 
             let func_address =
-                unsafe { winapi::um::libloaderapi::GetProcAddress(module, function_name.as_ptr()) };
-
+                unsafe { winapi::um::libloaderapi::GetProcAddress(handle, function_name.as_ptr()) };
             if func_address.is_null() {
                 panic!("Failed to get function address");
             }
-
             unsafe { std::mem::transmute(func_address) }
         };
 
         #[cfg(all(not(windows), not(debug_assertions)))]
         let request_context = {
-            let c_name = std::ffi::CString::new("RVExtensionRequestContext")
-                .expect("CString::new failed");
-
             let handle =
                 unsafe { libc::dlopen(std::ptr::null(), libc::RTLD_LAZY | libc::RTLD_NOLOAD) };
-
             if handle.is_null() {
                 panic!("Failed to open handle to current process");
             }
-
-            let result = unsafe { libc::dlsym(handle, c_name.as_ptr()) };
-
-            unsafe { libc::dlclose(handle) };
-
-            if result.is_null() {
+            let func_address = unsafe { libc::dlsym(handle, function_name.as_ptr()) };
+            if func_address.is_null() {
                 panic!("Failed to get function address");
             }
-
-            unsafe { std::mem::transmute(result) }
+            let func = unsafe { std::mem::transmute(func_address) };
+            unsafe { libc::dlclose(handle) };
+            func
         };
 
         #[cfg(debug_assertions)]
