@@ -94,6 +94,7 @@ pub struct Extension {
     callback_channel: (Sender<CallbackMessage>, Receiver<CallbackMessage>),
     callback_thread: Option<std::thread::JoinHandle<()>>,
     context_manager: Rc<ArmaContextManager>,
+    pre218_clear_context_override: bool,
 }
 
 #[cfg(feature = "extension")]
@@ -165,7 +166,7 @@ impl Extension {
         count: Option<libc::c_int>,
         clear_call_context: bool,
     ) -> libc::c_int {
-        if clear_call_context {
+        if clear_call_context && !self.pre218_clear_context_override {
             self.context_manager.replace(None);
         }
         let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
@@ -338,37 +339,40 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
-        // super convenient
+        let mut pre218 = false;
+        #[allow(unused_variables)]
         let function_name =
             std::ffi::CString::new("RVExtensionRequestContext").expect("CString::new failed");
         #[cfg(all(windows, not(debug_assertions)))]
-        let request_context = {
+        let request_context: ContextRequest = {
             let handle = unsafe { winapi::um::libloaderapi::GetModuleHandleW(std::ptr::null()) };
             if handle.is_null() {
                 panic!("GetModuleHandleW failed");
             }
-
             let func_address =
                 unsafe { winapi::um::libloaderapi::GetProcAddress(handle, function_name.as_ptr()) };
             if func_address.is_null() {
-                panic!("Failed to get function address");
+                pre218 = true;
+                empty_request_context
+            } else {
+                unsafe { std::mem::transmute(func_address) }
             }
-            unsafe { std::mem::transmute(func_address) }
         };
-
         #[cfg(all(not(windows), not(debug_assertions)))]
-        let request_context = {
+        let request_context: ContextRequest = {
             let handle = unsafe { libc::dlopen(std::ptr::null(), libc::RTLD_LAZY) };
             if handle.is_null() {
                 panic!("Failed to open handle to current process");
             }
             let func_address = unsafe { libc::dlsym(handle, function_name.as_ptr()) };
             if func_address.is_null() {
-                panic!("Failed to get function address");
+                pre218 = true;
+                empty_request_context
+            } else {
+                let func = unsafe { std::mem::transmute(func_address) };
+                unsafe { libc::dlclose(handle) };
+                func
             }
-            let func = unsafe { std::mem::transmute(func_address) };
-            unsafe { libc::dlclose(handle) };
-            func
         };
 
         #[cfg(debug_assertions)]
@@ -382,6 +386,7 @@ impl ExtensionBuilder {
             callback_channel: unbounded(),
             callback_thread: None,
             context_manager: Rc::new(ArmaContextManager::new(request_context)),
+            pre218_clear_context_override: pre218,
         }
     }
 }
