@@ -80,6 +80,7 @@ pub type State = state::TypeMap![Send + Sync];
 static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 #[no_mangle]
+#[allow(non_upper_case_globals, reason = "This is a C API")]
 /// Feature flags read on each callExtension call.
 pub static mut RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
 
@@ -339,6 +340,7 @@ impl ExtensionBuilder {
     #[must_use]
     /// Builds the extension.
     pub fn finish(self) -> Extension {
+        #[expect(unused_mut, reason = "Only used on Windows release")]
         let mut pre218 = false;
         #[allow(unused_variables)]
         let function_name =

@@ -66,7 +66,7 @@ pub struct FieldNamed {
     pub attributes: FieldAttributes,
     pub ident: syn::Ident,
     pub name: String,
-    pub ty: syn::Type,
+    pub _ty: syn::Type,
 }
 
 pub struct FieldUnnamed {
@@ -83,7 +83,7 @@ impl FieldNamed {
             attributes: parse_attributes::<FieldAttributes>(errors, &field.attrs),
             ident,
             name,
-            ty: field.ty,
+            _ty: field.ty,
         }
     }
 }

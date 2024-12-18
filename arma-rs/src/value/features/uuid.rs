@@ -8,6 +8,10 @@ impl IntoArma for uuid::Uuid {
 
 impl FromArma for uuid::Uuid {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
-        uuid::Uuid::parse_str(&s).map_err(FromArmaError::custom)
+        let s = s
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .unwrap_or(&s);
+        uuid::Uuid::parse_str(s).map_err(FromArmaError::custom)
     }
 }

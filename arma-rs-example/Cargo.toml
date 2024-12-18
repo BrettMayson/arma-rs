@@ -8,5 +8,5 @@ name = "arma_rs_example"
 crate-type = ["cdylib"]
 
 [dependencies]
-arma-rs = { path = "../arma-rs" }
+arma-rs = { path = "../arma-rs", features = ["uuid"] }
 sys-info = "0.9.1"
