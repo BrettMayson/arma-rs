@@ -6,12 +6,17 @@ pub trait IntoArma {
     fn to_arma(&self) -> Value;
 }
 
-impl<T> From<T> for Value
-where
-    T: IntoArma,
-{
-    fn from(t: T) -> Self {
-        t.to_arma()
+pub struct DirectReturn(Value);
+impl Value {
+    /// A workaround to return a value directly to Arma
+    pub fn direct(value: Value) -> DirectReturn {
+        DirectReturn(value)
+    }
+}
+
+impl IntoArma for DirectReturn {
+    fn to_arma(&self) -> Value {
+        self.0.clone()
     }
 }
 
