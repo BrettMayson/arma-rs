@@ -6,7 +6,7 @@ mod into_arma;
 pub mod loadout;
 
 pub use from_arma::{FromArma, FromArmaError};
-pub use into_arma::{IntoArma, DirectReturn};
+pub use into_arma::{DirectReturn, IntoArma};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
