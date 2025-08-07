@@ -10,10 +10,7 @@ mod extension {
 
     macro_rules! platform_extern {
         ($($func_body:tt)*) => {
-            #[cfg(windows)]
-            extern "stdcall" $($func_body)*
-            #[cfg(not(windows))]
-            extern "C" $($func_body)*
+            extern "system" $($func_body)*
         };
     }
 

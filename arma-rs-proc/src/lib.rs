@@ -12,7 +12,7 @@ pub fn arma(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(item as ItemFn);
     let init = ast.sig.ident.clone();
 
-    let extern_type = if cfg!(windows) { "stdcall" } else { "C" };
+    let extern_type = "system";
 
     let ext_init = quote! {
         if RV_EXTENSION.is_none() {
