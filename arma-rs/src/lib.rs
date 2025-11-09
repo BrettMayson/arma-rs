@@ -49,21 +49,16 @@ pub mod testing;
 #[cfg(feature = "extension")]
 pub use testing::Result;
 
-#[cfg(all(windows, feature = "extension"))]
+#[cfg(all(feature = "extension"))]
 #[doc(hidden)]
 /// Used by generated code to call back into Arma
-pub type Callback = extern "stdcall" fn(
+pub type Callback = extern "system" fn(
     *const libc::c_char,
     *const libc::c_char,
     *const libc::c_char,
 ) -> libc::c_int;
-#[cfg(all(not(windows), feature = "extension"))]
-#[doc(hidden)]
-/// Used by generated code to call back into Arma
-pub type Callback =
-    extern "C" fn(*const libc::c_char, *const libc::c_char, *const libc::c_char) -> libc::c_int;
 /// Requests a call context from Arma
-pub type ContextRequest = unsafe extern "C" fn();
+pub type ContextRequest = unsafe extern "system" fn();
 
 #[cfg(feature = "extension")]
 enum CallbackMessage {
@@ -393,7 +388,7 @@ impl ExtensionBuilder {
     }
 }
 
-unsafe extern "C" fn empty_request_context() {}
+unsafe extern "system" fn empty_request_context() {}
 
 #[doc(hidden)]
 /// Called by generated code, do not call directly.
