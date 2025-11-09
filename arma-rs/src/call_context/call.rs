@@ -40,6 +40,7 @@ impl RawArmaCallContext {
 
 pub trait StackRequest {}
 
+#[derive(Default)]
 pub struct WithStackTrace;
 impl StackRequest for WithStackTrace {}
 

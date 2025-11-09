@@ -30,7 +30,7 @@ impl ArmaContextManager {
         // It can now be taken and sent to the Context
         self.state
             .replace(None)
-            .expect("Arma should've set the state")
+            .unwrap_or_default()
     }
 
     /// Replace the current ArmaCallContext with a new one
