@@ -4,6 +4,7 @@ fn split_array(s: &str) -> Vec<String> {
     let mut nest = 0;
     let mut parts = Vec::new();
     let mut part = String::new();
+    let mut in_string = false;
     for c in s.chars() {
         if c == '[' {
             part.push(c);
@@ -11,7 +12,10 @@ fn split_array(s: &str) -> Vec<String> {
         } else if c == ']' {
             nest -= 1;
             part.push(c);
-        } else if c == ',' && nest == 0 {
+        } else if c == '"' {
+            in_string = !in_string;
+            part.push(c);
+        } else if c == ',' && nest == 0 && !in_string {
             parts.push(part.trim().to_string());
             part = String::new();
         } else {
@@ -557,5 +561,34 @@ mod tests {
         assert_eq!(1.0, <f64>::from_arma(r#""1""#.to_string()).unwrap());
         assert_eq!(1.0, <f64>::from_arma(r#""1.0e+0""#.to_string()).unwrap());
         assert_eq!(-1.0, <f64>::from_arma(r#""-1.0""#.to_string()).unwrap());
+    }
+
+    #[test]
+    fn parse_map() {
+        use std::collections::HashMap;
+        let arma_str = r#"[["key1", "value1"], ["key2", "value2"]]"#.to_string();
+        let expected: HashMap<String, String> = HashMap::from([
+            (String::from("key1"), String::from("value1")),
+            (String::from("key2"), String::from("value2")),
+        ]);
+        let result: HashMap<String, String> =
+            FromArma::from_arma(arma_str).expect("Failed to parse HashMap from Arma string");
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_map_string_with_command() {
+        use std::collections::HashMap;
+        let arma_str = r#"[["command", "say ""Hello, World!"""], ["key2", "value2"]]"#.to_string();
+        let expected: HashMap<String, String> = HashMap::from([
+            (
+                String::from("command"),
+                String::from(r#"say "Hello, World!""#),
+            ),
+            (String::from("key2"), String::from("value2")),
+        ]);
+        let result: HashMap<String, String> =
+            FromArma::from_arma(arma_str).expect("Failed to parse HashMap from Arma string");
+        assert_eq!(result, expected);
     }
 }
