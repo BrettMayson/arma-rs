@@ -24,6 +24,7 @@ mod extension {
             CALLBACK_STACK_INIT.call_once(|| {
                 CALLBACK_STACK = Some(Arc::new(RwLock::new(HashMap::new())));
             });
+            #[allow(static_mut_refs)]
             CALLBACK_STACK.as_ref().unwrap().clone()
         }
     }
