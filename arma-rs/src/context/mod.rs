@@ -21,7 +21,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub(crate) fn new(
+    pub(crate) const fn new(
         callback_tx: Sender<CallbackMessage>,
         global: GlobalContext,
         group: GroupContext,
@@ -50,6 +50,7 @@ impl Context {
         &self.global
     }
 
+    #[must_use]
     /// Group context, is equal to `GlobalContext` if the call is from the global scope.
     pub const fn group(&self) -> &GroupContext {
         &self.group
@@ -117,7 +118,7 @@ impl IntoArma for CallbackError {
 mod tests {
     use super::*;
     use crate::State;
-    use crossbeam_channel::{bounded, Sender};
+    use crossbeam_channel::{Sender, bounded};
     use std::sync::Arc;
 
     fn context(tx: Sender<CallbackMessage>) -> Context {

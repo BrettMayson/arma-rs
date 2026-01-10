@@ -3,10 +3,10 @@
 
 use std::rc::Rc;
 
-pub use arma_rs_proc::{arma, FromArma, IntoArma};
+pub use arma_rs_proc::{FromArma, IntoArma, arma};
 
 #[cfg(feature = "extension")]
-use crossbeam_channel::{unbounded, Receiver, Sender};
+use crossbeam_channel::{Receiver, Sender, unbounded};
 #[cfg(feature = "extension")]
 pub use libc;
 
@@ -20,7 +20,7 @@ extern crate log;
 mod flags;
 
 mod value;
-pub use value::{loadout, DirectReturn, FromArma, FromArmaError, IntoArma, Value};
+pub use value::{DirectReturn, FromArma, FromArmaError, IntoArma, Value, loadout};
 
 #[cfg(feature = "extension")]
 mod call_context;
@@ -49,7 +49,7 @@ pub mod testing;
 #[cfg(feature = "extension")]
 pub use testing::Result;
 
-#[cfg(all(feature = "extension"))]
+#[cfg(feature = "extension")]
 #[doc(hidden)]
 /// Used by generated code to call back into Arma
 pub type Callback = extern "system" fn(
@@ -67,14 +67,14 @@ enum CallbackMessage {
 }
 
 #[cfg(feature = "extension")]
-/// State TypeMap that can hold at most one value per type key.
+/// State `TypeMap` that can hold at most one value per type key.
 pub type State = state::TypeMap![Send + Sync];
 
 #[cfg(windows)]
 /// Allows a console to be allocated for the extension.
 static CONSOLE_ALLOCATED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(non_upper_case_globals, reason = "This is a C API")]
 /// Feature flags read on each callExtension call.
 pub static mut RVExtensionFeatureFlags: u64 = flags::RV_CONTEXT_NO_DEFAULT_CALL;
@@ -165,7 +165,7 @@ impl Extension {
         if clear_call_context && !self.pre218_clear_context_override {
             self.context_manager.replace(None);
         }
-        let function = if let Ok(cstring) = std::ffi::CStr::from_ptr(function).to_str() {
+        let function = if let Ok(cstring) = unsafe { std::ffi::CStr::from_ptr(function).to_str() } {
             cstring.to_string()
         } else {
             return 1;
@@ -204,27 +204,23 @@ impl Extension {
         self.callback_thread = Some(std::thread::spawn(move || {
             while let Ok(CallbackMessage::Call(name, func, data)) = rx.recv() {
                 if let Some(c) = callback {
-                    let name = if let Ok(cstring) = std::ffi::CString::new(name) {
-                        cstring
-                    } else {
+                    let Ok(name) = std::ffi::CString::new(name) else {
                         error!("callback name was not valid");
                         continue;
                     };
-                    let func = if let Ok(cstring) = std::ffi::CString::new(func) {
-                        cstring
-                    } else {
+                    let Ok(func) = std::ffi::CString::new(func) else {
                         error!("callback func was not valid");
                         continue;
                     };
-                    let data = if let Ok(cstring) = std::ffi::CString::new(match data {
-                        Some(value) => match value {
-                            Value::String(s) => s,
-                            v => v.to_string(),
-                        },
-                        None => String::new(),
-                    }) {
-                        cstring
-                    } else {
+                    let Ok(data) =
+                        std::ffi::CString::new(data.map_or_else(
+                            String::new,
+                            |value| match value {
+                                Value::String(s) => s,
+                                v => v.to_string(),
+                            },
+                        ))
+                    else {
                         error!("callback data was not valid");
                         continue;
                     };
@@ -253,8 +249,9 @@ impl Drop for Extension {
     fn drop(&mut self) {
         if let Some(thread) = self.callback_thread.take() {
             let (tx, _) = &self.callback_channel;
-            tx.send(CallbackMessage::Terminate).unwrap();
-            thread.join().unwrap();
+            tx.send(CallbackMessage::Terminate)
+                .expect("Failed to send terminate message to callback thread");
+            thread.join().expect("Failed to join callback thread");
         }
     }
 }
@@ -388,7 +385,7 @@ impl ExtensionBuilder {
     }
 }
 
-unsafe extern "system" fn empty_request_context() {}
+const unsafe extern "system" fn empty_request_context() {}
 
 #[doc(hidden)]
 /// Called by generated code, do not call directly.
@@ -414,8 +411,8 @@ pub unsafe fn write_cstr(
         return None;
     }
 
-    ptr.copy_from(cstr.as_ptr(), len_to_copy);
-    ptr.add(len_to_copy).write(0x00);
+    unsafe { ptr.copy_from(cstr.as_ptr(), len_to_copy) };
+    unsafe { ptr.add(len_to_copy).write(0x00) };
     Some(len_to_copy)
 }
 
@@ -437,7 +434,7 @@ mod tests {
     fn write_size_zero_empty() {
         const BUF_SIZE: libc::size_t = 0;
         let mut buf = [0; BUF_SIZE];
-        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+        let result = unsafe { write_cstr(String::new(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(0));
         assert_eq!(buf, [0; BUF_SIZE]);
@@ -457,7 +454,7 @@ mod tests {
     fn write_size_one_empty() {
         const BUF_SIZE: libc::size_t = 1;
         let mut buf = [0; BUF_SIZE];
-        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+        let result = unsafe { write_cstr(String::new(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(0));
         assert_eq!(buf, [0; BUF_SIZE]);
@@ -467,7 +464,7 @@ mod tests {
     fn write_empty() {
         const BUF_SIZE: libc::size_t = 7;
         let mut buf = [0; BUF_SIZE];
-        let result = unsafe { write_cstr("".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
+        let result = unsafe { write_cstr(String::new(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(0));
         assert_eq!(buf, [0; BUF_SIZE]);
@@ -480,7 +477,7 @@ mod tests {
         let result = unsafe { write_cstr("foo".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(3));
-        assert_eq!(buf, (b"foo\0\0\0\0").map(|c| c as i8));
+        assert_eq!(buf, (b"foo\0\0\0\0").map(u8::cast_signed));
     }
 
     #[test]
@@ -490,7 +487,7 @@ mod tests {
         let result = unsafe { write_cstr("foobar".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(6));
-        assert_eq!(buf, (b"foobar\0").map(|c| c as i8));
+        assert_eq!(buf, (b"foobar\0").map(u8::cast_signed));
     }
 
     #[test]
@@ -506,10 +503,10 @@ mod tests {
     #[test]
     fn write_overwrite() {
         const BUF_SIZE: libc::size_t = 7;
-        let mut buf = (b"zzzzzz\0").map(|c| c as i8);
+        let mut buf = (b"zzzzzz\0").map(u8::cast_signed);
         let result = unsafe { write_cstr("a".to_string(), buf.as_mut_ptr(), BUF_SIZE) };
 
         assert_eq!(result, Some(1));
-        assert_eq!(buf, (b"a\0zzzz\0").map(|c| c as i8));
+        assert_eq!(buf, (b"a\0zzzz\0").map(u8::cast_signed));
     }
 }

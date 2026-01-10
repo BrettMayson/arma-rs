@@ -26,29 +26,30 @@ pub enum Result<T, E> {
 
 impl<T, E> Result<T, E> {
     /// Returns true if the result is an ok result
-    pub fn is_ok(&self) -> bool {
+    pub const fn is_ok(&self) -> bool {
         matches!(self, Self::Ok(_))
     }
 
     /// Returns true if the result is an error
-    pub fn is_err(&self) -> bool {
+    pub const fn is_err(&self) -> bool {
         matches!(self, Self::Err(_))
     }
 
     /// Returns true if the result is a continue result
-    pub fn is_continue(&self) -> bool {
+    pub const fn is_continue(&self) -> bool {
         matches!(self, Self::Continue)
     }
 
     /// Returns true if the result is a timeout result
-    pub fn is_timeout(&self) -> bool {
+    pub const fn is_timeout(&self) -> bool {
         matches!(self, Self::Timeout)
     }
 }
 
 impl Extension {
+    #[must_use]
     /// Create a new testing Extension
-    pub fn new(ext: crate::Extension) -> Self {
+    pub const fn new(ext: crate::Extension) -> Self {
         Self(ext)
     }
 
@@ -126,7 +127,7 @@ impl Extension {
         );
         if let Some(args) = args_pointer {
             for arg in args {
-                let _ = std::ffi::CString::from_raw(arg);
+                let _ = unsafe { std::ffi::CString::from_raw(arg) };
             }
         }
         (

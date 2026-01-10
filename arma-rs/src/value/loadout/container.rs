@@ -81,7 +81,7 @@ impl IntoArma for Container {
 
 #[cfg(test)]
 mod tests {
-    use crate::{loadout::InventoryItem, FromArma, IntoArma, Value};
+    use crate::{FromArma, IntoArma, Value, loadout::InventoryItem};
 
     use super::Container;
 

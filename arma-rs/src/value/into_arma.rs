@@ -9,7 +9,7 @@ pub trait IntoArma {
 pub struct DirectReturn(Value);
 impl Value {
     /// A workaround to return a value directly to Arma
-    pub fn direct(value: Value) -> DirectReturn {
+    pub const fn direct(value: Value) -> DirectReturn {
         DirectReturn(value)
     }
 }
@@ -121,12 +121,12 @@ fn test_slice() {
     assert_eq!(
         String::from("[1,2,3]"),
         vec![1, 2, 3].as_slice().to_arma().to_string()
-    )
+    );
 }
 
 impl IntoArma for String {
     fn to_arma(&self) -> Value {
-        Value::String(self.to_string())
+        Value::String(self.clone())
     }
 }
 
@@ -152,7 +152,7 @@ impl IntoArma for &'static str {
 #[cfg(test)]
 #[test]
 fn test_static_str() {
-    assert_eq!(String::from("\"hello\""), "hello".to_arma().to_string())
+    assert_eq!(String::from("\"hello\""), "hello".to_arma().to_string());
 }
 
 impl IntoArma for bool {
@@ -164,7 +164,7 @@ impl IntoArma for bool {
 #[cfg(test)]
 #[test]
 fn test_bool() {
-    assert_eq!(String::from("true"), true.to_arma().to_string())
+    assert_eq!(String::from("true"), true.to_arma().to_string());
 }
 
 impl IntoArma for i8 {
@@ -176,7 +176,7 @@ impl IntoArma for i8 {
 #[cfg(test)]
 #[test]
 fn test_i8() {
-    assert_eq!(String::from("1"), 1i8.to_arma().to_string())
+    assert_eq!(String::from("1"), 1i8.to_arma().to_string());
 }
 
 impl IntoArma for i16 {
@@ -188,7 +188,7 @@ impl IntoArma for i16 {
 #[cfg(test)]
 #[test]
 fn test_i16() {
-    assert_eq!(String::from("1"), 1i16.to_arma().to_string())
+    assert_eq!(String::from("1"), 1i16.to_arma().to_string());
 }
 
 impl IntoArma for i32 {
@@ -200,7 +200,7 @@ impl IntoArma for i32 {
 #[cfg(test)]
 #[test]
 fn test_i32() {
-    assert_eq!(String::from("1"), 1i32.to_arma().to_string())
+    assert_eq!(String::from("1"), 1i32.to_arma().to_string());
 }
 
 impl IntoArma for f32 {
@@ -238,7 +238,7 @@ impl IntoArma for u8 {
 #[cfg(test)]
 #[test]
 fn test_u8() {
-    assert_eq!(String::from("1"), 1u8.to_arma().to_string())
+    assert_eq!(String::from("1"), 1u8.to_arma().to_string());
 }
 
 impl IntoArma for u16 {
@@ -250,7 +250,7 @@ impl IntoArma for u16 {
 #[cfg(test)]
 #[test]
 fn test_u16() {
-    assert_eq!(String::from("1"), 1u16.to_arma().to_string())
+    assert_eq!(String::from("1"), 1u16.to_arma().to_string());
 }
 
 impl IntoArma for u32 {
@@ -262,15 +262,12 @@ impl IntoArma for u32 {
 #[cfg(test)]
 #[test]
 fn test_u32() {
-    assert_eq!(String::from("1"), 1u32.to_arma().to_string())
+    assert_eq!(String::from("1"), 1u32.to_arma().to_string());
 }
 
 impl<T: IntoArma> IntoArma for Option<T> {
     fn to_arma(&self) -> Value {
-        match self {
-            Some(v) => v.to_arma(),
-            None => Value::Null,
-        }
+        self.as_ref().map_or(Value::Null, IntoArma::to_arma)
     }
 }
 
@@ -326,7 +323,7 @@ fn test_hashmap() {
         assert!(
             map == r#"[["key1","value1"],["key2","value2"]]"#
                 || map == r#"[["key2","value2"],["key1","value1"]]"#
-        )
+        );
     }
 }
 
@@ -415,7 +412,7 @@ impl Value {
             Self::Array(a) => a.is_empty(),
             Self::Boolean(b) => !*b,
             Self::String(s) => s.is_empty(),
-            _ => false,
+            Self::Unknown(_) => false,
         }
     }
 }
@@ -456,13 +453,13 @@ mod tests {
 
     #[test]
     fn as_nil() {
-        assert!(Value::Null.as_null().is_some())
+        assert!(Value::Null.as_null().is_some());
     }
 
     #[test]
     fn as_f32() {
         let v = Value::Number(54.0).as_f64().unwrap();
-        assert!((54.0 - v) == 0.0)
+        assert!((54.0 - v) == 0.0);
     }
 
     #[test]
@@ -485,7 +482,7 @@ mod tests {
 
     #[test]
     fn is_empty() {
-        assert!(Value::String("".into()).is_empty());
+        assert!(Value::String(String::new()).is_empty());
         assert!(Value::Array(vec![]).is_empty());
         assert!(Value::Boolean(false).is_empty());
         assert!(Value::String(String::new()).is_empty());
@@ -501,6 +498,6 @@ mod tests {
     #[test]
     fn to_array() {
         let array = Value::Array(vec![]);
-        assert_eq!(array.to_string(), r#"[]"#.to_string());
+        assert_eq!(array.to_string(), r"[]".to_string());
     }
 }

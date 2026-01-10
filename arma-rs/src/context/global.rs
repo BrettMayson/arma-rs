@@ -9,7 +9,7 @@ pub struct GlobalContext {
 }
 
 impl GlobalContext {
-    pub(crate) fn new(version: String, state: Arc<State>) -> Self {
+    pub(crate) const fn new(version: String, state: Arc<State>) -> Self {
         Self { version, state }
     }
 

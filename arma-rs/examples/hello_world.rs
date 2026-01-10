@@ -1,4 +1,4 @@
-use arma_rs::{arma, Extension};
+use arma_rs::{Extension, arma};
 
 #[arma]
 fn init() -> Extension {

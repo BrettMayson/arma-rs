@@ -106,13 +106,13 @@ impl<T: StackRequest> ArmaCallContext<T> {
     /// Player that called the extension. Can be [`Caller::Unknown`] when the player's steamID64 is unavailable
     /// # Note
     /// Unlike <https://community.bistudio.com/wiki/getPlayerUID> [`Caller::Steam`] isn't limited to multiplayer.
-    pub fn caller(&self) -> &Caller {
+    pub const fn caller(&self) -> &Caller {
         &self.caller
     }
 
     #[must_use]
     /// Source from where the extension was called.
-    pub fn source(&self) -> &Source {
+    pub const fn source(&self) -> &Source {
         &self.source
     }
 
@@ -120,19 +120,19 @@ impl<T: StackRequest> ArmaCallContext<T> {
     /// Current mission's name.
     /// # Note
     /// Can result in [`Mission::None`] in missions made prior to Arma v2.02.
-    pub fn mission(&self) -> &Mission {
+    pub const fn mission(&self) -> &Mission {
         &self.mission
     }
 
     #[must_use]
     /// Current server's name
-    pub fn server(&self) -> &Server {
+    pub const fn server(&self) -> &Server {
         &self.server
     }
 
     #[must_use]
     /// Remote execution owner.
-    pub fn remote_exec_owner(&self) -> i16 {
+    pub const fn remote_exec_owner(&self) -> i16 {
         self.remote_exec_owner
     }
 }
@@ -140,7 +140,7 @@ impl<T: StackRequest> ArmaCallContext<T> {
 impl ArmaCallContext<WithStackTrace> {
     #[must_use]
     /// Call stack of the extension call.
-    pub fn stack_trace(&self) -> &ArmaContextStackTrace {
+    pub const fn stack_trace(&self) -> &ArmaContextStackTrace {
         // By the time this gets to consumer code, to_without_stack would've been called if the stack was not requested
         self.stack.as_ref().expect("Stack is missing")
     }
@@ -168,6 +168,7 @@ pub enum Caller {
 }
 
 impl Caller {
+    #[must_use]
     /// Convert the caller to a string.
     pub fn as_str(&self) -> String {
         match self {
@@ -176,8 +177,9 @@ impl Caller {
         }
     }
 
+    #[must_use]
     /// Convert the caller to a u64.
-    pub fn as_u64(&self) -> u64 {
+    pub const fn as_u64(&self) -> u64 {
         match self {
             Self::Steam(id) => *id,
             Self::Unknown => 0,
@@ -220,6 +222,7 @@ pub enum Source {
 }
 
 impl Source {
+    #[must_use]
     /// Convert the source to a string.
     pub fn as_str(&self) -> &str {
         match self {

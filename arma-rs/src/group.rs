@@ -1,9 +1,9 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    command::{fn_handler, Factory, Handler},
-    context::{Context, GroupContext},
     State,
+    command::{Factory, Handler, fn_handler},
+    context::{Context, GroupContext},
 };
 
 #[derive(Default)]
@@ -70,7 +70,7 @@ impl Group {
     }
 }
 
-pub(crate) struct InternalGroup {
+pub struct InternalGroup {
     commands: HashMap<String, Box<Handler>>,
     children: HashMap<String, Self>,
     pub(crate) state: Arc<State>,

@@ -1,8 +1,8 @@
+use crate::Context;
 use crate::call_context::{ArmaContextManager, CallContext, CallContextStackTrace};
 use crate::ext_result::IntoExtResult;
 use crate::flags::FeatureFlags;
 use crate::value::{FromArma, Value};
-use crate::Context;
 
 type HandlerFunc = Box<
     dyn Fn(

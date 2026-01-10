@@ -244,7 +244,7 @@ impl IntoArma for Weapon {
 #[cfg(test)]
 mod tests {
     use super::Weapon;
-    use crate::{loadout::Magazine, FromArma, IntoArma, Value};
+    use crate::{FromArma, IntoArma, Value, loadout::Magazine};
 
     #[test]
     fn exists() {

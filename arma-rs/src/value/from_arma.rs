@@ -61,10 +61,13 @@ impl std::fmt::Display for FromArmaError {
             Self::InvalidLength { expected, actual } => {
                 write!(f, "expected {expected} elements, got {actual}")
             }
-            Self::MissingBracket(start) => match *start {
-                true => write!(f, "missing '[' at start of array"),
-                false => write!(f, "missing ']' at end of array"),
-            },
+            Self::MissingBracket(start) => {
+                if *start {
+                    write!(f, "missing '[' at start of array")
+                } else {
+                    write!(f, "missing ']' at end of array")
+                }
+            }
             Self::MissingField(s) => write!(f, "missing field: {s}"),
             Self::UnknownField(s) => write!(f, "unknown field: {s}"),
             Self::DuplicateField(s) => write!(f, "duplicate field: {s}"),
@@ -150,7 +153,9 @@ macro_rules! impl_from_arma_number {
         )*
     };
 }
-impl_from_arma_number!(i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize);
+impl_from_arma_number!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize
+);
 
 macro_rules! impl_from_arma_tuple {
     { $c: expr, $($t:ident)* } => {
@@ -207,7 +212,7 @@ where
             .ok_or(FromArmaError::MissingBracket(false))?;
         let parts = split_array(source);
         parts.iter().try_fold(Self::new(), |mut acc, p| {
-            acc.push(T::from_arma(p.to_string())?);
+            acc.push(T::from_arma(p.clone())?);
             Ok(acc)
         })
     }
@@ -260,7 +265,7 @@ mod tests {
     #[test]
     fn parse_tuple_size_errors() {
         assert_eq!(
-            <(String, i32)>::from_arma(r#"[]"#.to_string()),
+            <(String, i32)>::from_arma(r"[]".to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
@@ -298,7 +303,7 @@ mod tests {
     fn test_tuple_2() {
         assert_eq!(
             (0, 1),
-            <(u8, u8)>::from_arma(r#"[0, 1]"#.to_string()).unwrap()
+            <(u8, u8)>::from_arma(r"[0, 1]".to_string()).unwrap()
         );
     }
 
@@ -306,7 +311,7 @@ mod tests {
     fn test_tuple_3() {
         assert_eq!(
             (0, 1, 2),
-            <(u8, u8, u8)>::from_arma(r#"[0, 1, 2]"#.to_string()).unwrap()
+            <(u8, u8, u8)>::from_arma(r"[0, 1, 2]".to_string()).unwrap()
         );
     }
 
@@ -314,7 +319,7 @@ mod tests {
     fn test_tuple_4() {
         assert_eq!(
             (0, 1, 2, 3),
-            <(u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3]"#.to_string()).unwrap()
+            <(u8, u8, u8, u8)>::from_arma(r"[0, 1, 2, 3]".to_string()).unwrap()
         );
     }
 
@@ -322,7 +327,7 @@ mod tests {
     fn test_tuple_5() {
         assert_eq!(
             (0, 1, 2, 3, 4),
-            <(u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4]"#.to_string()).unwrap()
+            <(u8, u8, u8, u8, u8)>::from_arma(r"[0, 1, 2, 3, 4]".to_string()).unwrap()
         );
     }
 
@@ -330,7 +335,7 @@ mod tests {
     fn test_tuple_6() {
         assert_eq!(
             (0, 1, 2, 3, 4, 5),
-            <(u8, u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4, 5]"#.to_string()).unwrap()
+            <(u8, u8, u8, u8, u8, u8)>::from_arma(r"[0, 1, 2, 3, 4, 5]".to_string()).unwrap()
         );
     }
 
@@ -338,7 +343,7 @@ mod tests {
     fn test_tuple_7() {
         assert_eq!(
             (0, 1, 2, 3, 4, 5, 6),
-            <(u8, u8, u8, u8, u8, u8, u8)>::from_arma(r#"[0, 1, 2, 3, 4, 5, 6]"#.to_string())
+            <(u8, u8, u8, u8, u8, u8, u8)>::from_arma(r"[0, 1, 2, 3, 4, 5, 6]".to_string())
                 .unwrap()
         );
     }
@@ -347,10 +352,8 @@ mod tests {
     fn test_tuple_8() {
         assert_eq!(
             (0, 1, 2, 3, 4, 5, 6, 7),
-            <(u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
-                r#"[0, 1, 2, 3, 4, 5, 6, 7]"#.to_string()
-            )
-            .unwrap()
+            <(u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(r"[0, 1, 2, 3, 4, 5, 6, 7]".to_string())
+                .unwrap()
         );
     }
 
@@ -359,7 +362,7 @@ mod tests {
         assert_eq!(
             (0, 1, 2, 3, 4, 5, 6, 7, 8),
             <(u8, u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
-                r#"[0, 1, 2, 3, 4, 5, 6, 7, 8]"#.to_string()
+                r"[0, 1, 2, 3, 4, 5, 6, 7, 8]".to_string()
             )
             .unwrap()
         );
@@ -370,7 +373,7 @@ mod tests {
         assert_eq!(
             (0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
             <(u8, u8, u8, u8, u8, u8, u8, u8, u8, u8)>::from_arma(
-                r#"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]"#.to_string()
+                r"[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]".to_string()
             )
             .unwrap()
         );
@@ -436,7 +439,7 @@ mod tests {
     #[test]
     fn parse_slice_size_errors() {
         assert_eq!(
-            <[String; 2]>::from_arma(r#"[]"#.to_string()),
+            <[String; 2]>::from_arma(r"[]".to_string()),
             Err(FromArmaError::InvalidLength {
                 expected: 2,
                 actual: 0
@@ -486,36 +489,36 @@ mod tests {
 
     #[test]
     fn parse_exponential() {
-        assert_eq!(1.0e-10, <f64>::from_arma(r#"1.0e-10"#.to_string()).unwrap());
+        assert_eq!(1.0e-10, <f64>::from_arma(r"1.0e-10".to_string()).unwrap());
         assert_eq!(
             1_227_700,
-            <u32>::from_arma(r#"1.2277e+006"#.to_string()).unwrap()
+            <u32>::from_arma(r"1.2277e+006".to_string()).unwrap()
         );
     }
 
     #[test]
     fn parse_exponential_errors() {
         assert_eq!(
-            <f64>::from_arma(r#"e-10"#.to_string()),
+            <f64>::from_arma(r"e-10".to_string()),
             Err(FromArmaError::InvalidPrimitive(
                 "invalid float literal".to_string()
             ))
         );
         assert_eq!(
-            <f64>::from_arma(r#"1.0e"#.to_string()),
+            <f64>::from_arma(r"1.0e".to_string()),
             Err(FromArmaError::InvalidPrimitive(
                 "invalid float literal".to_string()
             ))
         );
 
         assert_eq!(
-            <u32>::from_arma(r#"e-10"#.to_string()),
+            <u32>::from_arma(r"e-10".to_string()),
             Err(FromArmaError::InvalidPrimitive(
                 "invalid number literal".to_string()
             ))
         );
         assert_eq!(
-            <u32>::from_arma(r#"1.0e"#.to_string()),
+            <u32>::from_arma(r"1.0e".to_string()),
             Err(FromArmaError::InvalidPrimitive(
                 "invalid number literal".to_string()
             ))

@@ -20,7 +20,7 @@ pub enum Value {
     Number(f64),
     /// Arma's `array` value.
     /// Represented as `[...]`
-    Array(Vec<Value>),
+    Array(Vec<Self>),
     /// Arma's `boolean` value.
     /// Represented as `true` or `false`
     Boolean(bool),
@@ -50,7 +50,7 @@ impl Display for Value {
             ),
             Self::Boolean(b) => write!(f, "{b}"),
             Self::String(s) => write!(f, "\"{}\"", s.replace('\"', "\"\"")),
-            Self::Unknown(s) => write!(f, "Unknown({})", s),
+            Self::Unknown(s) => write!(f, "Unknown({s})"),
         }
     }
 }
@@ -59,11 +59,11 @@ impl FromArma for Value {
     fn from_arma(s: String) -> Result<Self, FromArmaError> {
         match s.chars().next() {
             Some('n') => Ok(Self::Null),
-            Some('t') | Some('f') => Ok(Value::Boolean(<bool>::from_arma(s)?)),
-            Some('0'..='9') | Some('-') => Ok(Value::Number(<f64>::from_arma(s)?)),
-            Some('[') => Ok(Value::Array(<Vec<Value>>::from_arma(s)?)),
-            Some('"') => Ok(Value::String(<String>::from_arma(s)?)),
-            _ => Ok(Value::Unknown(s)),
+            Some('t' | 'f') => Ok(Self::Boolean(<bool>::from_arma(s)?)),
+            Some('0'..='9' | '-') => Ok(Self::Number(<f64>::from_arma(s)?)),
+            Some('[') => Ok(Self::Array(<Vec<Self>>::from_arma(s)?)),
+            Some('"') => Ok(Self::String(<String>::from_arma(s)?)),
+            _ => Ok(Self::Unknown(s)),
         }
     }
 }
@@ -80,7 +80,7 @@ mod tests {
         assert_eq!(Value::Number(-1.5).to_string(), "-1.5");
         assert_eq!(Value::Boolean(true).to_string(), "true");
         assert_eq!(Value::Boolean(false).to_string(), "false");
-        assert_eq!(Value::String("".to_string()).to_string(), "\"\"");
+        assert_eq!(Value::String(String::new()).to_string(), "\"\"");
         assert_eq!(Value::String(" ".to_string()).to_string(), "\" \"");
         assert_eq!(Value::String("Hello".to_string()).to_string(), "\"Hello\"");
         assert_eq!(

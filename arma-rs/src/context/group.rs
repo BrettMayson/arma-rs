@@ -8,7 +8,7 @@ pub struct GroupContext {
 }
 
 impl GroupContext {
-    pub(crate) fn new(state: Arc<State>) -> Self {
+    pub(crate) const fn new(state: Arc<State>) -> Self {
         Self { state }
     }
 }

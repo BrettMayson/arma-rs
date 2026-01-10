@@ -10,7 +10,10 @@ fn main() {
     }
     std::fs::copy(
         root,
-        Path::new(&format!("{}/README.md", std::env::var("OUT_DIR").unwrap())),
+        Path::new(&format!(
+            "{}/README.md",
+            std::env::var("OUT_DIR").expect("OUT_DIR not set")
+        )),
     )
-    .unwrap();
+    .expect("Failed to copy README.md");
 }

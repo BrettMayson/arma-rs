@@ -12,6 +12,6 @@ impl FromArma for uuid::Uuid {
             .strip_prefix('"')
             .and_then(|s| s.strip_suffix('"'))
             .unwrap_or(&s);
-        uuid::Uuid::parse_str(s).map_err(FromArmaError::custom)
+        Self::parse_str(s).map_err(FromArmaError::custom)
     }
 }
