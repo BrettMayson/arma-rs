@@ -463,14 +463,29 @@ mod tests {
         let loadout = r#"[[["CUP_arifle_M4A1_SOMMOD_Grip_tan", "", "", "CUP_optic_Eotech553_Black", ["tacgt_30Rnd_556x45_EPR_PMAG_Tan", 30], [], ""], [], ["ACE_VMM3", "", "", "", [], [], ""], ["casual_plaid_gray_khaki_uniform", [["ACE_packingBandage", 10]]], ["milgp_v_mmac_assaulter_belt_AOR2", []], ["B_MU_TacticalPack_cbr", []], "synixe_contractors_Cap_Headphones_GreenLogo", "CUP_G_Tan_Scarf_Shades", ["Binocular", "", "", "", [], [], ""], ["ItemMap", "ItemGPS", "", "ItemCompass", "ItemWatch", ""]], [["grad_slingHelmet", "CUP_H_OpsCore_Grey"]]]"#;
         let loadout = Loadout::from_arma(loadout.to_string()).unwrap();
         let v = loadout.to_arma();
-            assert!(v.is_array());
-            let arr = v.as_vec().unwrap();
-            // Should be the 2-element form: [ core(10-array), extended ]
-            assert_eq!(arr.len(), 2);
-            let core = arr[0].clone();
-            assert!(core.is_array());
-            let core_vec = core.as_vec().unwrap();
-            assert_eq!(core_vec.len(), 10);
-            assert_eq!(arr[1].clone(), loadout.cba_extended().to_arma());
+        assert!(v.is_array());
+        let arr = v.as_vec().unwrap();
+        // Should be the 2-element form: [ core(10-array), extended ]
+        assert_eq!(arr.len(), 2);
+        let core = arr[0].clone();
+        assert!(core.is_array());
+        let core_vec = core.as_vec().unwrap();
+        assert_eq!(core_vec.len(), 10);
+        assert_eq!(arr[1].clone(), loadout.cba_extended().to_arma());
+    }
+
+    #[test]
+    fn roundtrip_preserves_extended_shape_and_values() {
+        let loadout = r#"[[["CUP_arifle_M4A1_SOMMOD_Grip_tan", "", "", "CUP_optic_Eotech553_Black", ["tacgt_30Rnd_556x45_EPR_PMAG_Tan", 30], [], ""], [], ["ACE_VMM3", "", "", "", [], [], ""], ["casual_plaid_gray_khaki_uniform", [["ACE_packingBandage", 10]]], ["milgp_v_mmac_assaulter_belt_AOR2", []], ["B_MU_TacticalPack_cbr", []], "synixe_contractors_Cap_Headphones_GreenLogo", "CUP_G_Tan_Scarf_Shades", ["Binocular", "", "", "", [], [], ""], ["ItemMap", "ItemGPS", "", "ItemCompass", "ItemWatch", ""]], [["grad_slingHelmet", "CUP_H_OpsCore_Grey"]]]"#;
+        let parsed = Loadout::from_arma(loadout.to_string()).unwrap();
+
+        let serialized = parsed.to_arma();
+        let outer = serialized.as_vec().unwrap();
+        assert_eq!(outer.len(), 2);
+        assert!(outer[0].is_array());
+        assert_eq!(outer[0].as_vec().unwrap().len(), 10);
+
+        let reparsed = Loadout::from_arma(serialized.to_string()).unwrap();
+        assert_eq!(reparsed, parsed);
     }
 }
