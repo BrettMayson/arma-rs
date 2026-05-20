@@ -55,6 +55,16 @@ impl FromArma for CBAExtended {
     }
 }
 
+impl crate::IntoArma for CBAExtended {
+    fn to_arma(&self) -> Value {
+        match &self.0 {
+            None => Value::Null,
+            Some(map) => map.to_arma(),
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
