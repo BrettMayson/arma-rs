@@ -64,7 +64,6 @@ impl crate::IntoArma for CBAExtended {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
