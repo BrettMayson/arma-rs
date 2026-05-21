@@ -55,9 +55,19 @@ impl FromArma for CBAExtended {
     }
 }
 
+impl crate::IntoArma for CBAExtended {
+    fn to_arma(&self) -> Value {
+        match &self.0 {
+            None => Value::Null,
+            Some(map) => map.to_arma(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::IntoArma;
 
     #[test]
     fn test_from_arma() {
@@ -75,5 +85,32 @@ mod tests {
                     .collect()
             ))
         );
+    }
+
+    #[test]
+    fn test_to_arma() {
+        let none = CBAExtended::new();
+        assert_eq!(none.to_arma(), Value::Null);
+
+        let mut some = CBAExtended::new();
+        some.insert("cba_xeh_enabled".to_string(), Value::Boolean(true));
+        assert_eq!(
+            some.to_arma(),
+            Value::Array(vec![Value::Array(vec![
+                Value::String("cba_xeh_enabled".to_string()),
+                Value::Boolean(true)
+            ])])
+        );
+    }
+
+    #[test]
+    fn test_roundtrip_to_from_arma() {
+        let mut extended = CBAExtended::new();
+        extended.insert("cba_xeh_enabled".to_string(), Value::Boolean(true));
+
+        let serialized = extended.to_arma().to_string();
+        let parsed = CBAExtended::from_arma(serialized).unwrap();
+
+        assert_eq!(parsed, extended);
     }
 }
