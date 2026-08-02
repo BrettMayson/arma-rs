@@ -11,7 +11,7 @@ pub fn impl_from_arma(attributes: &ContainerAttributes, data: &StructData) -> To
     match &data {
         StructData::Map(fields) => map_struct(attributes, fields),
         StructData::Tuple(fields) => tuple_struct(attributes, fields),
-        StructData::NewType(field) => newtype_struct(attributes, field),
+        StructData::NewType(field) => newtype_struct(attributes, &**field),
     }
 }
 
@@ -41,10 +41,12 @@ fn map_struct(attributes: &ContainerAttributes, fields: &[FieldNamed]) -> TokenS
         let (ident, name) = (&field.ident, &field.name);
 
         let some_match = if *field.attributes.from_str.value() {
-            quote!(input_value
-                .to_string()
-                .parse()
-                .map_err(arma_rs::FromArmaError::custom)?)
+            quote!(
+                input_value
+                    .to_string()
+                    .parse()
+                    .map_err(arma_rs::FromArmaError::custom)?
+            )
         } else {
             quote!(arma_rs::FromArma::from_arma(input_value.to_string())?)
         };
@@ -98,10 +100,12 @@ fn tuple_struct(attributes: &ContainerAttributes, fields: &[FieldUnnamed]) -> To
         let index = &field.index;
 
         let some_match = if *field.attributes.from_str.value() {
-            quote!(input_value
-                .to_string()
-                .parse()
-                .map_err(arma_rs::FromArmaError::custom)?)
+            quote!(
+                input_value
+                    .to_string()
+                    .parse()
+                    .map_err(arma_rs::FromArmaError::custom)?
+            )
         } else {
             quote!(arma_rs::FromArma::from_arma(input_value.to_string())?)
         };

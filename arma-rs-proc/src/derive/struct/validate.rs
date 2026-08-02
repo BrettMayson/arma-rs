@@ -1,9 +1,9 @@
 use syn::Error;
 
 use crate::derive::{
+    CombinedErrors,
     attributes::{Attribute, ContainerAttributes, FieldAttributes},
     data::StructData,
-    CombinedErrors,
 };
 
 pub fn validate_attributes(

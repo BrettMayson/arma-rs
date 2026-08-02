@@ -10,8 +10,8 @@ pub use into::impl_into_arma;
 pub use validate::validate_attributes;
 
 use crate::derive::{
-    data::{FieldNamed, FieldUnnamed, StructData},
     CombinedErrors,
+    data::{FieldNamed, FieldUnnamed, StructData},
 };
 
 impl StructData {
@@ -46,7 +46,7 @@ impl StructData {
 
                 if fields.unnamed.len() == 1 {
                     let field = FieldUnnamed::new(errors, fields.unnamed[0].clone(), 0);
-                    Ok(Self::NewType(field))
+                    Ok(Self::NewType(Box::new(field)))
                 } else {
                     let fields = fields
                         .unnamed

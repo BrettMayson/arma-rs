@@ -85,20 +85,20 @@ macro_rules! execute {
             return format!("2{}", count).parse::<libc::c_int>().unwrap();
         }
         if $c == 0 {
-            handle_output_and_return(
+            unsafe { handle_output_and_return(
                 ($s)($( $vars, )* $($param::from_arma("".to_string()).unwrap(),)*),
                 $output,
                 $size
-            )
+            ) }
         } else {
             #[allow(unused_variables, unused_mut)]
             let mut argv: Vec<String> = {
-                let argv: &[*mut libc::c_char; $c] = &*($args.unwrap() as *const [*mut i8; $c]);
+                let argv: &[*mut libc::c_char; $c] = unsafe { &*($args.unwrap() as *const [*mut i8; $c]) };
                 let mut argv = argv
                     .to_vec()
                     .into_iter()
                     .map(|s| {
-                        std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                        unsafe { std::ffi::CStr::from_ptr(s).to_string_lossy().to_string() }
                     })
                     .collect::<Vec<String>>();
                 argv.reverse();
@@ -107,7 +107,7 @@ macro_rules! execute {
             #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
             let mut c = 0;
             #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-            handle_output_and_return(
+            unsafe { handle_output_and_return(
                 {
                     ($s)($( $vars, )* $(
                         if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
@@ -120,7 +120,7 @@ macro_rules! execute {
                 },
                 $output,
                 $size
-            )
+            ) }
         }
     }};
 }
@@ -140,7 +140,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
             args: Option<*mut *mut i8>,
             count: Option<libc::c_int>,
         ) {
-            self.call(context, acm, output, size, args, count);
+            unsafe { self.call(context, acm, output, size, args, count); }
         }
     }
 
@@ -158,20 +158,20 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 return format!("2{}", count).parse::<libc::c_int>().unwrap();
             }
             if $c == 0 {
-                handle_output_and_return(
+                unsafe { handle_output_and_return(
                     (self)($($param::from_arma("".to_string()).unwrap(),)*),
                     output,
                     size
-                )
+                ) }
             } else {
                 #[allow(unused_variables, unused_mut)]
                 let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = &*(args.unwrap() as *const [*mut i8; $c]);
+                    let argv: &[*mut libc::c_char; $c] = unsafe { &*(args.unwrap() as *const [*mut i8; $c]) };
                     let mut argv = argv
                         .to_vec()
                         .into_iter()
                         .map(|s| {
-                            std::ffi::CStr::from_ptr(s).to_string_lossy().to_string()
+                            unsafe { std::ffi::CStr::from_ptr(s).to_string_lossy().to_string() }
                         })
                         .collect::<Vec<String>>();
                     argv.reverse();
@@ -180,7 +180,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
                 let mut c = 0;
                 #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
-                handle_output_and_return(
+                unsafe { handle_output_and_return(
                     {
                         (self)($(
                             if let Ok(val) = $param::from_arma(argv.pop().unwrap()) {
@@ -193,7 +193,7 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     },
                     output,
                     size
-                )
+                ) }
             }
         }
     }
@@ -220,7 +220,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, _: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-            crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(false).as_bits();
+            unsafe {
+                crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(false).as_bits();
+            }
             let call_context = acm.request().into_without_stack();
             execute!(self, $c, count, output, size, args, (call_context), ($($param,)*))
         }
@@ -235,7 +237,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, _: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-            crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(true).as_bits();
+            unsafe {
+                crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(true).as_bits();
+            }
             let call_context = acm.request();
             execute!(self, $c, count, output, size, args, (call_context), ($($param,)*))
         }
@@ -250,7 +254,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, context: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-            crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(false).as_bits();
+            unsafe {
+                crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(false).as_bits();
+            }
             let call_context = acm.request().into_without_stack();
             execute!(self, $c, count, output, size, args, (context call_context), ($($param,)*))
         }
@@ -265,7 +271,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
     {
         #[allow(non_snake_case)]
         unsafe fn call(&self, context: Context, acm: &ArmaContextManager, output: *mut libc::c_char, size: libc::size_t, args: Option<*mut *mut i8>, count: Option<libc::c_int>) -> libc::c_int {
-            crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(true).as_bits();
+            unsafe {
+                crate::RVExtensionFeatureFlags = FeatureFlags::default().with_context_stack_trace(true).as_bits();
+            }
             let call_context = acm.request();
             execute!(self, $c, count, output, size, args, (context call_context), ($($param,)*))
         }
@@ -282,19 +290,21 @@ where
 {
     let ret = ret.to_ext_result();
     let ok = ret.is_ok();
-    if crate::write_cstr(
-        {
-            let value = match ret {
-                Ok(x) | Err(x) => x,
-            };
-            match value {
-                Value::String(s) => s,
-                v => v.to_string(),
-            }
-        },
-        output,
-        size,
-    )
+    if unsafe {
+        crate::write_cstr(
+            {
+                let value = match ret {
+                    Ok(x) | Err(x) => x,
+                };
+                match value {
+                    Value::String(s) => s,
+                    v => v.to_string(),
+                }
+            },
+            output,
+            size,
+        )
+    }
     .is_none()
     {
         4

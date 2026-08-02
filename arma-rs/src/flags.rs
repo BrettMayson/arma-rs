@@ -31,6 +31,7 @@ impl FeatureFlags {
         self.context_stack_trace
     }
 
+    #[allow(dead_code)]
     /// Create a new `FeatureFlags` from the given bits
     pub fn from_bits(bits: u64) -> Self {
         let mut flags = Self::default();

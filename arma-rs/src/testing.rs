@@ -131,10 +131,12 @@ impl Extension {
             }
         }
         (
-            std::ffi::CStr::from_ptr(output.as_ptr())
-                .to_str()
-                .unwrap()
-                .to_string(),
+            unsafe {
+                std::ffi::CStr::from_ptr(output.as_ptr())
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+            },
             res,
         )
     }

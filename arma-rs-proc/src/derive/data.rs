@@ -3,8 +3,9 @@ use quote::ToTokens;
 use syn::{Error, Result};
 
 use crate::derive::{
-    attributes::{parse_attributes, ContainerAttributes, FieldAttributes},
-    r#struct, CombinedErrors,
+    CombinedErrors,
+    attributes::{ContainerAttributes, FieldAttributes, parse_attributes},
+    r#struct,
 };
 
 pub struct ContainerData {
@@ -21,7 +22,7 @@ pub enum Data {
 pub enum StructData {
     Map(Vec<FieldNamed>),
     Tuple(Vec<FieldUnnamed>),
-    NewType(FieldUnnamed),
+    NewType(Box<FieldUnnamed>),
 }
 
 impl ContainerData {

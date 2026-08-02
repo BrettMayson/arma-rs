@@ -1,7 +1,7 @@
 [package]
 name = "arma-rs"
 description = "Arma 3 Extensions in Rust"
-version = "1.12.1"
+version = "1.13.0"
 edition = "2024"
 authors = ["Brett Mayson"]
 repository = "https://github.com/brettmayson/arma-rs"
@@ -10,17 +10,17 @@ keywords = ["arma"]
 readme = "../README.md"
 
 [dependencies]
-arma-rs-proc = { path = "../arma-rs-proc", version = "1.12.0" }
-log = "0.4.29"
+arma-rs-proc = { path = "../arma-rs-proc", version = "1.13.0" }
+log = "0.4.33"
 state = "0.6.0"
 seq-macro = "0.3.6"
 
-chrono = { version = "0.4.42", optional = true }
-crossbeam-channel = { version = "0.5.15", optional = true }
-libc = { version = "0.2.180", optional = true }
-serde = { version = "1.0.228", features = ["derive"], optional = true }
-serde_json = { version = "1.0.149", optional = true }
-uuid = { version = "1.19.0", optional = true }
+chrono = { version = "0.4.45", optional = true }
+crossbeam-channel = { version = "0.5.16", optional = true }
+libc = { version = "0.2.189", optional = true }
+serde = { version = "1.0.229", features = ["derive"], optional = true }
+serde_json = { version = "1.0.151", optional = true }
+uuid = { version = "1.24.0", optional = true }
 
 [target.'cfg(all(target_os="windows", target_arch="x86"))'.dependencies]
 link_args = "0.6.0"
@@ -34,7 +34,7 @@ version = "0.62.2"
 features = ["Win32_Foundation", "Win32_System_Console"]
 
 [dev-dependencies]
-trybuild = "1.0.114"
+trybuild = "1.0.118"
 
 [features]
 default = ["extension"]

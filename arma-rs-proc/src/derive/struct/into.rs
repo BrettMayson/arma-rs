@@ -11,7 +11,7 @@ pub fn impl_into_arma(attributes: &ContainerAttributes, data: &StructData) -> To
     match &data {
         StructData::Map(fields) => map_struct(attributes, fields),
         StructData::Tuple(fields) => tuple_struct(attributes, fields),
-        StructData::NewType(field) => newtype_struct(attributes, field),
+        StructData::NewType(field) => newtype_struct(attributes, &**field),
     }
 }
 
