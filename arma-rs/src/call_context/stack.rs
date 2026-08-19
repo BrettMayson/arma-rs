@@ -25,12 +25,16 @@ pub struct RawContextStackTrace {
 }
 
 impl RawContextStackTrace {
-    pub fn to_lines(&self) -> Option<&[RawStackTraceLine]> {
-        unsafe {
-            self.lines
-                .as_ref()
-                .map(|lines_ptr| std::slice::from_raw_parts(lines_ptr, self.line_count as usize))
+    pub fn to_lines(&self) -> Option<Vec<RawStackTraceLine>> {
+        if self.line_count == 0 || self.lines.is_null() {
+            return None;
         }
+
+        let mut lines = Vec::with_capacity(self.line_count as usize);
+        for i in 0..self.line_count as usize {
+            lines.push(unsafe { self.lines.add(i).read_unaligned() });
+        }
+        Some(lines)
     }
 }
 
