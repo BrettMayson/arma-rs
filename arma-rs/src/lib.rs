@@ -25,6 +25,8 @@ pub use value::{DirectReturn, FromArma, FromArmaError, IntoArma, Value, loadout}
 #[cfg(feature = "extension")]
 mod call_context;
 #[cfg(feature = "extension")]
+pub use call_context::stack::{RawContextStackTrace, RawStackTraceLine}; // Used in emulation testing
+#[cfg(feature = "extension")]
 use call_context::{ArmaCallContext, ArmaContextManager};
 #[cfg(feature = "extension")]
 pub use call_context::{CallContext, CallContextStackTrace, Caller, Mission, Server, Source};

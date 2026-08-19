@@ -1,6 +1,8 @@
 use std::ffi::CStr;
 
 #[repr(C)]
+#[doc(hidden)]
+/// Stack Trace data from Arma, pub for emulation testing.
 pub struct RawStackTraceLine {
     // Line number in file (before preprocessing if preprocessed with line numbers)
     pub line_number: u32,
@@ -15,6 +17,8 @@ pub struct RawStackTraceLine {
 }
 
 #[repr(C)]
+#[doc(hidden)]
+/// Stack Trace data from Arma, pub for emulation testing.
 pub struct RawContextStackTrace {
     pub lines: *mut RawStackTraceLine,
     pub line_count: u32,

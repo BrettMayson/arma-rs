@@ -6,7 +6,8 @@ mod extension {
         sync::{Arc, Once, RwLock},
     };
 
-    use arma_rs::{CallbackError, Context, Extension};
+    use arma_rs::{CallContextStackTrace, CallbackError, Context, Extension};
+    use arma_rs::{RawContextStackTrace, RawStackTraceLine};
 
     macro_rules! platform_extern {
         ($($func_body:tt)*) => {
@@ -478,6 +479,147 @@ mod extension {
             assert_eq!(code, 0);
             let _ = CString::from_raw(ptr);
             let _ = CString::from_raw(ptr_false);
+        }
+    }
+
+    struct MissAligner {
+        buffer: Box<[i8]>,
+        index: usize,
+    }
+
+    impl MissAligner {
+        const PTR_ALIGN: usize = align_of::<*mut i8>();
+
+        fn new(capacity: usize) -> Self {
+            Self {
+                buffer: vec![0i8; capacity].into_boxed_slice(),
+                index: 0,
+            }
+        }
+
+        fn misalign_array<T, const N: usize>(&mut self, array: &[T; N]) -> *mut *mut i8 {
+            self.misalign(array.as_ptr() as *mut i8, size_of_val(array)) as *mut *mut i8
+        }
+
+        fn misalign(&mut self, ptr: *mut i8, size: usize) -> *mut i8 {
+            while self.index.is_multiple_of(Self::PTR_ALIGN) {
+                self.index += 1;
+            }
+
+            debug_assert!(
+                self.index + size < self.buffer.len(),
+                "MissAligner buffer ran out of memory!"
+            );
+
+            let misaligned = unsafe { self.buffer.as_mut_ptr().add(self.index) };
+            self.index += size;
+
+            unsafe { ptr.copy_to_nonoverlapping(misaligned, size) };
+            misaligned
+        }
+    }
+
+    #[test]
+    fn c_interface_alignment() {
+        let mut extension = Extension::build()
+            .command("args", |a: String, b: String, c: String| -> String {
+                format!("{a}{b}{c}")
+            })
+            .command("call_context", |ctx: CallContextStackTrace| -> String {
+                let mut stack_matches = 0;
+                for (i, line) in ctx.stack_trace().lines.iter().enumerate() {
+                    if line.line_number == i as u32
+                        && line.file_offset == i as u32
+                        && line.source_file == "source"
+                        && line.scope_name == "scope"
+                        && line.file_content == "content"
+                    {
+                        stack_matches += 1
+                    }
+                }
+
+                format!(
+                    "{:?},{:?},{:?},{:?},{:?},valid:{stack_matches}",
+                    ctx.caller(),
+                    ctx.source(),
+                    ctx.mission(),
+                    ctx.server(),
+                    ctx.remote_exec_owner(),
+                )
+            })
+            .finish();
+
+        // Args
+        unsafe {
+            let mut arena = MissAligner::new(1024);
+            let mut output = [0i8; 1024];
+            let ptr = CString::new("args").unwrap().into_raw();
+            let args = [
+                CString::new("\"aaa\"").unwrap().into_raw(),
+                CString::new("\"bbb\"").unwrap().into_raw(),
+                CString::new("\"ccc\"").unwrap().into_raw(),
+            ];
+            extension.handle_call(
+                ptr,
+                output.as_mut_ptr(),
+                1024,
+                Some(arena.misalign_array(&args)),
+                Some(args.iter().count() as i32),
+                true,
+            );
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(cstring, Ok("aaabbbccc"));
+            let _ = CString::from_raw(ptr);
+            for str in args {
+                let _ = CString::from_raw(str);
+            }
+        }
+
+        // CallContext
+        unsafe {
+            let mut arena = MissAligner::new(1024);
+            let mut output = [0i8; 1024];
+            let ptr = CString::new("call_context").unwrap().into_raw();
+            let lines = std::array::from_fn::<_, 3, _>(|i| RawStackTraceLine {
+                line_number: i as u32,
+                file_offset: i as u32,
+                source_file: CString::new("source").unwrap().into_raw(),
+                scope_name: CString::new("scope").unwrap().into_raw(),
+                file_content: CString::new("content").unwrap().into_raw(),
+            });
+            let ptr_stack_trace = Box::into_raw(Box::new(RawContextStackTrace {
+                line_count: lines.iter().count() as u32,
+                lines: arena.misalign_array(&lines) as *mut RawStackTraceLine,
+            }));
+            let args = [
+                Box::into_raw(Box::new(123u64)) as *mut i8,
+                CString::new("source").unwrap().into_raw(),
+                CString::new("mission").unwrap().into_raw(),
+                CString::new("server").unwrap().into_raw(),
+                Box::into_raw(Box::new(456i16)) as *mut i8,
+                ptr_stack_trace as *mut i8,
+            ];
+            extension.handle_call_context(arena.misalign_array(&args), args.iter().count() as i32);
+            extension.handle_call(ptr, output.as_mut_ptr(), 1024, None, None, false);
+            let cstring = CStr::from_ptr(output.as_ptr()).to_str();
+            assert_eq!(
+                cstring,
+                Ok(
+                    "Steam(123),Pbo(\"source\"),Mission(\"mission\"),Multiplayer(\"server\"),456,valid:3"
+                )
+            );
+            let _ = CString::from_raw(ptr);
+            let _ = Box::from_raw(args[0]);
+            let _ = CString::from_raw(args[1]);
+            let _ = CString::from_raw(args[2]);
+            let _ = CString::from_raw(args[3]);
+            let _ = Box::from_raw(args[4]);
+            let _ = Box::from_raw(args[5]);
+            for line in lines {
+                let _ = CString::from_raw(line.source_file as *mut i8);
+                let _ = CString::from_raw(line.scope_name as *mut i8);
+                let _ = CString::from_raw(line.file_content as *mut i8);
+            }
         }
     }
 }
