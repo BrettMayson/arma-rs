@@ -272,8 +272,7 @@ mod extension {
                     .read()
                     .unwrap()
                     .get("c_interface_invalid_calls")
-                    .unwrap()
-                    .len(),
+                    .map_or_default(|s| s.len()),
                 2
             );
         }
