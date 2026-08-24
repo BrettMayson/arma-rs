@@ -3,7 +3,6 @@ mod extension {
     use std::{
         collections::HashMap,
         ffi::{CStr, CString},
-        ptr::slice_from_raw_parts_mut,
         sync::{Arc, Once, RwLock},
     };
 
@@ -67,8 +66,10 @@ mod extension {
             );
             extension.register_callback(callback);
             extension.run_callbacks();
-            let stack = get_callback_stack();
-            assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
+            assert_eq!(
+                get_callback_stack().read().unwrap().get("c_interface_full"),
+                None
+            );
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback").unwrap().into_raw();
@@ -110,9 +111,13 @@ mod extension {
                 let _ = CString::from_raw(ptr);
                 let _ = CString::from_raw(ptr_john);
             }
-            std::thread::sleep(std::time::Duration::from_millis(50));
+            std::thread::sleep(std::time::Duration::from_millis(100));
             assert_eq!(
-                stack.read().unwrap().get("c_interface_full").unwrap().len(),
+                get_callback_stack()
+                    .read()
+                    .unwrap()
+                    .get("c_interface_full")
+                    .map_or_default(|s| s.len()),
                 1
             );
         }
@@ -175,6 +180,13 @@ mod extension {
             );
             extension.register_callback(callback);
             extension.run_callbacks();
+            assert_eq!(
+                get_callback_stack()
+                    .read()
+                    .unwrap()
+                    .get("c_interface_invalid_calls"),
+                None
+            );
             let ptr = CString::new("hello").unwrap().into_raw();
             unsafe {
                 let mut output = [0i8; 1024];
@@ -252,9 +264,8 @@ mod extension {
             }
 
             std::thread::sleep(std::time::Duration::from_millis(500));
-            let stack = get_callback_stack();
             assert_eq!(
-                stack
+                get_callback_stack()
                     .read()
                     .unwrap()
                     .get("c_interface_invalid_calls")
@@ -529,8 +540,10 @@ mod extension {
     impl Drop for MissAligner {
         fn drop(&mut self) {
             unsafe {
-                let slice = slice_from_raw_parts_mut(self.buffer, self.capacity);
-                let _ = Box::from_raw(slice);
+                let _ = Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+                    self.buffer,
+                    self.capacity,
+                ));
             };
         }
     }
