@@ -5,13 +5,14 @@ use std::rc::Rc;
 
 pub use arma_rs_proc::{FromArma, IntoArma, arma};
 
+// Prevent compile on any non-x64 platforms, as Arma only supports x64.
+#[cfg(not(target_arch = "x86_64"))]
+compile_error!("arma-rs only supports x64 platforms, as Arma only supports x64.");
+
 #[cfg(feature = "extension")]
 use crossbeam_channel::{Receiver, Sender, unbounded};
 #[cfg(feature = "extension")]
 pub use libc;
-
-#[cfg(all(target_os = "windows", target_arch = "x86"))]
-pub use link_args;
 
 #[cfg(feature = "extension")]
 #[macro_use]
