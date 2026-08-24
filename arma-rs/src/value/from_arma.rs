@@ -137,21 +137,21 @@ macro_rules! impl_from_arma_number {
         $(
             impl FromArma for $t {
                 fn from_arma(s: String) -> Result<Self, FromArmaError> {
-                    let s = s.strip_suffix('"').and_then(|s| s.strip_prefix('"')).unwrap_or(&s);
-                    if s.contains("e") {
-                        // parse exponential notation
-                        let mut parts = s.split('e');
-                        let base = match parts.next().unwrap() {
-                            s if !s.is_empty() => s.parse::<f64>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
-                            _ => return Err(FromArmaError::InvalidPrimitive("invalid number literal".to_string())),
-                        };
-                        let exp = match parts.next().unwrap() {
-                            s if !s.is_empty() => s.parse::<i32>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))?,
-                            _ => return Err(FromArmaError::InvalidPrimitive("invalid number literal".to_string())),
-                        };
-                        return Ok((base * 10.0_f64.powi(exp)) as $t);
+                    let s = s
+                        .strip_suffix('"')
+                        .and_then(|s| s.strip_prefix('"'))
+                        .unwrap_or(&s);
+
+                    if s.contains(['e', 'E']) {
+                        let value = s
+                            .parse::<f64>()
+                            .map_err(|_| FromArmaError::InvalidPrimitive("invalid scientific notation".to_string()))?;
+
+                        Ok(value.round() as $t)
+                    } else {
+                        s.parse::<Self>()
+                            .map_err(|_| FromArmaError::InvalidPrimitive("invalid number literal".to_string()))
                     }
-                    s.parse::<Self>().map_err(|e| FromArmaError::InvalidPrimitive(e.to_string()))
                 }
             }
         )*
@@ -518,13 +518,13 @@ mod tests {
         assert_eq!(
             <u32>::from_arma(r"e-10".to_string()),
             Err(FromArmaError::InvalidPrimitive(
-                "invalid number literal".to_string()
+                "invalid scientific notation".to_string()
             ))
         );
         assert_eq!(
             <u32>::from_arma(r"1.0e".to_string()),
             Err(FromArmaError::InvalidPrimitive(
-                "invalid number literal".to_string()
+                "invalid scientific notation".to_string()
             ))
         );
     }
