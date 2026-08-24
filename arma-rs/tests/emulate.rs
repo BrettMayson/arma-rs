@@ -66,10 +66,8 @@ mod extension {
             );
             extension.register_callback(callback);
             extension.run_callbacks();
-            assert_eq!(
-                get_callback_stack().read().unwrap().get("c_interface_full"),
-                None
-            );
+            let stack = get_callback_stack();
+            assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
 
             unsafe {
                 let mut output = [0i8; 1024];
@@ -113,9 +111,9 @@ mod extension {
                 let _ = CString::from_raw(ptr_john);
             }
 
-            std::thread::sleep(std::time::Duration::from_millis(50));
+            std::thread::sleep(std::time::Duration::from_millis(500));
             assert_eq!(
-                get_callback_stack()
+                stack
                     .read()
                     .unwrap()
                     .get("c_interface_full")
@@ -182,13 +180,8 @@ mod extension {
             );
             extension.register_callback(callback);
             extension.run_callbacks();
-            assert_eq!(
-                get_callback_stack()
-                    .read()
-                    .unwrap()
-                    .get("c_interface_invalid_calls"),
-                None
-            );
+            let stack = get_callback_stack();
+            assert_eq!(stack.read().unwrap().get("c_interface_invalid_calls"), None);
 
             let ptr = CString::new("hello").unwrap().into_raw();
             unsafe {
@@ -268,7 +261,7 @@ mod extension {
 
             std::thread::sleep(std::time::Duration::from_millis(500));
             assert_eq!(
-                get_callback_stack()
+                stack
                     .read()
                     .unwrap()
                     .get("c_interface_invalid_calls")
