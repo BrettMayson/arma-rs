@@ -68,6 +68,7 @@ mod extension {
             extension.run_callbacks();
             let stack = get_callback_stack();
             assert_eq!(stack.read().unwrap().get("c_interface_full"), None);
+
             unsafe {
                 let mut output = [0i8; 1024];
                 let ptr = CString::new("callback").unwrap().into_raw();
@@ -109,9 +110,14 @@ mod extension {
                 let _ = CString::from_raw(ptr);
                 let _ = CString::from_raw(ptr_john);
             }
-            std::thread::sleep(std::time::Duration::from_millis(50));
+
+            std::thread::sleep(std::time::Duration::from_millis(500));
             assert_eq!(
-                stack.read().unwrap().get("c_interface_full").unwrap().len(),
+                stack
+                    .read()
+                    .unwrap()
+                    .get("c_interface_full")
+                    .map_or_default(|s| s.len()),
                 1
             );
         }
@@ -174,6 +180,9 @@ mod extension {
             );
             extension.register_callback(callback);
             extension.run_callbacks();
+            let stack = get_callback_stack();
+            assert_eq!(stack.read().unwrap().get("c_interface_invalid_calls"), None);
+
             let ptr = CString::new("hello").unwrap().into_raw();
             unsafe {
                 let mut output = [0i8; 1024];
@@ -251,14 +260,12 @@ mod extension {
             }
 
             std::thread::sleep(std::time::Duration::from_millis(500));
-            let stack = get_callback_stack();
             assert_eq!(
                 stack
                     .read()
                     .unwrap()
                     .get("c_interface_invalid_calls")
-                    .unwrap()
-                    .len(),
+                    .map_or_default(|s| s.len()),
                 2
             );
         }
@@ -483,39 +490,56 @@ mod extension {
     }
 
     struct MissAligner {
-        buffer: Box<[i8]>,
+        buffer: *mut i8,
+        capacity: usize,
         index: usize,
     }
 
     impl MissAligner {
-        const PTR_ALIGN: usize = align_of::<*mut i8>();
-
         fn new(capacity: usize) -> Self {
+            let buffer = vec![0i8; capacity].into_boxed_slice();
+            let buffer = Box::into_raw(buffer) as *mut i8;
             Self {
-                buffer: vec![0i8; capacity].into_boxed_slice(),
+                buffer,
+                capacity,
                 index: 0,
             }
         }
 
         fn misalign_array<T, const N: usize>(&mut self, array: &[T; N]) -> *mut *mut i8 {
-            self.misalign(array.as_ptr() as *mut i8, size_of_val(array)) as *mut *mut i8
+            self.misalign(
+                array.as_ptr() as *mut i8,
+                size_of_val(array),
+                align_of::<T>(),
+            ) as *mut *mut i8
         }
 
-        fn misalign(&mut self, ptr: *mut i8, size: usize) -> *mut i8 {
-            while self.index.is_multiple_of(Self::PTR_ALIGN) {
+        fn misalign(&mut self, ptr: *mut i8, size: usize, align: usize) -> *mut i8 {
+            while self.index.is_multiple_of(align) {
                 self.index += 1;
             }
 
             debug_assert!(
-                self.index + size < self.buffer.len(),
+                self.index + size <= self.capacity,
                 "MissAligner buffer ran out of memory!"
             );
 
-            let misaligned = unsafe { self.buffer.as_mut_ptr().add(self.index) };
+            let misaligned = unsafe { self.buffer.add(self.index) };
             self.index += size;
 
             unsafe { ptr.copy_to_nonoverlapping(misaligned, size) };
             misaligned
+        }
+    }
+
+    impl Drop for MissAligner {
+        fn drop(&mut self) {
+            unsafe {
+                let _ = Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+                    self.buffer,
+                    self.capacity,
+                ));
+            };
         }
     }
 
@@ -609,12 +633,12 @@ mod extension {
                 )
             );
             let _ = CString::from_raw(ptr);
-            let _ = Box::from_raw(args[0]);
+            let _ = Box::from_raw(args[0] as *mut u64);
             let _ = CString::from_raw(args[1]);
             let _ = CString::from_raw(args[2]);
             let _ = CString::from_raw(args[3]);
-            let _ = Box::from_raw(args[4]);
-            let _ = Box::from_raw(args[5]);
+            let _ = Box::from_raw(args[4] as *mut i16);
+            let _ = Box::from_raw(args[5] as *mut RawContextStackTrace);
             for line in lines {
                 let _ = CString::from_raw(line.source_file as *mut i8);
                 let _ = CString::from_raw(line.scope_name as *mut i8);
