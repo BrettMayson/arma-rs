@@ -1,6 +1,8 @@
 use std::ffi::CStr;
 
 #[repr(C)]
+#[doc(hidden)]
+/// Stack Trace data from Arma, pub for emulation testing.
 pub struct RawStackTraceLine {
     // Line number in file (before preprocessing if preprocessed with line numbers)
     pub line_number: u32,
@@ -15,18 +17,24 @@ pub struct RawStackTraceLine {
 }
 
 #[repr(C)]
+#[doc(hidden)]
+/// Stack Trace data from Arma, pub for emulation testing.
 pub struct RawContextStackTrace {
     pub lines: *mut RawStackTraceLine,
     pub line_count: u32,
 }
 
 impl RawContextStackTrace {
-    pub fn to_lines(&self) -> Option<&[RawStackTraceLine]> {
-        unsafe {
-            self.lines
-                .as_ref()
-                .map(|lines_ptr| std::slice::from_raw_parts(lines_ptr, self.line_count as usize))
+    pub fn to_lines(&self) -> Option<Vec<RawStackTraceLine>> {
+        if self.line_count == 0 || self.lines.is_null() {
+            return None;
         }
+
+        let mut lines = Vec::with_capacity(self.line_count as usize);
+        for i in 0..self.line_count as usize {
+            lines.push(unsafe { self.lines.add(i).read_unaligned() });
+        }
+        Some(lines)
     }
 }
 

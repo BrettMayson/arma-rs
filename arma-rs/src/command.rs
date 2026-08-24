@@ -91,20 +91,9 @@ macro_rules! execute {
                 $size
             ) }
         } else {
-            #[allow(unused_variables, unused_mut)]
-            let mut argv: Vec<String> = {
-                let argv: &[*mut libc::c_char; $c] = unsafe { &*($args.unwrap() as *const [*mut i8; $c]) };
-                let mut argv = argv
-                    .to_vec()
-                    .into_iter()
-                    .map(|s| {
-                        unsafe { std::ffi::CStr::from_ptr(s).to_string_lossy().to_string() }
-                    })
-                    .collect::<Vec<String>>();
-                argv.reverse();
-                argv
-            };
             #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+            let mut argv = unsafe { construct_args($args.unwrap(), $c) };
+            #[allow(unused_variables, unused_mut)]
             let mut c = 0;
             #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
             unsafe { handle_output_and_return(
@@ -164,20 +153,9 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
                     size
                 ) }
             } else {
-                #[allow(unused_variables, unused_mut)]
-                let mut argv: Vec<String> = {
-                    let argv: &[*mut libc::c_char; $c] = unsafe { &*(args.unwrap() as *const [*mut i8; $c]) };
-                    let mut argv = argv
-                        .to_vec()
-                        .into_iter()
-                        .map(|s| {
-                            unsafe { std::ffi::CStr::from_ptr(s).to_string_lossy().to_string() }
-                        })
-                        .collect::<Vec<String>>();
-                    argv.reverse();
-                    argv
-                };
                 #[allow(unused_variables, unused_mut)] // Caused by the 0 loop
+                let mut argv = unsafe { construct_args(args.unwrap(), $c) };
+                #[allow(unused_variables, unused_mut)]
                 let mut c = 0;
                 #[allow(unused_assignments, clippy::mixed_read_write_in_expression)]
                 unsafe { handle_output_and_return(
@@ -279,6 +257,17 @@ macro_rules! factory_tuple ({ $c: expr, $($param:ident)* } => {
         }
     }
 });
+
+// Arma provides misaligned pointers so we traverse the array manually
+unsafe fn construct_args(args: *mut *mut i8, count: usize) -> Vec<String> {
+    let mut argv = Vec::with_capacity(count);
+    for i in 0..count {
+        let u = unsafe { args.add(count - 1 - i).read_unaligned() }; // Reverse order
+        let s = unsafe { std::ffi::CStr::from_ptr(u).to_string_lossy().to_string() };
+        argv.push(s);
+    }
+    argv
+}
 
 unsafe fn handle_output_and_return<R>(
     ret: R,
